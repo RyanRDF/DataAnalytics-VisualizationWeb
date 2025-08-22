@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analytics Dashboard</title>
+    <link rel="stylesheet" href="test.css">
+    <script src="test.js" defer></script> <!-- Linking the external JS file -->
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">DAV</div>
+        <ul class="menu">
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="dropdown-btn" onclick="toggleDropdown('analytics-dropdown')">Analytics <span class="arrow">▼</span></a>
+                <ul class="submenu" id="analytics-dropdown">
+                    <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('keuangan')">Keuangan</a></li>
+                    <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('pasien')">Pasien</a></li>
+                    <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('dokter')">Dokter</a></li>
+                </ul>
+            </li>
+            <li class="menu-item">
+                <a href="javascript:void(0);" class="dropdown-btn" onclick="toggleDropdown('visualization-dropdown')">Visualization <span class="arrow">▼</span></a>
+                <ul class="submenu" id="visualization-dropdown">
+                    <li class="submenu-item">Placeholder</li>
+                    <li class="submenu-item">Placeholder</li>
+                </ul>
+            </li>
+        </ul>
+        <!-- File Input placed here -->
+        <div class="file-upload-container">
+            <label for="fileInput" class="file-upload-label">Upload File</label>
+            <input type="file" id="fileInput" accept=".txt, .csv, .xls" onchange="handleFileUpload(event)">
+            <p id="fileInfo">No file selected.</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>Dashboard</h1>
+        <div id="keuangan" style="display:none;">
+            <h2>Keuangan</h2>
+            <p>Details about financial data</p>
+        </div>
+        <div id="pasien" style="display:none;">
+            <h2>Pasien</h2>
+            <p>Information about patients</p>
+        </div>
+        <div id="dokter" style="display:none;">
+            <h2>Dokter</h2>
+            <p>Details about doctors</p>
+        </div>
+    </div>
+</body>
+</html>
