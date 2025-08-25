@@ -15,7 +15,7 @@
     <ul class="menu">
       <!-- Home Menu -->
       <li class="menu-item">
-        <a href="javascript:void(0);" onclick="showContent('home')">Home</a>
+        <a href="javascript:void(0);" onclick="showContent('home')" class="active">Home</a>
       </li>
       <li class="menu-item">
         <a href="javascript:void(0);" class="dropdown-btn" onclick="toggleDropdown('analytics-dropdown')">
@@ -31,10 +31,10 @@
 
     <!-- Form upload file -->
     <form class="file-upload-container" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-      <label for="fileInput" class="file-upload-label">Upload File (.txt, .csv, .xlsx)</label>
-      <input type="file" id="fileInput" name="file" accept=".txt,.csv,.xlsx" onchange="handleFileUpload(event)">
+      <label for="fileInput" class="file-upload-label">Upload .txt File</label>
+      <input type="file" id="fileInput" name="file" accept=".txt" onchange="handleFileUpload(event)" required>
       <p id="fileInfo">No file selected.</p>
-      <button type="submit">Proses</button>
+      <button type="submit" id="uploadBtn" disabled>Process File</button>
     </form>
   </div>
 
@@ -42,17 +42,70 @@
     <h1>Dashboard</h1>
 
     <!-- Home Content (for table) -->
-    <div id="home" style="display:none;">
-      <h2>Home</h2>
-      <div id="uploaded-table-container"></div>
+    <div id="home" class="content-section">
+      <div class="home-container">
+        <div class="home-left">
+          <h2>Welcome to Data Analytics Dashboard</h2>
+          <p>This dashboard provides comprehensive data analysis and visualization tools for healthcare data.</p>
+          
+          {% if error %}
+          <div class="error-message">
+            <p>{{ error }}</p>
+          </div>
+          {% endif %}
+          
+          <div class="info-cards">
+            <div class="info-card">
+              <h3>Data Overview</h3>
+              <p>Upload a .txt file to view raw data in tabular format</p>
+            </div>
+            <div class="info-card">
+              <h3>Analytics</h3>
+              <p>Explore financial, patient, and doctor analytics</p>
+            </div>
+          </div>
+        </div>
+        <div class="home-right">
+          {% if has_data %}
+            <h3>Raw Data Table</h3>
+            <div class="table-container">
+              {{ table_html | safe }}
+            </div>
+          {% else %}
+            <div class="no-data-container">
+              <h3>No Data Available</h3>
+              <p>Please upload a .txt file using the form on the left to view data.</p>
+              <div class="upload-instructions">
+                <h4>File Format Requirements:</h4>
+                <ul>
+                  <li>File must be in .txt format</li>
+                  <li>Data should be tab-separated</li>
+                  <li>First row should contain column headers</li>
+                </ul>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     <!-- Keuangan Content -->
-    <div id="keuangan" style="display:none;">
+    <div id="keuangan" class="content-section" style="display:none;">
       <h2>Keuangan</h2>
       <p>Details about financial data</p>
     </div>
 
+    <!-- Pasien Content -->
+    <div id="pasien" class="content-section" style="display:none;">
+      <h2>Pasien</h2>
+      <p>Details about patient data</p>
+    </div>
+
+    <!-- Dokter Content -->
+    <div id="dokter" class="content-section" style="display:none;">
+      <h2>Dokter</h2>
+      <p>Details about doctor data</p>
+    </div>
   </div>
 </body>
 </html>
