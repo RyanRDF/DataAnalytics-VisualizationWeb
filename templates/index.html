@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Analytics Dashboard</title>
+
+  <!-- Muat CSS dan JS dari static -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="logo">DAV</div>
+    <ul class="menu">
+      <!-- Home Menu -->
+      <li class="menu-item">
+        <a href="javascript:void(0);" onclick="showContent('home')">Home</a>
+      </li>
+      <li class="menu-item">
+        <a href="javascript:void(0);" class="dropdown-btn" onclick="toggleDropdown('analytics-dropdown')">
+          Analytics <span class="arrow">▼</span>
+        </a>
+        <ul class="submenu" id="analytics-dropdown">
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('keuangan')">Keuangan</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('pasien')">Pasien</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('dokter')">Dokter</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <!-- Form upload file -->
+    <form class="file-upload-container" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+      <label for="fileInput" class="file-upload-label">Upload File (.txt, .csv, .xlsx)</label>
+      <input type="file" id="fileInput" name="file" accept=".txt,.csv,.xlsx" onchange="handleFileUpload(event)">
+      <p id="fileInfo">No file selected.</p>
+      <button type="submit">Proses</button>
+    </form>
+  </div>
+
+  <div class="main-content">
+    <h1>Dashboard</h1>
+
+    <!-- Home Content (for table) -->
+    <div id="home" style="display:none;">
+      <h2>Home</h2>
+      <div id="uploaded-table-container"></div>
+    </div>
+
+    <!-- Keuangan Content -->
+    <div id="keuangan" style="display:none;">
+      <h2>Keuangan</h2>
+      <p>Details about financial data</p>
+    </div>
+
+  </div>
+</body>
+</html>

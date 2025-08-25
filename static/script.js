@@ -43,3 +43,15 @@ function handleFileUpload(event) {
         fileInfo.textContent = 'No file selected.';
     }
 }
+
+// Function to show content based on button clicked
+function showContent(content) {
+    // Hide all content first
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('keuangan').style.display = 'none';
+    document.getElementById('pasien').style.display = 'none';
+    document.getElementById('dokter').style.display = 'none';
+    
+    // Show the selected content
+    document.getElementById(content).style.display = 'block';
+}
