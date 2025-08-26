@@ -5,12 +5,20 @@ function showContent(content) {
     document.getElementById('keuangan').style.display = 'none';
     document.getElementById('pasien').style.display = 'none';
     document.getElementById('dokter').style.display = 'none';
+    document.getElementById('charts').style.display = 'none';
+    document.getElementById('graphs').style.display = 'none';
+    document.getElementById('reports').style.display = 'none';
     
     // Show the selected content
     document.getElementById(content).style.display = 'block';
     
     // Update active menu item
     updateActiveMenu(content);
+    
+    // Handle special content loading
+    if (content === 'keuangan') {
+        loadKeuanganData();
+    }
 }
 
 // Function to update active menu item
@@ -23,7 +31,9 @@ function updateActiveMenu(content) {
     if (content === 'home') {
         document.querySelector('.menu-item > a[onclick*="home"]').classList.add('active');
     } else if (content === 'keuangan' || content === 'pasien' || content === 'dokter') {
-        document.querySelector('.dropdown-btn').classList.add('active');
+        document.querySelector('.menu-item > a[onclick*="analytics-dropdown"]').classList.add('active');
+    } else if (content === 'charts' || content === 'graphs' || content === 'reports') {
+        document.querySelector('.menu-item > a[onclick*="visualize-dropdown"]').classList.add('active');
     }
 }
 
@@ -66,6 +76,42 @@ function handleFileUpload(event) {
         fileInfo.style.color = '#555';
         uploadBtn.disabled = true;
     }
+}
+
+// Function to load keuangan data via AJAX
+function loadKeuanganData() {
+    fetch('/keuangan')
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Extract the table from the response
+            const tableContainer = tempDiv.querySelector('.table-container');
+            const errorMessage = tempDiv.querySelector('.error-message');
+            
+            const keuanganContent = document.getElementById('keuangan');
+            
+            if (tableContainer) {
+                // Clear existing content
+                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2>';
+                
+                // Add the table
+                keuanganContent.appendChild(tableContainer.cloneNode(true));
+            } else if (errorMessage) {
+                // Show error message
+                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2>';
+                keuanganContent.appendChild(errorMessage.cloneNode(true));
+            } else {
+                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2><p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading keuangan data:', error);
+            const keuanganContent = document.getElementById('keuangan');
+            keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2><p>Terjadi kesalahan saat memuat data keuangan.</p>';
+        });
 }
 
 // Initialize the page with Home content as default

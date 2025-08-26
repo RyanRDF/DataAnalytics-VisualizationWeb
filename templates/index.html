@@ -27,6 +27,16 @@
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('dokter')">Dokter</a></li>
         </ul>
       </li>
+      <li class="menu-item">
+        <a href="javascript:void(0);" class="dropdown-btn" onclick="toggleDropdown('visualize-dropdown')">
+          Visualize <span class="arrow">▼</span>
+        </a>
+        <ul class="submenu" id="visualize-dropdown">
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('charts')">Charts</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('graphs')">Graphs</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('reports')">Reports</a></li>
+        </ul>
+      </li>
     </ul>
 
     <!-- Form upload file -->
@@ -39,13 +49,12 @@
   </div>
 
   <div class="main-content">
-    <h1>Dashboard</h1>
+    <h1>Welcome to Data Analytics Dashboard</h1>
 
     <!-- Home Content (for table) -->
     <div id="home" class="content-section">
       <div class="home-container">
         <div class="home-left">
-          <h2>Welcome to Data Analytics Dashboard</h2>
           <p>This dashboard provides comprehensive data analysis and visualization tools for healthcare data.</p>
           
           {% if error %}
@@ -91,8 +100,11 @@
 
     <!-- Keuangan Content -->
     <div id="keuangan" class="content-section" style="display:none;">
-      <h2>Keuangan</h2>
-      <p>Details about financial data</p>
+      <h2>Analisis Keuangan</h2>
+      <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
+      <div class="table-container">
+        <p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>
+      </div>
     </div>
 
     <!-- Pasien Content -->
@@ -105,6 +117,24 @@
     <div id="dokter" class="content-section" style="display:none;">
       <h2>Dokter</h2>
       <p>Details about doctor data</p>
+    </div>
+
+    <!-- Charts Content -->
+    <div id="charts" class="content-section" style="display:none;">
+      <h2>Charts</h2>
+      <p>Interactive charts and visualizations</p>
+    </div>
+
+    <!-- Graphs Content -->
+    <div id="graphs" class="content-section" style="display:none;">
+      <h2>Graphs</h2>
+      <p>Advanced graph visualizations</p>
+    </div>
+
+    <!-- Reports Content -->
+    <div id="reports" class="content-section" style="display:none;">
+      <h2>Reports</h2>
+      <p>Generated reports and insights</p>
     </div>
   </div>
 </body>

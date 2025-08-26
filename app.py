@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
-import pandas as pd
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import os
+from processing import DataHandler
 
 app = Flask(__name__)
 
@@ -9,6 +9,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize data handler
+data_handler = DataHandler()
 
 @app.route('/')
 def index():
@@ -24,28 +27,46 @@ def upload_file():
     if file.filename == '':
         return redirect(url_for('index'))
     
-    # Check if file is a .txt file
-    if not file.filename.endswith('.txt'):
-        return render_template('index.html', table_html="", has_data=False, error="Please upload a .txt file")
+    # Validate file
+    is_valid, error = data_handler.validate_file(file.filename)
+    if not is_valid:
+        return render_template('index.html', table_html="", has_data=False, error=error)
     
     try:
         # Save the uploaded file
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(filepath)
+        filepath, error = data_handler.save_uploaded_file(file, app.config['UPLOAD_FOLDER'])
+        if error:
+            return render_template('index.html', table_html="", has_data=False, error=error)
         
-        # Read the uploaded file with tab separator (same format as sampel_data.txt)
-        df = pd.read_csv(filepath, sep='\t')
+        # Load data from file
+        df, error = data_handler.load_data_from_file(filepath)
+        if error:
+            data_handler.cleanup_file(filepath)
+            return render_template('index.html', table_html="", has_data=False, error=error)
         
-        # Convert dataframe to HTML table
-        table_html = df.to_html(classes='data-table', index=False)
+        # Get raw data table
+        table_html, has_data = data_handler.get_raw_data_table()
         
         # Clean up the uploaded file
-        os.remove(filepath)
+        data_handler.cleanup_file(filepath)
         
-        return render_template('index.html', table_html=table_html, has_data=True)
+        return render_template('index.html', table_html=table_html, has_data=has_data)
         
     except Exception as e:
         return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
+
+@app.route('/keuangan')
+def keuangan():
+    if not data_handler.has_data():
+        return render_template('index.html', table_html="", has_data=False, error="No data available. Please upload a file first.")
+    
+    # Get financial table
+    table_html, error = data_handler.get_financial_table()
+    
+    if error:
+        return render_template('index.html', table_html="", has_data=False, error=error)
+    
+    return render_template('index.html', table_html=table_html, has_data=True, current_view='keuangan')
 
 if __name__ == '__main__':
     app.run(debug=True)

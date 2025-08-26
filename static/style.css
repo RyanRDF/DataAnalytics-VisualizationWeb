@@ -257,6 +257,29 @@ body {
     min-width: 800px; /* Ensure minimum width for readability */
 }
 
+/* Financial table specific styles */
+#keuangan .data-table {
+    font-size: 11px; /* Smaller font for financial table due to many columns */
+}
+
+#keuangan .data-table th,
+#keuangan .data-table td {
+    padding: 6px 8px; /* Smaller padding for financial table */
+    min-width: 80px; /* Smaller minimum width for financial table */
+}
+
+/* Highlight profit and loss columns */
+#keuangan .data-table th:nth-child(n+12), /* Columns from LABA onwards */
+#keuangan .data-table td:nth-child(n+12) {
+    background-color: #f8f9fa;
+    font-weight: 500;
+}
+
+#keuangan .data-table th:nth-child(n+12) {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
 .data-table th, .data-table td {
     padding: 8px 12px;
     border: 1px solid #ddd;
