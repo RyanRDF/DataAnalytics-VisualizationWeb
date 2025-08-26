@@ -280,6 +280,38 @@ body {
     color: #1976d2;
 }
 
+/* Patient table specific styles */
+#pasien .data-table {
+    font-size: 10px; /* Even smaller font for patient table due to many columns */
+}
+
+#pasien .data-table th,
+#pasien .data-table td {
+    padding: 4px 6px; /* Smaller padding for patient table */
+    min-width: 70px; /* Smaller minimum width for patient table */
+}
+
+/* Highlight important patient columns */
+#pasien .data-table th:nth-child(1), /* KODE_RS */
+#pasien .data-table td:nth-child(1),
+#pasien .data-table th:nth-child(8), /* NAMA_PASIEN */
+#pasien .data-table td:nth-child(8),
+#pasien .data-table th:nth-child(9), /* NOKARTU */
+#pasien .data-table td:nth-child(9),
+#pasien .data-table th:nth-child(30), /* MRN */
+#pasien .data-table td:nth-child(30) {
+    background-color: #fff3cd;
+    font-weight: 600;
+}
+
+#pasien .data-table th:nth-child(1),
+#pasien .data-table th:nth-child(8),
+#pasien .data-table th:nth-child(9),
+#pasien .data-table th:nth-child(30) {
+    background-color: #ffeaa7;
+    color: #d63031;
+}
+
 .data-table th, .data-table td {
     padding: 8px 12px;
     border: 1px solid #ddd;

@@ -68,5 +68,18 @@ def keuangan():
     
     return render_template('index.html', table_html=table_html, has_data=True, current_view='keuangan')
 
+@app.route('/pasien')
+def pasien():
+    if not data_handler.has_data():
+        return render_template('index.html', table_html="", has_data=False, error="No data available. Please upload a file first.")
+    
+    # Get patient table
+    table_html, error = data_handler.get_patient_table()
+    
+    if error:
+        return render_template('index.html', table_html="", has_data=False, error=error)
+    
+    return render_template('index.html', table_html=table_html, has_data=True, current_view='pasien')
+
 if __name__ == '__main__':
     app.run(debug=True)

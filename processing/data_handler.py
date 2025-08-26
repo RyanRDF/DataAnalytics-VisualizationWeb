@@ -27,6 +27,63 @@ class DataHandler:
         except Exception as e:
             return "", False
     
+    def process_patient_data(self):
+        """Process patient data with all required columns"""
+        if self.current_df is None:
+            return None, "No data available. Please upload a file first."
+        
+        try:
+            # Define all patient-related columns
+            patient_columns = [
+                'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF',
+                'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN',
+                'NOKARTU', 'BIRTH_DATE', 'BIRTH_WEIGHT', 'SEX',
+                'DISCHARGE_STATUS', 'DIAGLIST', 'PROCLIST', 'ADL1', 'ADL2',
+                'IN_SP', 'IN_SR', 'IN_SI', 'IN_SD', 'INACBG', 'SUBACUTE',
+                'CHRONIC', 'SP', 'SR', 'SI', 'SD', 'DESKRIPSI_INACBG',
+                'MRN', 'UMUR_TAHUN', 'UMUR_HARI', 'DPJP', 'SEP', 'PAYOR_ID',
+                'CODER_ID', 'VERSI_INACBG', 'VERSI_GROUPER'
+            ]
+            
+            # Check which columns exist in the data
+            existing_columns = [col for col in patient_columns if col in self.current_df.columns]
+            missing_columns = [col for col in patient_columns if col not in self.current_df.columns]
+            
+            if not existing_columns:
+                return None, "No patient-related columns found in the data."
+            
+            # Create a copy of the dataframe with existing patient columns
+            patient_df = self.current_df[existing_columns].copy()
+            
+            # Fill missing columns with empty values
+            for col in missing_columns:
+                patient_df[col] = ''
+            
+            # Reorder columns to match the expected format
+            final_columns = patient_columns
+            patient_df = patient_df.reindex(columns=final_columns)
+            
+            # Clean up data - replace None values with empty strings
+            patient_df = patient_df.fillna('')
+            
+            return patient_df, None
+            
+        except Exception as e:
+            return None, f"Error processing patient data: {str(e)}"
+    
+    def get_patient_table(self):
+        """Get patient data as HTML table"""
+        patient_df, error = self.process_patient_data()
+        
+        if error:
+            return "", error
+        
+        try:
+            table_html = patient_df.to_html(classes='data-table', index=False)
+            return table_html, None
+        except Exception as e:
+            return "", f"Error creating patient table: {str(e)}"
+    
     def process_financial_data(self):
         """Process financial data with required calculations"""
         if self.current_df is None:

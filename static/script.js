@@ -18,6 +18,8 @@ function showContent(content) {
     // Handle special content loading
     if (content === 'keuangan') {
         loadKeuanganData();
+    } else if (content === 'pasien') {
+        loadPasienData();
     }
 }
 
@@ -111,6 +113,42 @@ function loadKeuanganData() {
             console.error('Error loading keuangan data:', error);
             const keuanganContent = document.getElementById('keuangan');
             keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2><p>Terjadi kesalahan saat memuat data keuangan.</p>';
+        });
+}
+
+// Function to load pasien data via AJAX
+function loadPasienData() {
+    fetch('/pasien')
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Extract the table from the response
+            const tableContainer = tempDiv.querySelector('.table-container');
+            const errorMessage = tempDiv.querySelector('.error-message');
+            
+            const pasienContent = document.getElementById('pasien');
+            
+            if (tableContainer) {
+                // Clear existing content
+                pasienContent.innerHTML = '<h2>Data Pasien</h2>';
+                
+                // Add the table
+                pasienContent.appendChild(tableContainer.cloneNode(true));
+            } else if (errorMessage) {
+                // Show error message
+                pasienContent.innerHTML = '<h2>Data Pasien</h2>';
+                pasienContent.appendChild(errorMessage.cloneNode(true));
+            } else {
+                pasienContent.innerHTML = '<h2>Data Pasien</h2><p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading pasien data:', error);
+            const pasienContent = document.getElementById('pasien');
+            pasienContent.innerHTML = '<h2>Data Pasien</h2><p>Terjadi kesalahan saat memuat data pasien.</p>';
         });
 }
 
