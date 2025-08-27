@@ -68,6 +68,51 @@ def keuangan():
     
     return render_template('index.html', table_html=table_html, has_data=True, current_view='keuangan')
 
+@app.route('/keuangan/sort')
+def keuangan_sort():
+    """Get sorted financial data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    sort_column = request.args.get('column')
+    sort_order = request.args.get('order', 'ASC')
+    
+    if not sort_column:
+        return jsonify({"error": "Column parameter is required"}), 400
+    
+    # Get sorted financial table
+    table_html, error = data_handler.get_financial_table(sort_column, sort_order)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/keuangan/filter')
+def keuangan_filter():
+    """Get filtered financial data by date range"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    
+    # Get filtered financial table
+    table_html, error = data_handler.get_financial_table(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/keuangan/columns')
+def keuangan_columns():
+    """Get available columns for financial data"""
+    columns = data_handler.get_financial_columns()
+    return jsonify({"columns": columns})
+
 @app.route('/pasien')
 def pasien():
     if not data_handler.has_data():

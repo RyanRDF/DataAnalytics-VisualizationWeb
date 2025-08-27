@@ -84,8 +84,8 @@ class DataHandler:
         except Exception as e:
             return "", f"Error creating patient table: {str(e)}"
     
-    def process_financial_data(self):
-        """Process financial data with required calculations"""
+    def process_financial_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        """Process financial data with required calculations, sorting, and date filtering"""
         if self.current_df is None:
             return None, "No data available. Please upload a file first."
         
@@ -111,6 +111,36 @@ class DataHandler:
             # Convert TOTAL_TARIF and TARIF_RS to numeric
             financial_df['TOTAL_TARIF'] = pd.to_numeric(financial_df['TOTAL_TARIF'], errors='coerce').fillna(0)
             financial_df['TARIF_RS'] = pd.to_numeric(financial_df['TARIF_RS'], errors='coerce').fillna(0)
+            
+            # Apply date filtering if specified (handle DD/MM/YYYY format from data)
+            if start_date or end_date:
+                try:
+                    # Convert input dates (YYYY-MM-DD) to datetime for comparison
+                    if start_date:
+                        start_dt = pd.to_datetime(start_date)
+                    if end_date:
+                        end_dt = pd.to_datetime(end_date)
+                    
+                    # Convert ADMISSION_DATE to datetime for proper comparison
+                    financial_df['ADMISSION_DATE_DT'] = pd.to_datetime(financial_df['ADMISSION_DATE'], format='%d/%m/%Y', errors='coerce')
+                    
+                    # Apply start date filter
+                    if start_date:
+                        financial_df = financial_df[financial_df['ADMISSION_DATE_DT'] >= start_dt]
+                    
+                    # Apply end date filter
+                    if end_date:
+                        financial_df = financial_df[financial_df['ADMISSION_DATE_DT'] <= end_dt]
+                    
+                    # Remove temporary datetime column
+                    financial_df = financial_df.drop('ADMISSION_DATE_DT', axis=1)
+                    
+                    # Check if any data remains after filtering
+                    if financial_df.empty:
+                        return None, f"No data found for the specified date range: {start_date} to {end_date}"
+                    
+                except Exception as e:
+                    return None, f"Error processing date filter: {str(e)}"
             
             # Calculate derived columns
             # TOTAL_TARIF/HARI (TOTAL_TARIF divided by LOS)
@@ -160,14 +190,26 @@ class DataHandler:
             for col in numeric_columns:
                 financial_df[col] = financial_df[col].round(2)
             
+            # Apply sorting if specified
+            if sort_column and sort_column in financial_df.columns:
+                try:
+                    # Handle numeric columns for proper sorting
+                    if sort_column in ['LOS', 'TOTAL_TARIF', 'TARIF_RS', 'TOTAL_TARIF/HARI', 'TARIF_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
+                        financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                    else:
+                        # For non-numeric columns, convert to string for sorting
+                        financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                except Exception as e:
+                    print(f"Warning: Could not sort by {sort_column}: {str(e)}")
+            
             return financial_df, None
             
         except Exception as e:
             return None, f"Error processing financial data: {str(e)}"
     
-    def get_financial_table(self):
-        """Get financial data as HTML table"""
-        financial_df, error = self.process_financial_data()
+    def get_financial_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        """Get financial data as HTML table with sorting and date filtering"""
+        financial_df, error = self.process_financial_data(sort_column, sort_order, start_date, end_date)
         
         if error:
             return "", error
@@ -177,6 +219,21 @@ class DataHandler:
             return table_html, None
         except Exception as e:
             return "", f"Error creating financial table: {str(e)}"
+    
+    def get_financial_columns(self):
+        """Get list of available columns for financial data sorting"""
+        if self.current_df is None:
+            return []
+        
+        try:
+            # Get the financial dataframe to see all available columns
+            financial_df, error = self.process_financial_data()
+            if error:
+                return []
+            
+            return list(financial_df.columns)
+        except Exception as e:
+            return []
     
     def validate_file(self, filename):
         """Validate uploaded file"""

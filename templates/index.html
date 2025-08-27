@@ -102,6 +102,39 @@
     <div id="keuangan" class="content-section" style="display:none;">
       <h2>Analisis Keuangan</h2>
       <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
+      
+      <!-- Sorting Controls -->
+      <div class="sorting-controls">
+        <div class="sort-group">
+          <label for="sortColumn">Sort By:</label>
+          <select id="sortColumn" class="sort-select">
+            <option value="">Pilih Kolom</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label for="sortOrder">Order:</label>
+          <select id="sortOrder" class="sort-select">
+            <option value="ASC">ASC</option>
+            <option value="DESC">DESC</option>
+          </select>
+        </div>
+        <button id="applySort" class="sort-btn">Apply Sort</button>
+      </div>
+      
+      <!-- Date Range Filter Controls -->
+      <div class="date-filter-controls">
+        <div class="filter-group">
+          <label for="startDate">Tanggal Mulai:</label>
+          <input type="date" id="startDate" class="date-input">
+        </div>
+        <div class="filter-group">
+          <label for="endDate">Tanggal Akhir:</label>
+          <input type="date" id="endDate" class="date-input">
+        </div>
+        <button id="applyDateFilter" class="filter-btn">Filter Data</button>
+        <button id="clearDateFilter" class="clear-btn">Clear Filter</button>
+      </div>
+      
       <div class="table-container">
         <p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>
       </div>
