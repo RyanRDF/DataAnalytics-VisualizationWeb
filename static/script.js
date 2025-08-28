@@ -82,108 +82,89 @@ function handleFileUpload(event) {
 
 // Function to load keuangan data via AJAX
 function loadKeuanganData() {
-    fetch('/keuangan')
-        .then(response => response.text())
-        .then(html => {
-            // Create a temporary div to parse the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            // Extract the table from the response
-            const tableContainer = tempDiv.querySelector('.table-container');
-            const errorMessage = tempDiv.querySelector('.error-message');
-            
-            const keuanganContent = document.getElementById('keuangan');
-            
-            if (tableContainer) {
-                // Clear existing content
-                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2>';
-                
-                // Add the sorting controls
-                const sortingControls = `
-                    <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
-                    
-                    <!-- Sorting Controls -->
-                    <div class="sorting-controls">
-                        <div class="sort-group">
-                            <label for="sortColumn">Sort By:</label>
-                            <select id="sortColumn" class="sort-select">
-                                <option value="">Pilih Kolom</option>
-                            </select>
-                        </div>
-                        <div class="sort-group">
-                            <label for="sortOrder">Order:</label>
-                            <select id="sortOrder" class="sort-select">
-                                <option value="ASC">ASC</option>
-                                <option value="DESC">DESC</option>
-                            </select>
-                        </div>
-                        <button id="applySort" class="sort-btn">Apply Sort</button>
-                    </div>
-                    
-                    <!-- Date Range Filter Controls -->
-                    <div class="date-filter-controls">
-                        <div class="filter-group">
-                            <label for="startDate">Tanggal Mulai:</label>
-                            <input type="date" id="startDate" class="date-input">
-                        </div>
-                        <div class="filter-group">
-                            <label for="endDate">Tanggal Akhir:</label>
-                            <input type="date" id="endDate" class="date-input">
-                        </div>
-                        <button id="applyDateFilter" class="filter-btn">Filter Data</button>
-                        <button id="clearDateFilter" class="clear-btn">Clear Filter</button>
-                    </div>
-                    
-                    <!-- Specific Data Filter Controls -->
-                    <div class="specific-filter-controls">
-                        <div class="filter-group">
-                            <label for="filterColumn">Pilih Kolom:</label>
-                            <select id="filterColumn" class="filter-select">
-                                <option value="">Pilih Kolom</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="filterValue">Nilai yang Dicari:</label>
-                            <input type="text" id="filterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-                        </div>
-                        <button id="applySpecificFilter" class="specific-filter-btn">Cari</button>
-                        <button id="clearSpecificFilter" class="clear-specific-btn">Clear</button>
-                    </div>
-                `;
-                
-                keuanganContent.innerHTML += sortingControls;
-                
-                // Add the table
-                keuanganContent.appendChild(tableContainer.cloneNode(true));
-                
-                // Load available columns for sorting and filtering
-                loadSortingColumns();
-                loadFilterColumns();
-                
-                // Add event listener for sort button
-                document.getElementById('applySort').addEventListener('click', applySorting);
-                
-                // Add event listeners for date filter buttons
-                document.getElementById('applyDateFilter').addEventListener('click', applyDateFilter);
-                document.getElementById('clearDateFilter').addEventListener('click', clearDateFilter);
-                
-                // Add event listeners for specific filter buttons
-                document.getElementById('applySpecificFilter').addEventListener('click', applySpecificFilter);
-                document.getElementById('clearSpecificFilter').addEventListener('click', clearSpecificFilter);
-            } else if (errorMessage) {
-                // Show error message
-                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2>';
-                keuanganContent.appendChild(errorMessage.cloneNode(true));
-            } else {
-                keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2><p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading keuangan data:', error);
-            const keuanganContent = document.getElementById('keuangan');
-            keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2><p>Terjadi kesalahan saat memuat data keuangan.</p>';
-        });
+    const keuanganContent = document.getElementById('keuangan');
+    
+    // Set content dengan urutan filter yang baru - data tidak langsung muncul
+    keuanganContent.innerHTML = `
+        <h2>Analisis Keuangan</h2>
+        <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
+        <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
+        
+        <!-- Date Range Filter Controls (Paling Atas) -->
+        <div class="date-filter-controls">
+            <div class="filter-group">
+                <label for="startDate">Tanggal Mulai:</label>
+                <input type="date" id="startDate" class="date-input">
+            </div>
+            <div class="filter-group">
+                <label for="endDate">Tanggal Akhir:</label>
+                <input type="date" id="endDate" class="date-input">
+            </div>
+            <button id="applyDateFilter" class="filter-btn">Filter Data</button>
+            <button id="clearDateFilter" class="clear-btn">Clear Filter</button>
+        </div>
+        
+        <!-- Sorting Controls (Tengah) -->
+        <div class="sorting-controls">
+            <div class="sort-group">
+                <label for="sortColumn">Sort By:</label>
+                <select id="sortColumn" class="sort-select">
+                    <option value="">Pilih Kolom</option>
+                </select>
+            </div>
+            <div class="sort-group">
+                <label for="sortOrder">Order:</label>
+                <select id="sortOrder" class="sort-select">
+                    <option value="ASC">ASC</option>
+                    <option value="DESC">DESC</option>
+                </select>
+            </div>
+            <button id="applySort" class="sort-btn">Apply Sort</button>
+        </div>
+        
+        <!-- Specific Data Filter Controls (Paling Bawah) -->
+        <div class="specific-filter-controls">
+            <div class="filter-group">
+                <label for="filterColumn">Pilih Kolom:</label>
+                <select id="filterColumn" class="filter-select">
+                    <option value="">Pilih Kolom</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterValue">Nilai yang Dicari:</label>
+                <input type="text" id="filterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+            </div>
+            <button id="applySpecificFilter" class="specific-filter-btn">Cari</button>
+            <button id="clearSpecificFilter" class="clear-specific-btn">Clear</button>
+        </div>
+        
+        <div class="table-container">
+            <div class="no-data-container">
+                <h3>Data Belum Tersedia</h3>
+                <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
+                <div class="upload-instructions">
+                    <h4>Cara Menampilkan Data:</h4>
+                    <ol>
+                        <li>Upload file .txt menggunakan form di sebelah kiri</li>
+                        <li>Pilih rentang waktu yang diinginkan</li>
+                        <li>Klik tombol "Filter Data"</li>
+                        <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Load filter columns
+    loadFilterColumns();
+    loadSortingColumns();
+    
+    // Attach event listeners
+    document.getElementById('applySort').addEventListener('click', applySorting);
+    document.getElementById('applyDateFilter').addEventListener('click', applyDateFilter);
+    document.getElementById('clearDateFilter').addEventListener('click', clearDateFilter);
+    document.getElementById('applySpecificFilter').addEventListener('click', applySpecificFilter);
+    document.getElementById('clearSpecificFilter').addEventListener('click', clearSpecificFilter);
 }
 
 // Function to load available columns for sorting
@@ -484,108 +465,89 @@ function clearSpecificFilter() {
 
 // Function to load pasien data via AJAX
 function loadPasienData() {
-    fetch('/pasien')
-        .then(response => response.text())
-        .then(html => {
-            // Create a temporary div to parse the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            // Extract the table from the response
-            const tableContainer = tempDiv.querySelector('.table-container');
-            const errorMessage = tempDiv.querySelector('.error-message');
-            
-            const pasienContent = document.getElementById('pasien');
-            
-            if (tableContainer) {
-                // Clear existing content
-                pasienContent.innerHTML = '<h2>Data Pasien</h2>';
-                
-                // Add the sorting controls
-                const sortingControls = `
-                    <p>Menampilkan data lengkap pasien dengan informasi medis</p>
-                    
-                    <!-- Sorting Controls -->
-                    <div class="sorting-controls">
-                        <div class="sort-group">
-                            <label for="pasienSortColumn">Sort By:</label>
-                            <select id="pasienSortColumn" class="sort-select">
-                                <option value="">Pilih Kolom</option>
-                            </select>
-                        </div>
-                        <div class="sort-group">
-                            <label for="pasienSortOrder">Order:</label>
-                            <select id="pasienSortOrder" class="sort-select">
-                                <option value="ASC">ASC</option>
-                                <option value="DESC">DESC</option>
-                            </select>
-                        </div>
-                        <button id="pasienApplySort" class="sort-btn">Apply Sort</button>
-                    </div>
-                    
-                    <!-- Date Range Filter Controls -->
-                    <div class="date-filter-controls">
-                        <div class="filter-group">
-                            <label for="pasienStartDate">Tanggal Mulai:</label>
-                            <input type="date" id="pasienStartDate" class="date-input">
-                        </div>
-                        <div class="filter-group">
-                            <label for="pasienEndDate">Tanggal Akhir:</label>
-                            <input type="date" id="pasienEndDate" class="date-input">
-                        </div>
-                        <button id="pasienApplyDateFilter" class="filter-btn">Filter Data</button>
-                        <button id="pasienClearDateFilter" class="clear-btn">Clear Filter</button>
-                    </div>
-                    
-                    <!-- Specific Data Filter Controls -->
-                    <div class="specific-filter-controls">
-                        <div class="filter-group">
-                            <label for="pasienFilterColumn">Pilih Kolom:</label>
-                            <select id="pasienFilterColumn" class="filter-select">
-                                <option value="">Pilih Kolom</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="pasienFilterValue">Nilai yang Dicari:</label>
-                            <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-                        </div>
-                        <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
-                        <button id="pasienClearSpecificFilter" class="clear-specific-btn">Clear</button>
-                    </div>
-                `;
-                
-                pasienContent.innerHTML += sortingControls;
-                
-                // Add the table
-                pasienContent.appendChild(tableContainer.cloneNode(true));
-                
-                // Load available columns for sorting and filtering
-                loadPasienSortingColumns();
-                loadPasienFilterColumns();
-                
-                // Add event listener for sort button
-                document.getElementById('pasienApplySort').addEventListener('click', applyPasienSorting);
-                
-                // Add event listeners for date filter buttons
-                document.getElementById('pasienApplyDateFilter').addEventListener('click', applyPasienDateFilter);
-                document.getElementById('pasienClearDateFilter').addEventListener('click', clearPasienDateFilter);
-                
-                // Add event listeners for specific filter buttons
-                document.getElementById('pasienApplySpecificFilter').addEventListener('click', applyPasienSpecificFilter);
-                document.getElementById('pasienClearSpecificFilter').addEventListener('click', clearPasienSpecificFilter);
-            } else if (errorMessage) {
-                // Show error message
-                pasienContent.innerHTML = '<h2>Data Pasien</h2>';
-                pasienContent.appendChild(errorMessage.cloneNode(true));
-            } else {
-                pasienContent.innerHTML = '<h2>Data Pasien</h2><p>Tidak ada data yang tersedia. Silakan upload file terlebih dahulu.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading pasien data:', error);
-            const pasienContent = document.getElementById('pasien');
-            pasienContent.innerHTML = '<h2>Data Pasien</h2><p>Terjadi kesalahan saat memuat data pasien.</p>';
-        });
+    const pasienContent = document.getElementById('pasien');
+    
+    // Set content dengan urutan filter yang baru - data tidak langsung muncul
+    pasienContent.innerHTML = `
+        <h2>Analisis Pasien</h2>
+        <p>Menampilkan analisis data pasien dengan informasi medis lengkap</p>
+        <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
+        
+        <!-- Date Range Filter Controls (Paling Atas) -->
+        <div class="date-filter-controls">
+            <div class="filter-group">
+                <label for="pasienStartDate">Tanggal Mulai:</label>
+                <input type="date" id="pasienStartDate" class="date-input">
+            </div>
+            <div class="filter-group">
+                <label for="pasienEndDate">Tanggal Akhir:</label>
+                <input type="date" id="pasienEndDate" class="date-input">
+            </div>
+            <button id="pasienApplyDateFilter" class="filter-btn">Filter Data</button>
+            <button id="pasienClearDateFilter" class="clear-btn">Clear Filter</button>
+        </div>
+        
+        <!-- Sorting Controls (Tengah) -->
+        <div class="sorting-controls">
+            <div class="sort-group">
+                <label for="pasienSortColumn">Sort By:</label>
+                <select id="pasienSortColumn" class="sort-select">
+                    <option value="">Pilih Kolom</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="pasienSortOrder">Order:</label>
+                <select id="pasienSortOrder" class="sort-select">
+                    <option value="ASC">ASC</option>
+                    <option value="DESC">DESC</option>
+                </select>
+            </div>
+            <button id="pasienApplySort" class="sort-btn">Apply Sort</button>
+        </div>
+        
+        <!-- Specific Data Filter Controls (Paling Bawah) -->
+        <div class="specific-filter-controls">
+            <div class="filter-group">
+                <label for="pasienFilterColumn">Pilih Kolom:</label>
+                <select id="pasienFilterColumn" class="filter-select">
+                    <option value="">Pilih Kolom</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="pasienFilterValue">Nilai yang Dicari:</label>
+                <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+            </div>
+            <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
+            <button id="pasienClearSpecificFilter" class="clear-specific-btn">Clear</button>
+        </div>
+        
+        <div class="table-container">
+            <div class="no-data-container">
+                <h3>Data Belum Tersedia</h3>
+                <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
+                <div class="upload-instructions">
+                    <h4>Cara Menampilkan Data:</h4>
+                    <ol>
+                        <li>Upload file .txt menggunakan form di sebelah kiri</li>
+                        <li>Pilih rentang waktu yang diinginkan</li>
+                        <li>Klik tombol "Filter Data"</li>
+                        <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Load filter columns
+    loadPasienFilterColumns();
+    loadPasienSortingColumns();
+    
+    // Attach event listeners
+    document.getElementById('pasienApplySort').addEventListener('click', applyPasienSorting);
+    document.getElementById('pasienApplyDateFilter').addEventListener('click', applyPasienDateFilter);
+    document.getElementById('pasienClearDateFilter').addEventListener('click', clearPasienDateFilter);
+    document.getElementById('pasienApplySpecificFilter').addEventListener('click', applyPasienSpecificFilter);
+    document.getElementById('pasienClearSpecificFilter').addEventListener('click', clearPasienSpecificFilter);
 }
 
 // Function to load available columns for patient sorting

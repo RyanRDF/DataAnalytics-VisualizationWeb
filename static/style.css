@@ -100,6 +100,13 @@ body {
     color: #007bff;
 }
 
+/* Main menu items styling - bold */
+.main-menu-item {
+    font-weight: 700 !important;
+    font-size: 19px !important;
+    color: #1a1a1a !important;
+}
+
 .main-content {
     flex-grow: 1;
     padding: 20px;
