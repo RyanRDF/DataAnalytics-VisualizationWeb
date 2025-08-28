@@ -113,6 +113,32 @@ def keuangan_columns():
     columns = data_handler.get_financial_columns()
     return jsonify({"columns": columns})
 
+@app.route('/keuangan/specific-filter')
+def keuangan_specific_filter():
+    """Get filtered financial data by specific column value"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    filter_column = request.args.get('filter_column')
+    filter_value = request.args.get('filter_value')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not filter_column or not filter_value:
+        return jsonify({"error": "Filter column and value are required"}), 400
+    
+    # Get filtered financial table
+    table_html, error = data_handler.get_financial_table_with_specific_filter(
+        filter_column, filter_value, sort_column, sort_order, start_date, end_date
+    )
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
 @app.route('/pasien')
 def pasien():
     if not data_handler.has_data():
@@ -125,6 +151,77 @@ def pasien():
         return render_template('index.html', table_html="", has_data=False, error=error)
     
     return render_template('index.html', table_html=table_html, has_data=True, current_view='pasien')
+
+@app.route('/pasien/sort')
+def pasien_sort():
+    """Get sorted patient data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    sort_column = request.args.get('column')
+    sort_order = request.args.get('order', 'ASC')
+    
+    if not sort_column:
+        return jsonify({"error": "Column parameter is required"}), 400
+    
+    # Get sorted patient table
+    table_html, error = data_handler.get_patient_table_with_filters(sort_column, sort_order)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/pasien/filter')
+def pasien_filter():
+    """Get filtered patient data by date range"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    
+    # Get filtered patient table
+    table_html, error = data_handler.get_patient_table_with_filters(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/pasien/specific-filter')
+def pasien_specific_filter():
+    """Get filtered patient data by specific column value"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    filter_column = request.args.get('filter_column')
+    filter_value = request.args.get('filter_value')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not filter_column or not filter_value:
+        return jsonify({"error": "Filter column and value are required"}), 400
+    
+    # Get filtered patient table
+    table_html, error = data_handler.get_patient_table_with_specific_filter(
+        filter_column, filter_value, sort_column, sort_order, start_date, end_date
+    )
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/pasien/columns')
+def pasien_columns():
+    """Get available columns for patient data sorting and filtering"""
+    columns = data_handler.get_patient_columns()
+    return jsonify({"columns": columns})
 
 if __name__ == '__main__':
     app.run(debug=True)

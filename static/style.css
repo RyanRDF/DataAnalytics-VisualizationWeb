@@ -427,6 +427,93 @@ body {
     transform: translateY(1px);
 }
 
+/* Specific Filter Controls Styles */
+.specific-filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fff3cd;
+    border-radius: 8px;
+    border: 1px solid #ffeaa7;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    min-width: 150px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+}
+
+.filter-input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    min-width: 200px;
+    transition: border-color 0.3s ease;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+}
+
+.specific-filter-btn {
+    padding: 8px 20px;
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: end;
+}
+
+.specific-filter-btn:hover {
+    background-color: #e0a800;
+}
+
+.specific-filter-btn:active {
+    transform: translateY(1px);
+}
+
+.clear-specific-btn {
+    padding: 8px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: end;
+}
+
+.clear-specific-btn:hover {
+    background-color: #c82333;
+}
+
+.clear-specific-btn:active {
+    transform: translateY(1px);
+}
+
 /* Patient table specific styles */
 #pasien .data-table {
     font-size: 10px; /* Even smaller font for patient table due to many columns */

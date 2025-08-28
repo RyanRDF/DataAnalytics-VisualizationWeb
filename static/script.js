@@ -134,6 +134,22 @@ function loadKeuanganData() {
                         <button id="applyDateFilter" class="filter-btn">Filter Data</button>
                         <button id="clearDateFilter" class="clear-btn">Clear Filter</button>
                     </div>
+                    
+                    <!-- Specific Data Filter Controls -->
+                    <div class="specific-filter-controls">
+                        <div class="filter-group">
+                            <label for="filterColumn">Pilih Kolom:</label>
+                            <select id="filterColumn" class="filter-select">
+                                <option value="">Pilih Kolom</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterValue">Nilai yang Dicari:</label>
+                            <input type="text" id="filterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+                        </div>
+                        <button id="applySpecificFilter" class="specific-filter-btn">Cari</button>
+                        <button id="clearSpecificFilter" class="clear-specific-btn">Clear</button>
+                    </div>
                 `;
                 
                 keuanganContent.innerHTML += sortingControls;
@@ -141,8 +157,9 @@ function loadKeuanganData() {
                 // Add the table
                 keuanganContent.appendChild(tableContainer.cloneNode(true));
                 
-                // Load available columns for sorting
+                // Load available columns for sorting and filtering
                 loadSortingColumns();
+                loadFilterColumns();
                 
                 // Add event listener for sort button
                 document.getElementById('applySort').addEventListener('click', applySorting);
@@ -150,6 +167,10 @@ function loadKeuanganData() {
                 // Add event listeners for date filter buttons
                 document.getElementById('applyDateFilter').addEventListener('click', applyDateFilter);
                 document.getElementById('clearDateFilter').addEventListener('click', clearDateFilter);
+                
+                // Add event listeners for specific filter buttons
+                document.getElementById('applySpecificFilter').addEventListener('click', applySpecificFilter);
+                document.getElementById('clearSpecificFilter').addEventListener('click', clearSpecificFilter);
             } else if (errorMessage) {
                 // Show error message
                 keuanganContent.innerHTML = '<h2>Analisis Keuangan</h2>';
@@ -187,6 +208,31 @@ function loadSortingColumns() {
         })
         .catch(error => {
             console.error('Error loading sorting columns:', error);
+        });
+}
+
+// Function to load available columns for filtering
+function loadFilterColumns() {
+    fetch('/keuangan/columns')
+        .then(response => response.json())
+        .then(data => {
+            const filterColumnSelect = document.getElementById('filterColumn');
+            
+            // Clear existing options except the first one
+            filterColumnSelect.innerHTML = '<option value="">Pilih Kolom</option>';
+            
+            // Add column options
+            if (data.columns && data.columns.length > 0) {
+                data.columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    filterColumnSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading filter columns:', error);
         });
 }
 
@@ -330,6 +376,112 @@ function clearDateFilter() {
         });
 }
 
+// Function to apply specific filter
+function applySpecificFilter() {
+    const filterColumn = document.getElementById('filterColumn').value;
+    const filterValue = document.getElementById('filterValue').value;
+    const sortColumn = document.getElementById('sortColumn').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!filterColumn || !filterValue) {
+        alert('Silakan pilih kolom dan masukkan nilai yang dicari');
+        return;
+    }
+    
+    // Show loading state
+    const applyFilterBtn = document.getElementById('applySpecificFilter');
+    const originalText = applyFilterBtn.textContent;
+    applyFilterBtn.textContent = 'Mencari...';
+    applyFilterBtn.disabled = true;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('filter_column', filterColumn);
+    params.append('filter_value', filterValue);
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // Make API call to get filtered data
+    fetch(`/keuangan/specific-filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with filtered data
+            const tableContainer = document.querySelector('#keuangan .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error applying specific filter:', error);
+            alert('Terjadi kesalahan saat melakukan pencarian');
+        })
+        .finally(() => {
+            // Restore button state
+            applyFilterBtn.textContent = originalText;
+            applyFilterBtn.disabled = false;
+        });
+}
+
+// Function to clear specific filter
+function clearSpecificFilter() {
+    // Clear filter inputs
+    document.getElementById('filterColumn').value = '';
+    document.getElementById('filterValue').value = '';
+    
+    // Reload original data without specific filter
+    const sortColumn = document.getElementById('sortColumn').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // Show loading state
+    const clearFilterBtn = document.getElementById('clearSpecificFilter');
+    const originalText = clearFilterBtn.textContent;
+    clearFilterBtn.textContent = 'Clearing...';
+    clearFilterBtn.disabled = true;
+    
+    // Build query parameters for other filters only
+    const params = new URLSearchParams();
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // Make API call to get original data
+    fetch(`/keuangan/filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with original data
+            const tableContainer = document.querySelector('#keuangan .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing specific filter:', error);
+            alert('Terjadi kesalahan saat membersihkan filter');
+        })
+        .finally(() => {
+            // Restore button state
+            clearFilterBtn.textContent = originalText;
+            clearFilterBtn.disabled = false;
+        });
+}
+
 // Function to load pasien data via AJAX
 function loadPasienData() {
     fetch('/pasien')
@@ -349,8 +501,78 @@ function loadPasienData() {
                 // Clear existing content
                 pasienContent.innerHTML = '<h2>Data Pasien</h2>';
                 
+                // Add the sorting controls
+                const sortingControls = `
+                    <p>Menampilkan data lengkap pasien dengan informasi medis</p>
+                    
+                    <!-- Sorting Controls -->
+                    <div class="sorting-controls">
+                        <div class="sort-group">
+                            <label for="pasienSortColumn">Sort By:</label>
+                            <select id="pasienSortColumn" class="sort-select">
+                                <option value="">Pilih Kolom</option>
+                            </select>
+                        </div>
+                        <div class="sort-group">
+                            <label for="pasienSortOrder">Order:</label>
+                            <select id="pasienSortOrder" class="sort-select">
+                                <option value="ASC">ASC</option>
+                                <option value="DESC">DESC</option>
+                            </select>
+                        </div>
+                        <button id="pasienApplySort" class="sort-btn">Apply Sort</button>
+                    </div>
+                    
+                    <!-- Date Range Filter Controls -->
+                    <div class="date-filter-controls">
+                        <div class="filter-group">
+                            <label for="pasienStartDate">Tanggal Mulai:</label>
+                            <input type="date" id="pasienStartDate" class="date-input">
+                        </div>
+                        <div class="filter-group">
+                            <label for="pasienEndDate">Tanggal Akhir:</label>
+                            <input type="date" id="pasienEndDate" class="date-input">
+                        </div>
+                        <button id="pasienApplyDateFilter" class="filter-btn">Filter Data</button>
+                        <button id="pasienClearDateFilter" class="clear-btn">Clear Filter</button>
+                    </div>
+                    
+                    <!-- Specific Data Filter Controls -->
+                    <div class="specific-filter-controls">
+                        <div class="filter-group">
+                            <label for="pasienFilterColumn">Pilih Kolom:</label>
+                            <select id="pasienFilterColumn" class="filter-select">
+                                <option value="">Pilih Kolom</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="pasienFilterValue">Nilai yang Dicari:</label>
+                            <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+                        </div>
+                        <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
+                        <button id="pasienClearSpecificFilter" class="clear-specific-btn">Clear</button>
+                    </div>
+                `;
+                
+                pasienContent.innerHTML += sortingControls;
+                
                 // Add the table
                 pasienContent.appendChild(tableContainer.cloneNode(true));
+                
+                // Load available columns for sorting and filtering
+                loadPasienSortingColumns();
+                loadPasienFilterColumns();
+                
+                // Add event listener for sort button
+                document.getElementById('pasienApplySort').addEventListener('click', applyPasienSorting);
+                
+                // Add event listeners for date filter buttons
+                document.getElementById('pasienApplyDateFilter').addEventListener('click', applyPasienDateFilter);
+                document.getElementById('pasienClearDateFilter').addEventListener('click', clearPasienDateFilter);
+                
+                // Add event listeners for specific filter buttons
+                document.getElementById('pasienApplySpecificFilter').addEventListener('click', applyPasienSpecificFilter);
+                document.getElementById('pasienClearSpecificFilter').addEventListener('click', clearPasienSpecificFilter);
             } else if (errorMessage) {
                 // Show error message
                 pasienContent.innerHTML = '<h2>Data Pasien</h2>';
@@ -363,6 +585,302 @@ function loadPasienData() {
             console.error('Error loading pasien data:', error);
             const pasienContent = document.getElementById('pasien');
             pasienContent.innerHTML = '<h2>Data Pasien</h2><p>Terjadi kesalahan saat memuat data pasien.</p>';
+        });
+}
+
+// Function to load available columns for patient sorting
+function loadPasienSortingColumns() {
+    fetch('/pasien/columns')
+        .then(response => response.json())
+        .then(data => {
+            const sortColumnSelect = document.getElementById('pasienSortColumn');
+            
+            // Clear existing options except the first one
+            sortColumnSelect.innerHTML = '<option value="">Pilih Kolom</option>';
+            
+            // Add column options
+            if (data.columns && data.columns.length > 0) {
+                data.columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    sortColumnSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading patient sorting columns:', error);
+        });
+}
+
+// Function to load available columns for patient filtering
+function loadPasienFilterColumns() {
+    fetch('/pasien/columns')
+        .then(response => response.json())
+        .then(data => {
+            const filterColumnSelect = document.getElementById('pasienFilterColumn');
+            
+            // Clear existing options except the first one
+            filterColumnSelect.innerHTML = '<option value="">Pilih Kolom</option>';
+            
+            // Add column options
+            if (data.columns && data.columns.length > 0) {
+                data.columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    filterColumnSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading patient filter columns:', error);
+        });
+}
+
+// Function to apply patient sorting
+function applyPasienSorting() {
+    const sortColumn = document.getElementById('pasienSortColumn').value;
+    const sortOrder = document.getElementById('pasienSortOrder').value;
+    
+    if (!sortColumn) {
+        alert('Silakan pilih kolom untuk sorting');
+        return;
+    }
+    
+    // Show loading state
+    const applySortBtn = document.getElementById('pasienApplySort');
+    const originalText = applySortBtn.textContent;
+    applySortBtn.textContent = 'Sorting...';
+    applySortBtn.disabled = true;
+    
+    // Make API call to get sorted data
+    fetch(`/pasien/sort?column=${encodeURIComponent(sortColumn)}&order=${encodeURIComponent(sortOrder)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with sorted data
+            const tableContainer = document.querySelector('#pasien .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error applying patient sorting:', error);
+            alert('Terjadi kesalahan saat melakukan sorting');
+        })
+        .finally(() => {
+            // Restore button state
+            applySortBtn.textContent = originalText;
+            applySortBtn.disabled = false;
+        });
+}
+
+// Function to apply patient date filter
+function applyPasienDateFilter() {
+    const startDate = document.getElementById('pasienStartDate').value;
+    const endDate = document.getElementById('pasienEndDate').value;
+    const sortColumn = document.getElementById('pasienSortColumn').value;
+    const sortOrder = document.getElementById('pasienSortOrder').value;
+    
+    if (!startDate && !endDate) {
+        alert('Silakan pilih minimal satu tanggal untuk filtering');
+        return;
+    }
+    
+    // Show loading state
+    const applyFilterBtn = document.getElementById('pasienApplyDateFilter');
+    const originalText = applyFilterBtn.textContent;
+    applyFilterBtn.textContent = 'Filtering...';
+    applyFilterBtn.disabled = true;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    
+    // Make API call to get filtered data
+    fetch(`/pasien/filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with filtered data
+            const tableContainer = document.querySelector('#pasien .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error applying patient date filter:', error);
+            alert('Terjadi kesalahan saat melakukan filtering');
+        })
+        .finally(() => {
+            // Restore button state
+            applyFilterBtn.textContent = originalText;
+            applyFilterBtn.disabled = false;
+        });
+}
+
+// Function to clear patient date filter
+function clearPasienDateFilter() {
+    // Clear date inputs
+    document.getElementById('pasienStartDate').value = '';
+    document.getElementById('pasienEndDate').value = '';
+    
+    // Reload original data without filters
+    const sortColumn = document.getElementById('pasienSortColumn').value;
+    const sortOrder = document.getElementById('pasienSortOrder').value;
+    
+    // Show loading state
+    const clearFilterBtn = document.getElementById('pasienClearDateFilter');
+    const originalText = clearFilterBtn.textContent;
+    clearFilterBtn.textContent = 'Clearing...';
+    clearFilterBtn.disabled = true;
+    
+    // Build query parameters for sorting only
+    const params = new URLSearchParams();
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    
+    // Make API call to get original data
+    fetch(`/pasien/filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with original data
+            const tableContainer = document.querySelector('#pasien .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing patient date filter:', error);
+            alert('Terjadi kesalahan saat membersihkan filter');
+        })
+        .finally(() => {
+            // Restore button state
+            clearFilterBtn.textContent = originalText;
+            clearFilterBtn.disabled = false;
+        });
+}
+
+// Function to apply patient specific filter
+function applyPasienSpecificFilter() {
+    const filterColumn = document.getElementById('pasienFilterColumn').value;
+    const filterValue = document.getElementById('pasienFilterValue').value;
+    const sortColumn = document.getElementById('pasienSortColumn').value;
+    const sortOrder = document.getElementById('pasienSortOrder').value;
+    const startDate = document.getElementById('pasienStartDate').value;
+    const endDate = document.getElementById('pasienEndDate').value;
+    
+    if (!filterColumn || !filterValue) {
+        alert('Silakan pilih kolom dan masukkan nilai yang dicari');
+        return;
+    }
+    
+    // Show loading state
+    const applyFilterBtn = document.getElementById('pasienApplySpecificFilter');
+    const originalText = applyFilterBtn.textContent;
+    applyFilterBtn.textContent = 'Mencari...';
+    applyFilterBtn.disabled = true;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('filter_column', filterColumn);
+    params.append('filter_value', filterValue);
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // Make API call to get filtered data
+    fetch(`/pasien/specific-filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with filtered data
+            const tableContainer = document.querySelector('#pasien .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error applying patient specific filter:', error);
+            alert('Terjadi kesalahan saat melakukan pencarian');
+        })
+        .finally(() => {
+            // Restore button state
+            applyFilterBtn.textContent = originalText;
+            applyFilterBtn.disabled = false;
+        });
+}
+
+// Function to clear patient specific filter
+function clearPasienSpecificFilter() {
+    // Clear filter inputs
+    document.getElementById('pasienFilterColumn').value = '';
+    document.getElementById('pasienFilterValue').value = '';
+    
+    // Reload original data without specific filter
+    const sortColumn = document.getElementById('pasienSortColumn').value;
+    const sortOrder = document.getElementById('pasienSortOrder').value;
+    const startDate = document.getElementById('pasienStartDate').value;
+    const endDate = document.getElementById('pasienEndDate').value;
+    
+    // Show loading state
+    const clearFilterBtn = document.getElementById('pasienClearSpecificFilter');
+    const originalText = clearFilterBtn.textContent;
+    clearFilterBtn.textContent = 'Clearing...';
+    clearFilterBtn.disabled = true;
+    
+    // Build query parameters for other filters only
+    const params = new URLSearchParams();
+    if (sortColumn) params.append('sort_column', sortColumn);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // Make API call to get original data
+    fetch(`/pasien/filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Update the table with original data
+            const tableContainer = document.querySelector('#pasien .table-container');
+            if (tableContainer && data.table_html) {
+                tableContainer.innerHTML = data.table_html;
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing patient specific filter:', error);
+            alert('Terjadi kesalahan saat membersihkan filter');
+        })
+        .finally(() => {
+            // Restore button state
+            clearFilterBtn.textContent = originalText;
+            clearFilterBtn.disabled = false;
         });
 }
 
