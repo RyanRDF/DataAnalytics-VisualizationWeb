@@ -23,6 +23,18 @@ let viewStates = {
             filterColumn: '',
             filterValue: ''
         }
+    },
+    'selisih-tarif': {
+        tableHtml: '',
+        hasData: false,
+        filters: {
+            startDate: '',
+            endDate: '',
+            sortColumn: '',
+            sortOrder: 'ASC',
+            filterColumn: '',
+            filterValue: ''
+        }
     }
 };
 
@@ -32,6 +44,7 @@ function showContent(content) {
     document.getElementById('home').style.display = 'none';
     document.getElementById('keuangan').style.display = 'none';
     document.getElementById('pasien').style.display = 'none';
+    document.getElementById('selisih-tarif').style.display = 'none';
     
     // Show the selected content
     document.getElementById(content).style.display = 'block';
@@ -44,6 +57,8 @@ function showContent(content) {
         loadDataView('keuangan');
     } else if (content === 'pasien') {
         loadDataView('pasien');
+    } else if (content === 'selisih-tarif') {
+        loadDataView('selisih-tarif');
     }
 }
 
@@ -58,6 +73,8 @@ function updateActiveMenu(content) {
         document.querySelector('.menu-item > a[onclick*="home"]').classList.add('active');
     } else if (content === 'keuangan' || content === 'pasien') {
         document.querySelector('.menu-item > a[onclick*="analytics-dropdown"]').classList.add('active');
+    } else if (content === 'selisih-tarif') {
+        document.querySelector('.menu-item > a[onclick*="analisa-dropdown"]').classList.add('active');
     }
 }
 
@@ -129,7 +146,7 @@ function handleFormSubmit(event) {
             // Extract table HTML and update both view states
             const tableHtml = tableContainer.innerHTML;
             
-            // Update both keuangan and pasien states with the uploaded data
+            // Update all view states with the uploaded data
             updateViewState('keuangan', { 
                 tableHtml: tableHtml, 
                 hasData: true,
@@ -142,8 +159,14 @@ function handleFormSubmit(event) {
                 filters: { ...viewStates.pasien.filters }
             });
             
+            updateViewState('selisih-tarif', { 
+                tableHtml: tableHtml, 
+                hasData: true,
+                filters: { ...viewStates['selisih-tarif'].filters }
+            });
+            
             // Show success message
-            alert('File berhasil diproses! Data tersedia di menu Keuangan dan Pasien.');
+            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, dan Analisa Selisih Tarif.');
         } else {
             alert('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.');
         }
@@ -164,17 +187,31 @@ function handleFormSubmit(event) {
     });
 }
 
-// Generic function to load data view (keuangan or pasien)
+// Generic function to load data view (keuangan, pasien, or selisih-tarif)
 function loadDataView(viewType) {
     const content = document.getElementById(viewType);
-    const isKeuangan = viewType === 'keuangan';
-    const prefix = isKeuangan ? '' : 'pasien';
+    let title, description, prefix;
+    
+    if (viewType === 'keuangan') {
+        title = 'Keuangan';
+        description = 'keuangan dengan perhitungan laba rugi';
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        title = 'Pasien';
+        description = 'pasien dengan informasi medis lengkap';
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        title = 'Selisih Tarif';
+        description = 'selisih tarif antara tarif yang dikenakan dan tarif standar';
+        prefix = 'selisih';
+    }
+    
     const state = viewStates[viewType];
     
     // Set content dengan urutan filter yang baru - data tidak langsung muncul
     content.innerHTML = `
-        <h2>Analisis ${isKeuangan ? 'Keuangan' : 'Pasien'}</h2>
-        <p>Menampilkan analisis data ${isKeuangan ? 'keuangan dengan perhitungan laba rugi' : 'pasien dengan informasi medis lengkap'}</p>
+        <h2>Analisis ${title}</h2>
+        <p>Menampilkan analisis data ${description}</p>
         <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
         
         <!-- Date Range Filter Controls (Paling Atas) -->
@@ -278,7 +315,15 @@ function loadDataView(viewType) {
 // Generic function to load available columns for sorting
 function loadSortingColumns(viewType) {
     const endpoint = `/${viewType}/columns`;
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
     
     fetch(endpoint)
         .then(response => response.json())
@@ -306,7 +351,15 @@ function loadSortingColumns(viewType) {
 // Generic function to load available columns for filtering
 function loadFilterColumns(viewType) {
     const endpoint = `/${viewType}/columns`;
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
     
     fetch(endpoint)
         .then(response => response.json())
@@ -343,7 +396,16 @@ function updateFiltersState(viewType, filterUpdates) {
 
 // Generic function to apply sorting
 function applySorting(viewType) {
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
+    
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
     
@@ -391,7 +453,16 @@ function applySorting(viewType) {
 
 // Generic function to apply date filter
 function applyDateFilter(viewType) {
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
+    
     const startDate = document.getElementById(`${prefix}StartDate`).value;
     const endDate = document.getElementById(`${prefix}EndDate`).value;
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
@@ -448,7 +519,15 @@ function applyDateFilter(viewType) {
 
 // Generic function to clear date filter
 function clearDateFilter(viewType) {
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
     
     // Clear date inputs
     document.getElementById(`${prefix}StartDate`).value = '';
@@ -502,7 +581,16 @@ function clearDateFilter(viewType) {
 
 // Generic function to apply specific filter
 function applySpecificFilter(viewType) {
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
+    
     const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
     const filterValue = document.getElementById(`${prefix}FilterValue`).value;
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
@@ -563,7 +651,15 @@ function applySpecificFilter(viewType) {
 
 // Generic function to clear specific filter
 function clearSpecificFilter(viewType) {
-    const prefix = viewType === 'keuangan' ? '' : 'pasien';
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    }
     
     // Clear filter inputs
     document.getElementById(`${prefix}FilterColumn`).value = '';

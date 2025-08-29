@@ -223,5 +223,89 @@ def pasien_columns():
     columns = data_handler.get_patient_columns()
     return jsonify({"columns": columns})
 
+@app.route('/selisih-tarif')
+def selisih_tarif():
+    if not data_handler.has_data():
+        return render_template('index.html', table_html="", has_data=False, error="No data available. Please upload a file first.")
+    
+    # Get selisih tarif table
+    table_html, error = data_handler.get_selisih_tarif_table()
+    
+    if error:
+        return render_template('index.html', table_html="", has_data=False, error=error)
+    
+    return render_template('index.html', table_html=table_html, has_data=True, current_view='selisih-tarif')
+
+@app.route('/selisih-tarif/sort')
+def selisih_tarif_sort():
+    """Get sorted selisih tarif data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    sort_column = request.args.get('column')
+    sort_order = request.args.get('order', 'ASC')
+    
+    if not sort_column:
+        return jsonify({"error": "Column parameter is required"}), 400
+    
+    # Get sorted selisih tarif table
+    table_html, error = data_handler.get_selisih_tarif_table(sort_column, sort_order)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/selisih-tarif/filter')
+def selisih_tarif_filter():
+    """Get filtered selisih tarif data by date range"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    
+    # Get filtered selisih tarif table
+    table_html, error = data_handler.get_selisih_tarif_table(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/selisih-tarif/columns')
+def selisih_tarif_columns():
+    """Get available columns for selisih tarif data"""
+    columns = data_handler.get_selisih_tarif_columns()
+    return jsonify({"columns": columns})
+
+@app.route('/selisih-tarif/specific-filter')
+def selisih_tarif_specific_filter():
+    """Get filtered selisih tarif data by specific column value"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    filter_column = request.args.get('filter_column')
+    filter_value = request.args.get('filter_value')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not filter_column or not filter_value:
+        return jsonify({"error": "Filter column and value are required"}), 400
+    
+    # Get filtered selisih tarif table
+    table_html, error = data_handler.get_selisih_tarif_table_with_specific_filter(
+        filter_column, filter_value, sort_column, sort_order, start_date, end_date
+    )
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
 if __name__ == '__main__':
     app.run(debug=True)
