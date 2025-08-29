@@ -31,21 +31,10 @@
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('pasien')">Pasien</a></li>
         </ul>
       </li>
-      <li class="menu-item">
-        <a href="javascript:void(0);" class="dropdown-btn main-menu-item" onclick="toggleDropdown('visualize-dropdown')">
-          Analytics <span class="arrow">▼</span>
-        </a>
-        <ul class="submenu" id="visualize-dropdown">
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('charts')">Analisa 1</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('graphs')">Analisa 2</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('reports')">Analisa 3</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('reports')">Analisa 4</a></li>
-        </ul>
-      </li>
     </ul>
 
     <!-- Form upload file -->
-    <form class="file-upload-container" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+    <form class="file-upload-container" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
       <label for="fileInput" class="file-upload-label">Upload .txt File</label>
       <input type="file" id="fileInput" name="file" accept=".txt" onchange="handleFileUpload(event)" required>
       <p id="fileInfo">No file selected.</p>
@@ -182,7 +171,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label for="pasienFilterValue">Nilai yang Dicari:</label>
+          <label for="pasienFilterColumn">Nilai yang Dicari:</label>
           <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
         </div>
         <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
@@ -204,30 +193,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Dokter Content -->
-    <div id="dokter" class="content-section" style="display:none;">
-      <h2>Dokter</h2>
-      <p>Details about doctor data</p>
-    </div>
-
-    <!-- Charts Content -->
-    <div id="charts" class="content-section" style="display:none;">
-      <h2>Charts</h2>
-      <p>Interactive charts and visualizations</p>
-    </div>
-
-    <!-- Graphs Content -->
-    <div id="graphs" class="content-section" style="display:none;">
-      <h2>Graphs</h2>
-      <p>Advanced graph visualizations</p>
-    </div>
-
-    <!-- Reports Content -->
-    <div id="reports" class="content-section" style="display:none;">
-      <h2>Reports</h2>
-      <p>Generated reports and insights</p>
     </div>
   </div>
 </body>

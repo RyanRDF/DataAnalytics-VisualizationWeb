@@ -138,7 +138,8 @@ class DataHandler:
                         # For non-numeric columns, convert to string for sorting
                         patient_df = patient_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                 except Exception as e:
-                    print(f"Warning: Could not sort by {sort_column}: {str(e)}")
+                    # Could not sort by column
+                    pass
             
             return patient_df, None
             
@@ -194,7 +195,8 @@ class DataHandler:
                         return "<p>Tidak ada data yang ditemukan dengan filter yang diberikan.</p>", None
                         
                 except Exception as e:
-                    print(f"Warning: Could not apply filter on {filter_column}: {str(e)}")
+                    # Could not apply filter on column
+                    pass
             
             # Create HTML table
             table_html = patient_df.to_html(classes='data-table', index=False)
@@ -334,7 +336,8 @@ class DataHandler:
                         # For non-numeric columns, convert to string for sorting
                         financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                 except Exception as e:
-                    print(f"Warning: Could not sort by {sort_column}: {str(e)}")
+                    # Could not sort by column
+                    pass
             
             return financial_df, None
             
@@ -390,7 +393,8 @@ class DataHandler:
                         return "<p>Tidak ada data yang ditemukan dengan filter yang diberikan.</p>", None
                         
                 except Exception as e:
-                    print(f"Warning: Could not apply filter on {filter_column}: {str(e)}")
+                    # Could not apply filter on column
+                    pass
             
             # Create HTML table
             table_html = financial_df.to_html(classes='data-table', index=False)
@@ -435,7 +439,8 @@ class DataHandler:
             if os.path.exists(filepath):
                 os.remove(filepath)
         except Exception as e:
-            print(f"Warning: Could not remove file {filepath}: {str(e)}")
+            # Could not remove file
+            pass
     
     def has_data(self):
         """Check if data is loaded"""
