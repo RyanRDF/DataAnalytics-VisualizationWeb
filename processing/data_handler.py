@@ -1,10 +1,21 @@
 import pandas as pd
 import numpy as np
 import os
+from .financial_handler import FinancialHandler
+from .patient_handler import PatientHandler
+from .selisih_tarif_handler import SelisihTarifHandler
+from .los_handler import LOSHandler
+from .inacbg_handler import INACBGHandler
 
 class DataHandler:
     def __init__(self):
         self.current_df = None
+        # Initialize specialized handlers
+        self.financial_handler = FinancialHandler(self)
+        self.patient_handler = PatientHandler(self)
+        self.selisih_tarif_handler = SelisihTarifHandler(self)
+        self.los_handler = LOSHandler(self)
+        self.inacbg_handler = INACBGHandler(self)
     
     def load_data_from_file(self, filepath):
         """Load data from uploaded file"""
@@ -27,587 +38,76 @@ class DataHandler:
         except Exception as e:
             return "", False
     
+    # Patient data methods - delegate to patient handler
     def process_patient_data(self):
-        """Process patient data with all required columns"""
-        if self.current_df is None:
-            return None, "No data available. Please upload a file first."
-        
-        try:
-            # Define all patient-related columns
-            patient_columns = [
-                'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF',
-                'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN',
-                'NOKARTU', 'BIRTH_DATE', 'BIRTH_WEIGHT', 'SEX',
-                'DISCHARGE_STATUS', 'DIAGLIST', 'PROCLIST', 'ADL1', 'ADL2',
-                'IN_SP', 'IN_SR', 'IN_SI', 'IN_SD', 'INACBG', 'SUBACUTE',
-                'CHRONIC', 'SP', 'SR', 'SI', 'SD', 'DESKRIPSI_INACBG',
-                'MRN', 'UMUR_TAHUN', 'UMUR_HARI', 'DPJP', 'SEP', 'PAYOR_ID',
-                'CODER_ID', 'VERSI_INACBG', 'VERSI_GROUPER'
-            ]
-            
-            # Check which columns exist in the data
-            existing_columns = [col for col in patient_columns if col in self.current_df.columns]
-            missing_columns = [col for col in patient_columns if col not in self.current_df.columns]
-            
-            if not existing_columns:
-                return None, "No patient-related columns found in the data."
-            
-            # Create a copy of the dataframe with existing patient columns
-            patient_df = self.current_df[existing_columns].copy()
-            
-            # Fill missing columns with empty values
-            for col in missing_columns:
-                patient_df[col] = ''
-            
-            # Reorder columns to match the expected format
-            final_columns = patient_columns
-            patient_df = patient_df.reindex(columns=final_columns)
-            
-            # Clean up data - replace None values with empty strings
-            patient_df = patient_df.fillna('')
-            
-            return patient_df, None
-            
-        except Exception as e:
-            return None, f"Error processing patient data: {str(e)}"
+        return self.patient_handler.process_patient_data()
     
     def get_patient_table(self):
-        """Get patient data as HTML table"""
-        patient_df, error = self.process_patient_data()
-        
-        if error:
-            return "", error
-        
-        try:
-            table_html = patient_df.to_html(classes='data-table', index=False)
-            return table_html, None
-        except Exception as e:
-            return "", f"Error creating patient table: {str(e)}"
+        return self.patient_handler.get_patient_table()
     
     def process_patient_data_with_filters(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Process patient data with sorting and date filtering"""
-        if self.current_df is None:
-            return None, "No data available. Please upload a file first."
-        
-        try:
-            # Get base patient data
-            patient_df, error = self.process_patient_data()
-            if error:
-                return None, error
-            
-            # Apply date filtering if specified (handle DD/MM/YYYY format from data)
-            if start_date or end_date:
-                try:
-                    # Convert input dates (YYYY-MM-DD) to datetime for comparison
-                    if start_date:
-                        start_dt = pd.to_datetime(start_date)
-                    if end_date:
-                        end_dt = pd.to_datetime(end_date)
-                    
-                    # Convert ADMISSION_DATE to datetime for proper comparison
-                    patient_df['ADMISSION_DATE_DT'] = pd.to_datetime(patient_df['ADMISSION_DATE'], format='%d/%m/%Y', errors='coerce')
-                    
-                    # Apply start date filter
-                    if start_date:
-                        patient_df = patient_df[patient_df['ADMISSION_DATE_DT'] >= start_dt]
-                    
-                    # Apply end date filter
-                    if end_date:
-                        patient_df = patient_df[patient_df['ADMISSION_DATE_DT'] <= end_dt]
-                    
-                    # Remove temporary datetime column
-                    patient_df = patient_df.drop('ADMISSION_DATE_DT', axis=1)
-                    
-                    # Check if any data remains after filtering
-                    if patient_df.empty:
-                        return None, f"No data found for the specified date range: {start_date} to {end_date}"
-                    
-                except Exception as e:
-                    return None, f"Error processing date filter: {str(e)}"
-            
-            # Apply sorting if specified
-            if sort_column and sort_column in patient_df.columns:
-                try:
-                    # Handle numeric columns for proper sorting
-                    numeric_columns = ['LOS', 'BIRTH_WEIGHT', 'UMUR_TAHUN', 'UMUR_HARI']
-                    if sort_column in numeric_columns:
-                        # Convert to numeric for proper sorting
-                        patient_df[sort_column] = pd.to_numeric(patient_df[sort_column], errors='coerce')
-                        patient_df = patient_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                    else:
-                        # For non-numeric columns, convert to string for sorting
-                        patient_df = patient_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                except Exception as e:
-                    # Could not sort by column
-                    pass
-            
-            return patient_df, None
-            
-        except Exception as e:
-            return None, f"Error processing patient data with filters: {str(e)}"
+        return self.patient_handler.process_patient_data_with_filters(sort_column, sort_order, start_date, end_date)
     
     def get_patient_table_with_filters(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get patient data as HTML table with sorting and date filtering"""
-        patient_df, error = self.process_patient_data_with_filters(sort_column, sort_order, start_date, end_date)
-        
-        if error:
-            return "", error
-        
-        try:
-            table_html = patient_df.to_html(classes='data-table', index=False)
-            return table_html, None
-        except Exception as e:
-            return "", f"Error creating patient table: {str(e)}"
+        return self.patient_handler.get_patient_table_with_filters(sort_column, sort_order, start_date, end_date)
     
     def get_patient_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get patient data as HTML table with specific column filtering, sorting, and date filtering"""
-        try:
-            # First get the base patient data with filters
-            patient_df, error = self.process_patient_data_with_filters(sort_column, sort_order, start_date, end_date)
-            
-            if error:
-                return "", error
-            
-            # Apply specific column filter
-            if filter_column and filter_value and filter_column in patient_df.columns:
-                try:
-                    # Convert filter value to string for case-insensitive search
-                    filter_value_str = str(filter_value).lower()
-                    
-                    # Apply filter (case-insensitive search)
-                    if patient_df[filter_column].dtype == 'object':  # String columns
-                        patient_df = patient_df[
-                            patient_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
-                    else:  # Numeric columns
-                        # Try to convert filter value to numeric for exact match
-                        try:
-                            numeric_value = float(filter_value)
-                            patient_df = patient_df[patient_df[filter_column] == numeric_value]
-                        except ValueError:
-                            # If conversion fails, try string search
-                            patient_df = patient_df[
-                                patient_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                            ]
-                    
-                    # Check if any data remains after filtering
-                    if patient_df.empty:
-                        return "<p>Tidak ada data yang ditemukan dengan filter yang diberikan.</p>", None
-                        
-                except Exception as e:
-                    # Could not apply filter on column
-                    pass
-            
-            # Create HTML table
-            table_html = patient_df.to_html(classes='data-table', index=False)
-            return table_html, None
-            
-        except Exception as e:
-            return "", f"Error creating filtered patient table: {str(e)}"
+        return self.patient_handler.get_patient_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
     
     def get_patient_columns(self):
-        """Get list of available columns for patient data sorting and filtering"""
-        if self.current_df is None:
-            return []
-        
-        try:
-            # Get the patient dataframe to see all available columns
-            patient_df, error = self.process_patient_data()
-            if error:
-                return []
-            
-            return list(patient_df.columns)
-        except Exception as e:
-            return []
+        return self.patient_handler.get_patient_columns()
     
+    # Financial data methods - delegate to financial handler
     def process_financial_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Process financial data with required calculations, sorting, and date filtering"""
-        if self.current_df is None:
-            return None, "No data available. Please upload a file first."
-        
-        try:
-            # Select required columns
-            required_columns = [
-                'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF', 
-                'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN', 
-                'NOKARTU', 'TOTAL_TARIF', 'TARIF_RS'
-            ]
-            
-            # Check if all required columns exist
-            missing_columns = [col for col in required_columns if col not in self.current_df.columns]
-            if missing_columns:
-                return None, f"Missing columns: {', '.join(missing_columns)}"
-            
-            # Create a copy of the dataframe with required columns
-            financial_df = self.current_df[required_columns].copy()
-            
-            # Convert LOS to numeric, handling any non-numeric values
-            financial_df['LOS'] = pd.to_numeric(financial_df['LOS'], errors='coerce').fillna(0)
-            
-            # Convert TOTAL_TARIF and TARIF_RS to numeric
-            financial_df['TOTAL_TARIF'] = pd.to_numeric(financial_df['TOTAL_TARIF'], errors='coerce').fillna(0)
-            financial_df['TARIF_RS'] = pd.to_numeric(financial_df['TARIF_RS'], errors='coerce').fillna(0)
-            
-            # Apply date filtering if specified (handle DD/MM/YYYY format from data)
-            if start_date or end_date:
-                try:
-                    # Convert input dates (YYYY-MM-DD) to datetime for comparison
-                    if start_date:
-                        start_dt = pd.to_datetime(start_date)
-                    if end_date:
-                        end_dt = pd.to_datetime(end_date)
-                    
-                    # Convert ADMISSION_DATE to datetime for proper comparison
-                    financial_df['ADMISSION_DATE_DT'] = pd.to_datetime(financial_df['ADMISSION_DATE'], format='%d/%m/%Y', errors='coerce')
-                    
-                    # Apply start date filter
-                    if start_date:
-                        financial_df = financial_df[financial_df['ADMISSION_DATE_DT'] >= start_dt]
-                    
-                    # Apply end date filter
-                    if end_date:
-                        financial_df = financial_df[financial_df['ADMISSION_DATE_DT'] <= end_dt]
-                    
-                    # Remove temporary datetime column
-                    financial_df = financial_df.drop('ADMISSION_DATE_DT', axis=1)
-                    
-                    # Check if any data remains after filtering
-                    if financial_df.empty:
-                        return None, f"No data found for the specified date range: {start_date} to {end_date}"
-                    
-                except Exception as e:
-                    return None, f"Error processing date filter: {str(e)}"
-            
-            # Calculate derived columns
-            # TOTAL_TARIF/HARI (TOTAL_TARIF divided by LOS)
-            financial_df['TOTAL_TARIF/HARI'] = np.where(
-                financial_df['LOS'] > 0, 
-                financial_df['TOTAL_TARIF'] / financial_df['LOS'], 
-                0
-            )
-            
-            # TARIF_RS/HARI (TARIF_RS divided by LOS)
-            financial_df['TARIF_RS/HARI'] = np.where(
-                financial_df['LOS'] > 0, 
-                financial_df['TARIF_RS'] / financial_df['LOS'], 
-                0
-            )
-            
-            # LABA (TOTAL_TARIF - TARIF_RS, if negative then output 0, if positive then show the output as it is)
-            financial_df['LABA'] = np.where(
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'] > 0,
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'],
-                0
-            )
-            
-            # LABA/HARI (LABA divided by LOS)
-            financial_df['LABA/HARI'] = np.where(
-                financial_df['LOS'] > 0,
-                financial_df['LABA'] / financial_df['LOS'],
-                0
-            )
-            
-            # RUGI (TOTAL_TARIF - TARIF_RS, if negative then output is in absolute, if positive then show the output 0)
-            financial_df['RUGI'] = np.where(
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'] < 0,
-                abs(financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS']),
-                0
-            )
-            
-            # RUGI/HARI (RUGI divided by LOS)
-            financial_df['RUGI/HARI'] = np.where(
-                financial_df['LOS'] > 0,
-                financial_df['RUGI'] / financial_df['LOS'],
-                0
-            )
-            
-            # Round numeric columns to 2 decimal places
-            numeric_columns = ['TOTAL_TARIF/HARI', 'TARIF_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']
-            for col in numeric_columns:
-                financial_df[col] = financial_df[col].round(2)
-            
-            # Apply sorting if specified
-            if sort_column and sort_column in financial_df.columns:
-                try:
-                    # Handle numeric columns for proper sorting
-                    if sort_column in ['LOS', 'TOTAL_TARIF', 'TARIF_RS', 'TOTAL_TARIF/HARI', 'TARIF_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
-                        financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                    else:
-                        # For non-numeric columns, convert to string for sorting
-                        financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                except Exception as e:
-                    # Could not sort by column
-                    pass
-            
-            return financial_df, None
-            
-        except Exception as e:
-            return None, f"Error processing financial data: {str(e)}"
+        return self.financial_handler.process_financial_data(sort_column, sort_order, start_date, end_date)
     
     def get_financial_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get financial data as HTML table with sorting and date filtering"""
-        financial_df, error = self.process_financial_data(sort_column, sort_order, start_date, end_date)
-        
-        if error:
-            return "", error
-        
-        try:
-            table_html = financial_df.to_html(classes='data-table', index=False)
-            return table_html, None
-        except Exception as e:
-            return "", f"Error creating financial table: {str(e)}"
+        return self.financial_handler.get_financial_table(sort_column, sort_order, start_date, end_date)
     
     def get_financial_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get financial data as HTML table with specific column filtering, sorting, and date filtering"""
-        try:
-            # First get the base financial data
-            financial_df, error = self.process_financial_data(sort_column, sort_order, start_date, end_date)
-            
-            if error:
-                return "", error
-            
-            # Apply specific column filter
-            if filter_column and filter_value and filter_column in financial_df.columns:
-                try:
-                    # Convert filter value to string for case-insensitive search
-                    filter_value_str = str(filter_value).lower()
-                    
-                    # Apply filter (case-insensitive search)
-                    if financial_df[filter_column].dtype == 'object':  # String columns
-                        financial_df = financial_df[
-                            financial_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
-                    else:  # Numeric columns
-                        # Try to convert filter value to numeric for exact match
-                        try:
-                            numeric_value = float(filter_value)
-                            financial_df = financial_df[financial_df[filter_column] == numeric_value]
-                        except ValueError:
-                            # If conversion fails, try string search
-                            financial_df = financial_df[
-                                financial_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                            ]
-                    
-                    # Check if any data remains after filtering
-                    if financial_df.empty:
-                        return "<p>Tidak ada data yang ditemukan dengan filter yang diberikan.</p>", None
-                        
-                except Exception as e:
-                    # Could not apply filter on column
-                    pass
-            
-            # Create HTML table
-            table_html = financial_df.to_html(classes='data-table', index=False)
-            return table_html, None
-            
-        except Exception as e:
-            return "", f"Error creating filtered financial table: {str(e)}"
+        return self.financial_handler.get_financial_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
     
     def get_financial_columns(self):
-        """Get list of available columns for financial data sorting"""
-        if self.current_df is None:
-            return []
-        
-        try:
-            # Get the financial dataframe to see all available columns
-            financial_df, error = self.process_financial_data()
-            if error:
-                return []
-            
-            return list(financial_df.columns)
-        except Exception as e:
-            return []
+        return self.financial_handler.get_financial_columns()
     
+    # Selisih tarif data methods - delegate to selisih tarif handler
     def process_selisih_tarif_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Process selisih tarif data with required calculations, sorting, and date filtering"""
-        if self.current_df is None:
-            return None, "No data available. Please upload a file first."
-        
-        try:
-            # Select required columns
-            required_columns = [
-                'SEP', 'MRN', 'LOS', 'DIAGLIST', 'PROCLIST', 'INACBG', 'DESKRIPSI_INACBG',
-                'TOTAL_TARIF', 'TARIF_RS', 'ADMISSION_DATE', 'DISCHARGE_DATE'
-            ]
-            
-            # Check if all required columns exist
-            missing_columns = [col for col in required_columns if col not in self.current_df.columns]
-            if missing_columns:
-                return None, f"Missing columns: {', '.join(missing_columns)}"
-            
-            # Create a copy of the dataframe with required columns
-            selisih_df = self.current_df[required_columns].copy()
-            
-            # Process DIAGLIST to extract PDX and SDX
-            def extract_diagnosis(diaglist):
-                if pd.isna(diaglist) or diaglist == '':
-                    return '', ''
-                
-                diaglist_str = str(diaglist)
-                if ';' in diaglist_str:
-                    parts = diaglist_str.split(';')
-                    pdx = parts[0].strip()
-                    sdx = ';'.join(parts[1:]).strip()
-                    return pdx, sdx
-                else:
-                    return diaglist_str.strip(), ''
-            
-            # Apply diagnosis extraction
-            diagnosis_data = selisih_df['DIAGLIST'].apply(extract_diagnosis)
-            selisih_df['PDX'] = [d[0] for d in diagnosis_data]
-            selisih_df['SDX'] = [d[1] for d in diagnosis_data]
-            
-            # Rename columns according to requirements
-            selisih_df = selisih_df.rename(columns={
-                'MRN': 'RM',
-                'TOTAL_TARIF': 'TOTAL_CLAIM',
-                'TARIF_RS': 'TOTAL_BILING_RS'
-            })
-            
-            # Calculate SELISIH (TOTAL_CLAIM - TOTAL_BILING_RS)
-            selisih_df['SELISIH'] = selisih_df['TOTAL_CLAIM'] - selisih_df['TOTAL_BILING_RS']
-            
-            # Reorder columns to match the required format
-            final_columns = [
-                'SEP', 'RM', 'LOS', 'PDX', 'SDX', 'PROCLIST', 'INACBG', 
-                'DESKRIPSI_INACBG', 'TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH',
-                'ADMISSION_DATE', 'DISCHARGE_DATE'
-            ]
-            
-            # Ensure all columns exist (fill missing ones with empty strings)
-            for col in final_columns:
-                if col not in selisih_df.columns:
-                    selisih_df[col] = ''
-            
-            selisih_df = selisih_df[final_columns]
-            
-            # Convert numeric columns
-            numeric_columns = ['LOS', 'TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']
-            for col in numeric_columns:
-                if col in selisih_df.columns:
-                    selisih_df[col] = pd.to_numeric(selisih_df[col], errors='coerce').fillna(0)
-            
-            # Apply date filtering if specified (handle DD/MM/YYYY format from data)
-            if start_date or end_date:
-                try:
-                    # Convert input dates (YYYY-MM-DD) to datetime for comparison
-                    if start_date:
-                        start_dt = pd.to_datetime(start_date)
-                    if end_date:
-                        end_dt = pd.to_datetime(end_date)
-                    
-                    # Convert ADMISSION_DATE to datetime for proper comparison
-                    selisih_df['ADMISSION_DATE_DT'] = pd.to_datetime(selisih_df['ADMISSION_DATE'], format='%d/%m/%Y', errors='coerce')
-                    
-                    # Apply start date filter
-                    if start_date:
-                        selisih_df = selisih_df[selisih_df['ADMISSION_DATE_DT'] >= start_dt]
-                    
-                    # Apply end date filter
-                    if end_date:
-                        selisih_df = selisih_df[selisih_df['ADMISSION_DATE_DT'] <= end_dt]
-                    
-                    # Remove temporary datetime column
-                    selisih_df = selisih_df.drop('ADMISSION_DATE_DT', axis=1)
-                    
-                    # Check if any data remains after filtering
-                    if selisih_df.empty:
-                        return None, f"No data found for the specified date range: {start_date} to {end_date}"
-                    
-                except Exception as e:
-                    return None, f"Error processing date filter: {str(e)}"
-            
-            # Apply sorting if specified
-            if sort_column and sort_column in selisih_df.columns:
-                try:
-                    # Handle numeric columns for proper sorting
-                    if sort_column in ['LOS', 'TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']:
-                        selisih_df = selisih_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                    else:
-                        # For non-numeric columns, convert to string for sorting
-                        selisih_df = selisih_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
-                except Exception as e:
-                    # Could not sort by column
-                    pass
-            
-            return selisih_df, None
-            
-        except Exception as e:
-            return None, f"Error processing selisih tarif data: {str(e)}"
+        return self.selisih_tarif_handler.process_selisih_tarif_data(sort_column, sort_order, start_date, end_date)
     
     def get_selisih_tarif_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get selisih tarif data as HTML table with sorting and date filtering"""
-        selisih_df, error = self.process_selisih_tarif_data(sort_column, sort_order, start_date, end_date)
-        
-        if error:
-            return "", error
-        
-        try:
-            table_html = selisih_df.to_html(classes='data-table', index=False)
-            return table_html, None
-        except Exception as e:
-            return "", f"Error creating selisih tarif table: {str(e)}"
+        return self.selisih_tarif_handler.get_selisih_tarif_table(sort_column, sort_order, start_date, end_date)
     
     def get_selisih_tarif_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
-        """Get selisih tarif data as HTML table with specific column filtering, sorting, and date filtering"""
-        try:
-            # First get the base selisih tarif data
-            selisih_df, error = self.process_selisih_tarif_data(sort_column, sort_order, start_date, end_date)
-            
-            if error:
-                return "", error
-            
-            # Apply specific column filter
-            if filter_column and filter_value and filter_column in selisih_df.columns:
-                try:
-                    # Convert filter value to string for case-insensitive search
-                    filter_value_str = str(filter_value).lower()
-                    
-                    # Apply filter (case-insensitive search)
-                    if selisih_df[filter_column].dtype == 'object':  # String columns
-                        selisih_df = selisih_df[
-                            selisih_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
-                    else:  # Numeric columns
-                        # Try to convert filter value to numeric for exact match
-                        try:
-                            numeric_value = float(filter_value)
-                            selisih_df = selisih_df[selisih_df[filter_column] == numeric_value]
-                        except ValueError:
-                            # If conversion fails, try string search
-                            selisih_df = selisih_df[
-                                selisih_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                            ]
-                    
-                    # Check if any data remains after filtering
-                    if selisih_df.empty:
-                        return "<p>Tidak ada data yang ditemukan dengan filter yang diberikan.</p>", None
-                        
-                except Exception as e:
-                    # Could not apply filter on column
-                    pass
-            
-            # Create HTML table
-            table_html = selisih_df.to_html(classes='data-table', index=False)
-            return table_html, None
-            
-        except Exception as e:
-            return "", f"Error creating filtered selisih tarif table: {str(e)}"
+        return self.selisih_tarif_handler.get_selisih_tarif_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
     
     def get_selisih_tarif_columns(self):
-        """Get list of available columns for selisih tarif data sorting and filtering"""
-        if self.current_df is None:
-            return []
-        
-        try:
-            # Get the selisih tarif dataframe to see all available columns
-            selisih_df, error = self.process_selisih_tarif_data()
-            if error:
-                return []
-            
-            return list(selisih_df.columns)
-        except Exception as e:
-            return []
+        return self.selisih_tarif_handler.get_selisih_tarif_columns()
+    
+    # LOS data methods - delegate to los handler
+    def process_los_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.los_handler.process_los_data(sort_column, sort_order, start_date, end_date)
+    
+    def get_los_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.los_handler.get_los_table(sort_column, sort_order, start_date, end_date)
+    
+    def get_los_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.los_handler.get_los_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
+    
+    def get_los_columns(self):
+        return self.los_handler.get_los_columns()
+    
+    # INACBG data methods - delegate to inacbg handler
+    def process_inacbg_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.inacbg_handler.process_inacbg_data(sort_column, sort_order, start_date, end_date)
+    
+    def get_inacbg_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.inacbg_handler.get_inacbg_table(sort_column, sort_order, start_date, end_date)
+    
+    def get_inacbg_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.inacbg_handler.get_inacbg_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
+    
+    def get_inacbg_columns(self):
+        return self.inacbg_handler.get_inacbg_columns()
     
     def validate_file(self, filename):
         """Validate uploaded file"""

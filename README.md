@@ -1,134 +1,143 @@
-# Data Analytics Visualization Web Application
+# Data Analytics Visualization Web
 
-A Flask-based web application for analyzing and visualizing healthcare data from E-Claim systems. This application provides comprehensive data analysis capabilities for both financial and patient data.
+Aplikasi web untuk analisis dan visualisasi data dengan fitur filtering, sorting, dan analisis berbagai jenis data.
 
-## Features
+## Fitur Utama
 
-### 📊 Data Analysis
-- **Financial Analysis**: Calculate profit/loss, daily rates, and financial metrics
-- **Patient Analysis**: Comprehensive patient data analysis with medical information
-- **File Upload**: Support for .txt file uploads with tab-separated data
-- **Advanced Filtering**: Date range filtering, column-specific filtering, and sorting
+- **Upload File**: Upload file .txt dengan format tab-separated
+- **Menu E-Claim**: 
+  - Analisis Keuangan (dengan perhitungan laba rugi)
+  - Analisis Pasien (informasi medis lengkap)
+- **Menu Analisa**:
+  - Analisa Selisih Tarif (selisih antara tarif yang dikenakan dan tarif standar)
+  - Analisa LOS (Length of Stay - lama rawat inap pasien)
 
-### 🔍 Filtering & Sorting
-- Date range filtering for admission dates
-- Column-based sorting (ASC/DESC)
-- Specific value filtering with case-insensitive search
-- Combined filtering and sorting capabilities
+## Struktur Kode
 
-### 💻 User Interface
-- Modern, responsive web interface
-- Interactive sidebar navigation
-- Real-time data updates via AJAX
-- Clean and intuitive user experience
+### Frontend
+- `templates/index.html` - Template HTML utama dengan sidebar dan konten
+- `static/style.css` - Styling CSS
+- `static/script.js` - JavaScript untuk interaksi dan state management
 
-## Installation
+### Backend
+- `app.py` - Flask application dengan routing untuk semua menu
+- `processing/` - Modul untuk pemrosesan data
+  - `__init__.py` - Import semua handler
+  - `data_handler.py` - Handler utama yang mengkoordinasikan semua handler khusus
+  - `financial_handler.py` - Handler khusus untuk data keuangan
+  - `patient_handler.py` - Handler khusus untuk data pasien
+  - `selisih_tarif_handler.py` - Handler khusus untuk analisa selisih tarif
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd DataAnalytics-VisualizationWeb
-   ```
+## Struktur Data
 
-2. **Install dependencies**
+### Analisis Keuangan
+Kolom yang ditampilkan:
+- KODE_RS, KELAS_RS, KELAS_RAWAT, KODE_TARIF
+- ADMISSION_DATE, DISCHARGE_DATE, LOS, NAMA_PASIEN, NOKARTU
+- TOTAL_TARIF, TARIF_RS
+- TOTAL_TARIF/HARI, TARIF_RS/HARI, LABA, LABA/HARI, RUGI, RUGI/HARI
+
+### Analisis Pasien
+Kolom yang ditampilkan:
+- KODE_RS, KELAS_RS, KELAS_RAWAT, KODE_TARIF
+- ADMISSION_DATE, DISCHARGE_DATE, LOS, NAMA_PASIEN
+- NOKARTU, BIRTH_DATE, BIRTH_WEIGHT, SEX, DISCHARGE_STATUS
+- DIAGLIST, PROCLIST, ADL1, ADL2
+- IN_SP, IN_SR, IN_SI, IN_SD, INACBG, SUBACUTE, CHRONIC
+- SP, SR, SI, SD, DESKRIPSI_INACBG
+- MRN, UMUR_TAHUN, UMUR_HARI, DPJP, SEP, PAYOR_ID
+- CODER_ID, VERSI_INACBG, VERSI_GROUPER
+
+### Analisa Selisih Tarif
+Kolom yang ditampilkan:
+- SEP, RM, LOS, PDX, SDX, PROCLIST, INACBG
+- DESKRIPSI_INACBG, TOTAL_CLAIM, TOTAL_BILING_RS, SELISIH
+- ADMISSION_DATE, DISCHARGE_DATE
+
+**Keterangan kolom:**
+- **SEP** = dari kolom SEP
+- **RM** = dari kolom MRN
+- **LOS** = dari kolom LOS
+- **PDX** = Primary Diagnosis (index pertama dari DIAGLIST, sebelum separator `;`)
+- **SDX** = Secondary Diagnosis (setelah separator `;` dari DIAGLIST)
+- **PR** = dari PROCLIST
+- **INACBG** = dari INACBG
+- **DESC INACBG** = dari DESKRIPSI_INACBG
+- **TOTAL_CLAIM** = dari TOTAL_TARIF
+- **TOTAL_BILING RS** = dari TARIF_RS
+- **SELISIH** = TOTAL_CLAIM - TOTAL_BILING_RS
+- **ADMISSION_DATE** = dari ADMISSION_DATE
+- **DISCHARGE_DATE** = dari DISCHARGE_DATE
+
+### Analisa LOS (Length of Stay)
+Kolom yang ditampilkan:
+- SEP, MRN, PDX, SDX, PROCLIST, INACBG, LOS, CARA_PULANG
+- TOTAL_CLAIM, TOTAL_BILING_RS, SELISIH
+- ADMISSION_DATE, DISCHARGE_DATE
+
+**Keterangan kolom:**
+- **SEP** = dari kolom SEP
+- **MRN** = dari kolom MRN
+- **PDX** = Primary Diagnosis (index pertama dari DIAGLIST, sebelum separator `;`)
+- **SDX** = Secondary Diagnosis (setelah separator `;` dari DIAGLIST)
+- **PR** = dari PROCLIST
+- **INACBG** = dari INACBG
+- **LOS** = dari kolom LOS
+- **CARA_PULANG** = dari DISCHARGE_STATUS (1=Persetujuan Dokter, 2=Dirujuk, 3=Persetujuan Sendiri, 4=Meninggal)
+- **TOTAL_CLAIM** = dari TOTAL_TARIF
+- **TOTAL_BILING RS** = dari TARIF_RS
+- **SELISIH** = TOTAL_CLAIM - TOTAL_BILING_RS
+- **ADMISSION_DATE** = dari ADMISSION_DATE
+- **DISCHARGE_DATE** = dari DISCHARGE_DATE
+
+## Fitur Filtering dan Sorting
+
+Setiap menu memiliki fitur:
+1. **Filter Tanggal**: Filter berdasarkan rentang tanggal admission
+2. **Sorting**: Sort berdasarkan kolom tertentu (ASC/DESC)
+3. **Filter Spesifik**: Filter berdasarkan nilai kolom tertentu
+4. **Clear Filter**: Hapus semua filter yang diterapkan
+
+## Cara Penggunaan
+
+1. **Upload File**: Upload file .txt melalui form di sidebar
+2. **Pilih Menu**: Klik menu yang diinginkan di sidebar
+3. **Filter Data**: Pilih rentang tanggal dan klik "Filter Data"
+4. **Sorting**: Pilih kolom dan urutan sorting
+5. **Filter Tambahan**: Gunakan filter kolom spesifik jika diperlukan
+
+## Instalasi
+
+1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the application**
+2. Jalankan aplikasi:
    ```bash
    python app.py
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:5000`
+3. Buka browser dan akses `http://localhost:5000`
 
 ## Dependencies
 
-- **Flask**: Web framework
-- **Pandas**: Data manipulation and analysis
-- **NumPy**: Numerical computing
+- Flask
+- Pandas
+- NumPy
 
-## Usage
+## Struktur Modular
 
-### 1. Upload Data
-- Click "Upload .txt File" in the sidebar
-- Select a .txt file with tab-separated data
-- Click "Process File" to load the data
+Aplikasi menggunakan struktur modular dimana setiap jenis data memiliki handler terpisah:
 
-### 2. Financial Analysis
-- Navigate to "E-Claim > Keuangan"
-- Set date range filters
-- Apply sorting by any column
-- Use specific filters to search for particular values
+- **DataHandler**: Handler utama yang mengkoordinasikan semua handler khusus
+- **FinancialHandler**: Khusus untuk pemrosesan data keuangan
+- **PatientHandler**: Khusus untuk pemrosesan data pasien  
+- **SelisihTarifHandler**: Khusus untuk pemrosesan data selisih tarif
+- **LOSHandler**: Khusus untuk pemrosesan data LOS (Length of Stay)
 
-### 3. Patient Analysis
-- Navigate to "E-Claim > Pasien"
-- Apply similar filtering and sorting options
-- Analyze patient demographics and medical data
-
-## Data Format
-
-The application expects .txt files with tab-separated values containing the following columns:
-
-### Financial Data Columns
-- `KODE_RS`, `KELAS_RS`, `KELAS_RAWAT`
-- `ADMISSION_DATE`, `DISCHARGE_DATE`, `LOS`
-- `TOTAL_TARIF`, `TARIF_RS`
-- Additional patient identification columns
-
-### Patient Data Columns
-- Patient demographics and medical information
-- Admission and discharge details
-- Medical procedures and diagnoses
-- Length of stay and status information
-
-## Project Structure
-
-```
-DataAnalytics-VisualizationWeb/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── processing/
-│   └── data_handler.py   # Data processing logic
-├── static/
-│   ├── script.js         # Frontend JavaScript
-│   └── style.css         # Styling
-├── templates/
-│   └── index.html        # Main HTML template
-└── instance/uploads/      # File upload directory
-```
-
-## API Endpoints
-
-### Financial Data
-- `GET /keuangan` - Display financial analysis
-- `GET /keuangan/sort` - Sort financial data
-- `GET /keuangan/filter` - Filter financial data by date
-- `GET /keuangan/specific-filter` - Filter by specific column values
-- `GET /keuangan/columns` - Get available columns
-
-### Patient Data
-- `GET /pasien` - Display patient analysis
-- `GET /pasien/sort` - Sort patient data
-- `GET /pasien/filter` - Filter patient data by date
-- `GET /pasien/specific-filter` - Filter by specific column values
-- `GET /pasien/columns` - Get available columns
-
-### File Upload
-- `POST /upload` - Upload and process data files
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For questions or support, please open an issue in the repository.
+Struktur ini memungkinkan:
+- Kode yang lebih rapi dan mudah dikelola
+- Pemisahan logika bisnis yang jelas
+- Kemudahan dalam maintenance dan pengembangan
+- Reusability kode yang lebih baik

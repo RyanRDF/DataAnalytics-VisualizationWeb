@@ -37,6 +37,8 @@
         </a>
         <ul class="submenu" id="analisa-dropdown">
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('selisih-tarif')">Analisa Selisih Tarif</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('los')">Analisa LOS</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('inacbg')">Analisa INACBG</a></li>
         </ul>
       </li>
     </ul>
@@ -328,6 +330,78 @@
         </div>
         <button id="losApplySpecificFilter" class="specific-filter-btn">Cari</button>
         <button id="losClearSpecificFilter" class="clear-specific-btn">Clear</button>
+      </div>
+      
+      <div class="table-container">
+        <div class="no-data-container">
+          <h3>Data Belum Tersedia</h3>
+          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
+          <div class="upload-instructions">
+            <h4>Cara Menampilkan Data:</h4>
+            <ol>
+              <li>Upload file .txt menggunakan form di sebelah kiri</li>
+              <li>Pilih rentang waktu yang diinginkan</li>
+              <li>Klik tombol "Filter Data"</li>
+              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analisis INACBG Content -->
+    <div id="inacbg" class="content-section" style="display:none;">
+      <h2>Analisis INACBG</h2>
+      <p>Menampilkan analisis data yang dikelompokkan berdasarkan INACBG dengan statistik agregat</p>
+      
+      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
+      
+      <!-- Date Range Filter Controls (Paling Atas) -->
+      <div class="date-filter-controls">
+        <div class="filter-group">
+          <label for="inacbgStartDate">Tanggal Mulai:</label>
+          <input type="date" id="inacbgStartDate" class="date-input">
+        </div>
+        <div class="filter-group">
+          <label for="inacbgEndDate">Tanggal Akhir:</label>
+          <input type="date" id="inacbgEndDate" class="date-input">
+        </div>
+        <button id="inacbgApplyDateFilter" class="filter-btn">Filter Data</button>
+        <button id="inacbgClearDateFilter" class="clear-btn">Clear Filter</button>
+      </div>
+      
+      <!-- Sorting Controls (Tengah) -->
+      <div class="sorting-controls">
+        <div class="sort-group">
+          <label for="inacbgSortColumn">Sort By:</label>
+          <select id="inacbgSortColumn" class="sort-select">
+            <option value="">Pilih Kolom</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label for="inacbgSortOrder">Order:</label>
+          <select id="inacbgSortOrder" class="sort-select">
+            <option value="ASC">ASC</option>
+            <option value="DESC">DESC</option>
+          </select>
+        </div>
+        <button id="inacbgApplySort" class="sort-btn">Apply Sort</button>
+      </div>
+      
+      <!-- Specific Data Filter Controls (Paling Bawah) -->
+      <div class="specific-filter-controls">
+        <div class="filter-group">
+          <label for="inacbgFilterColumn">Pilih Kolom:</label>
+          <select id="inacbgFilterColumn" class="filter-select">
+            <option value="">Pilih Kolom</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="inacbgFilterValue">Nilai yang Dicari:</label>
+          <input type="text" id="inacbgFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+        </div>
+        <button id="inacbgApplySpecificFilter" class="specific-filter-btn">Cari</button>
+        <button id="inacbgClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">

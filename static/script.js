@@ -35,6 +35,30 @@ let viewStates = {
             filterColumn: '',
             filterValue: ''
         }
+    },
+    'los': {
+        tableHtml: '',
+        hasData: false,
+        filters: {
+            startDate: '',
+            endDate: '',
+            sortColumn: '',
+            sortOrder: 'ASC',
+            filterColumn: '',
+            filterValue: ''
+        }
+    },
+    'inacbg': {
+        tableHtml: '',
+        hasData: false,
+        filters: {
+            startDate: '',
+            endDate: '',
+            sortColumn: '',
+            sortOrder: 'ASC',
+            filterColumn: '',
+            filterValue: ''
+        }
     }
 };
 
@@ -45,6 +69,8 @@ function showContent(content) {
     document.getElementById('keuangan').style.display = 'none';
     document.getElementById('pasien').style.display = 'none';
     document.getElementById('selisih-tarif').style.display = 'none';
+    document.getElementById('los').style.display = 'none';
+    document.getElementById('inacbg').style.display = 'none';
     
     // Show the selected content
     document.getElementById(content).style.display = 'block';
@@ -59,6 +85,10 @@ function showContent(content) {
         loadDataView('pasien');
     } else if (content === 'selisih-tarif') {
         loadDataView('selisih-tarif');
+    } else if (content === 'los') {
+        loadDataView('los');
+    } else if (content === 'inacbg') {
+        loadDataView('inacbg');
     }
 }
 
@@ -73,7 +103,7 @@ function updateActiveMenu(content) {
         document.querySelector('.menu-item > a[onclick*="home"]').classList.add('active');
     } else if (content === 'keuangan' || content === 'pasien') {
         document.querySelector('.menu-item > a[onclick*="analytics-dropdown"]').classList.add('active');
-    } else if (content === 'selisih-tarif') {
+    } else if (content === 'selisih-tarif' || content === 'los' || content === 'inacbg') {
         document.querySelector('.menu-item > a[onclick*="analisa-dropdown"]').classList.add('active');
     }
 }
@@ -143,7 +173,7 @@ function handleFormSubmit(event) {
         // Check if there's table data in the response
         const tableContainer = doc.querySelector('.table-container');
         if (tableContainer && tableContainer.innerHTML.trim() !== '') {
-            // Extract table HTML and update both view states
+            // Extract table HTML and update all view states
             const tableHtml = tableContainer.innerHTML;
             
             // Update all view states with the uploaded data
@@ -165,8 +195,20 @@ function handleFormSubmit(event) {
                 filters: { ...viewStates['selisih-tarif'].filters }
             });
             
+            updateViewState('los', { 
+                tableHtml: tableHtml, 
+                hasData: true,
+                filters: { ...viewStates['los'].filters }
+            });
+            
+            updateViewState('inacbg', { 
+                tableHtml: tableHtml, 
+                hasData: true,
+                filters: { ...viewStates['inacbg'].filters }
+            });
+            
             // Show success message
-            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, dan Analisa Selisih Tarif.');
+            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, dan Analisa INACBG.');
         } else {
             alert('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.');
         }
@@ -187,7 +229,7 @@ function handleFormSubmit(event) {
     });
 }
 
-// Generic function to load data view (keuangan, pasien, or selisih-tarif)
+// Generic function to load data view (keuangan, pasien, selisih-tarif, or los)
 function loadDataView(viewType) {
     const content = document.getElementById(viewType);
     let title, description, prefix;
@@ -204,6 +246,14 @@ function loadDataView(viewType) {
         title = 'Selisih Tarif';
         description = 'selisih tarif antara tarif yang dikenakan dan tarif standar';
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        title = 'LOS (Length of Stay)';
+        description = 'lama rawat inap pasien dengan berbagai parameter';
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        title = 'INACBG';
+        description = 'data yang dikelompokkan berdasarkan INACBG dengan statistik agregat';
+        prefix = 'inacbg';
     }
     
     const state = viewStates[viewType];
@@ -323,6 +373,10 @@ function loadSortingColumns(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     fetch(endpoint)
@@ -359,6 +413,10 @@ function loadFilterColumns(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     fetch(endpoint)
@@ -404,6 +462,10 @@ function applySorting(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
@@ -461,6 +523,10 @@ function applyDateFilter(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     const startDate = document.getElementById(`${prefix}StartDate`).value;
@@ -527,6 +593,10 @@ function clearDateFilter(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     // Clear date inputs
@@ -589,6 +659,10 @@ function applySpecificFilter(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
@@ -659,6 +733,10 @@ function clearSpecificFilter(viewType) {
         prefix = 'pasien';
     } else if (viewType === 'selisih-tarif') {
         prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
     }
     
     // Clear filter inputs

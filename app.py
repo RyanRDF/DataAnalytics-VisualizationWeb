@@ -307,5 +307,177 @@ def selisih_tarif_specific_filter():
     
     return jsonify({"table_html": table_html})
 
+@app.route('/los')
+def los():
+    if not data_handler.has_data():
+        return render_template('index.html', table_html="", has_data=False, error="No data available. Please upload a file first.")
+    
+    # Get LOS table
+    table_html, error = data_handler.get_los_table()
+    
+    if error:
+        return render_template('index.html', table_html="", has_data=False, error=error)
+    
+    return render_template('index.html', table_html=table_html, has_data=True, current_view='los')
+
+@app.route('/los/sort')
+def los_sort():
+    """Get sorted LOS data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    sort_column = request.args.get('column')
+    sort_order = request.args.get('order', 'ASC')
+    
+    if not sort_column:
+        return jsonify({"error": "Column parameter is required"}), 400
+    
+    # Get sorted LOS table
+    table_html, error = data_handler.get_los_table(sort_column, sort_order)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/los/filter')
+def los_filter():
+    """Get filtered LOS data by date range"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    
+    # Get filtered LOS table
+    table_html, error = data_handler.get_los_table(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/los/columns')
+def los_columns():
+    """Get available columns for LOS data"""
+    columns = data_handler.get_los_columns()
+    return jsonify({"columns": columns})
+
+@app.route('/los/specific-filter')
+def los_specific_filter():
+    """Get filtered LOS data by specific column value"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    filter_column = request.args.get('filter_column')
+    filter_value = request.args.get('filter_value')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not filter_column or not filter_value:
+        return jsonify({"error": "Filter column and value are required"}), 400
+    
+    # Get filtered LOS table
+    table_html, error = data_handler.get_los_table_with_specific_filter(
+        filter_column, filter_value, sort_column, sort_order, start_date, end_date
+    )
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+# INACBG routes
+@app.route('/inacbg')
+def inacbg():
+    """Get INACBG data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    # Get INACBG table
+    table_html, error = data_handler.get_inacbg_table()
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/inacbg/sort')
+def inacbg_sort():
+    """Get sorted INACBG data"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    sort_column = request.args.get('column')
+    sort_order = request.args.get('order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not sort_column:
+        return jsonify({"error": "Column parameter is required"}), 400
+    
+    # Get sorted INACBG table
+    table_html, error = data_handler.get_inacbg_table(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/inacbg/filter')
+def inacbg_filter():
+    """Get filtered INACBG data by date range"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    
+    # Get filtered INACBG table
+    table_html, error = data_handler.get_inacbg_table(sort_column, sort_order, start_date, end_date)
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
+@app.route('/inacbg/columns')
+def inacbg_columns():
+    """Get available columns for INACBG data"""
+    columns = data_handler.get_inacbg_columns()
+    return jsonify({"columns": columns})
+
+@app.route('/inacbg/specific-filter')
+def inacbg_specific_filter():
+    """Get filtered INACBG data by specific column value"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    filter_column = request.args.get('filter_column')
+    filter_value = request.args.get('filter_value')
+    sort_column = request.args.get('sort_column')
+    sort_order = request.args.get('sort_order', 'ASC')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not filter_column or not filter_value:
+        return jsonify({"error": "Filter column and value are required"}), 400
+    
+    # Get filtered INACBG table
+    table_html, error = data_handler.get_inacbg_table_with_specific_filter(
+        filter_column, filter_value, sort_column, sort_order, start_date, end_date
+    )
+    
+    if error:
+        return jsonify({"error": error}), 400
+    
+    return jsonify({"table_html": table_html})
+
 if __name__ == '__main__':
     app.run(debug=True)
