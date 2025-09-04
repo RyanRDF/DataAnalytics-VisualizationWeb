@@ -1,3 +1,94 @@
+// Modern Notification System
+class NotificationSystem {
+    constructor() {
+        this.container = document.getElementById('notificationContainer');
+        this.notifications = new Map();
+    }
+
+    show(message, type = 'info', title = '', duration = 2000) {
+        const id = Date.now() + Math.random();
+        const notification = this.createNotification(id, message, type, title);
+        
+        this.container.appendChild(notification);
+        this.notifications.set(id, notification);
+
+        // Auto remove after duration
+        setTimeout(() => {
+            this.remove(id);
+        }, duration);
+
+        return id;
+    }
+
+    createNotification(id, message, type, title) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.dataset.id = id;
+
+        // Get appropriate icon and title based on type
+        const iconMap = {
+            success: '✓',
+            error: '✕',
+            info: 'ℹ',
+            warning: '⚠'
+        };
+
+        const titleMap = {
+            success: title || 'Success',
+            error: title || 'Error',
+            info: title || 'Information',
+            warning: title || 'Warning'
+        };
+
+        notification.innerHTML = `
+            <div class="notification-icon">${iconMap[type] || 'ℹ'}</div>
+            <div class="notification-content">
+                <div class="notification-title">${titleMap[type]}</div>
+                <div class="notification-message">${message}</div>
+                <div class="notification-time">now</div>
+            </div>
+            <button class="notification-close" onclick="notificationSystem.remove(${id})">×</button>
+            <div class="notification-progress">
+                <div class="notification-progress-bar"></div>
+            </div>
+        `;
+
+        return notification;
+    }
+
+    remove(id) {
+        const notification = this.notifications.get(id);
+        if (notification) {
+            notification.classList.add('slide-out');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                this.notifications.delete(id);
+            }, 300);
+        }
+    }
+
+    success(message, title = '') {
+        return this.show(message, 'success', title);
+    }
+
+    error(message, title = '') {
+        return this.show(message, 'error', title);
+    }
+
+    info(message, title = '') {
+        return this.show(message, 'info', title);
+    }
+
+    warning(message, title = '') {
+        return this.show(message, 'warning', title);
+    }
+}
+
+// Initialize notification system
+const notificationSystem = new NotificationSystem();
+
 // Global state to store table data for each view
 let viewStates = {
     keuangan: {
@@ -267,9 +358,9 @@ function handleFormSubmit(event) {
             });
             
             // Show success message
-            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, Analisa INACBG, dan Analisa Ventilator.');
+            notificationSystem.success('Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, Analisa INACBG, dan Analisa Ventilator.', 'File Uploaded');
         } else {
-            alert('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.');
+            notificationSystem.warning('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.', 'No Data');
         }
         
         // Reset form
@@ -279,7 +370,7 @@ function handleFormSubmit(event) {
     })
     .catch(error => {
         console.error('Error uploading file:', error);
-        alert('Terjadi kesalahan saat mengupload file.');
+        notificationSystem.error('Terjadi kesalahan saat mengupload file.', 'Upload Error');
     })
     .finally(() => {
         // Restore button state
@@ -541,7 +632,7 @@ function applySorting(viewType) {
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
     
     if (!sortColumn) {
-        alert('Silakan pilih kolom untuk sorting');
+        notificationSystem.warning('Silakan pilih kolom untuk sorting', 'Sorting Required');
         return;
     }
     
@@ -559,7 +650,7 @@ function applySorting(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert('Error: ' + data.error);
+                notificationSystem.error('Error: ' + data.error, 'Sorting Error');
                 return;
             }
             
@@ -573,7 +664,7 @@ function applySorting(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} sorting:`, error);
-            alert('Terjadi kesalahan saat melakukan sorting');
+            notificationSystem.error('Terjadi kesalahan saat melakukan sorting', 'Sorting Error');
         })
         .finally(() => {
             // Restore button state
@@ -606,7 +697,7 @@ function applyDateFilter(viewType) {
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
     
     if (!startDate && !endDate) {
-        alert('Silakan pilih minimal satu tanggal untuk filtering');
+        notificationSystem.warning('Silakan pilih minimal satu tanggal untuk filtering', 'Date Required');
         return;
     }
     
@@ -631,7 +722,7 @@ function applyDateFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert('Error: ' + data.error);
+                notificationSystem.error('Error: ' + data.error, 'Filter Error');
                 return;
             }
             
@@ -645,7 +736,7 @@ function applyDateFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} date filter:`, error);
-            alert('Terjadi kesalahan saat melakukan filtering');
+            notificationSystem.error('Terjadi kesalahan saat melakukan filtering', 'Filter Error');
         })
         .finally(() => {
             // Restore button state
@@ -699,7 +790,7 @@ function clearDateFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert('Error: ' + data.error);
+                notificationSystem.error('Error: ' + data.error, 'Filter Error');
                 return;
             }
             
@@ -713,7 +804,7 @@ function clearDateFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error clearing ${viewType} date filter:`, error);
-            alert('Terjadi kesalahan saat membersihkan filter');
+            notificationSystem.error('Terjadi kesalahan saat membersihkan filter', 'Clear Filter Error');
         })
         .finally(() => {
             // Restore button state
@@ -748,7 +839,7 @@ function applySpecificFilter(viewType) {
     const endDate = document.getElementById(`${prefix}EndDate`).value;
     
     if (!filterColumn || !filterValue) {
-        alert('Silakan pilih kolom dan masukkan nilai yang dicari');
+        notificationSystem.warning('Silakan pilih kolom dan masukkan nilai yang dicari', 'Search Required');
         return;
     }
     
@@ -775,7 +866,7 @@ function applySpecificFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert('Error: ' + data.error);
+                notificationSystem.error('Error: ' + data.error, 'Filter Error');
                 return;
             }
             
@@ -789,7 +880,7 @@ function applySpecificFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} specific filter:`, error);
-            alert('Terjadi kesalahan saat melakukan pencarian');
+            notificationSystem.error('Terjadi kesalahan saat melakukan pencarian', 'Search Error');
         })
         .finally(() => {
             // Restore button state
@@ -847,7 +938,7 @@ function clearSpecificFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert('Error: ' + data.error);
+                notificationSystem.error('Error: ' + data.error, 'Filter Error');
                 return;
             }
             
@@ -861,13 +952,21 @@ function clearSpecificFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error clearing ${viewType} specific filter:`, error);
-            alert('Terjadi kesalahan saat membersihkan filter');
+            notificationSystem.error('Terjadi kesalahan saat membersihkan filter', 'Clear Filter Error');
         })
         .finally(() => {
             // Restore button state
             clearFilterBtn.textContent = originalText;
             clearFilterBtn.disabled = false;
         });
+}
+
+// Test function for notifications (can be called from browser console)
+function testNotifications() {
+    notificationSystem.success('File berhasil diproses!', 'File Uploaded');
+    setTimeout(() => notificationSystem.error('Terjadi kesalahan saat mengupload file.', 'Upload Error'), 500);
+    setTimeout(() => notificationSystem.warning('Silakan pilih kolom untuk sorting', 'Sorting Required'), 1000);
+    setTimeout(() => notificationSystem.info('Data tersedia di menu Keuangan', 'Information'), 1500);
 }
 
 // Initialize the page with Home content as default
@@ -880,5 +979,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadBtn) {
         uploadBtn.disabled = true;
     }
+    
+    // Test notifications on page load (remove this line in production)
+    // setTimeout(() => testNotifications(), 1000);
 });
 
