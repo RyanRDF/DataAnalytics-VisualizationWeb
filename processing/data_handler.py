@@ -6,6 +6,7 @@ from .patient_handler import PatientHandler
 from .selisih_tarif_handler import SelisihTarifHandler
 from .los_handler import LOSHandler
 from .inacbg_handler import INACBGHandler
+from .ventilator_handler import VentilatorHandler
 
 class DataHandler:
     def __init__(self):
@@ -16,6 +17,7 @@ class DataHandler:
         self.selisih_tarif_handler = SelisihTarifHandler(self)
         self.los_handler = LOSHandler(self)
         self.inacbg_handler = INACBGHandler(self)
+        self.ventilator_handler = VentilatorHandler(self)
     
     def load_data_from_file(self, filepath):
         """Load data from uploaded file"""
@@ -108,6 +110,19 @@ class DataHandler:
     
     def get_inacbg_columns(self):
         return self.inacbg_handler.get_inacbg_columns()
+    
+    # Ventilator data methods - delegate to ventilator handler
+    def process_ventilator_data(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.ventilator_handler.process_ventilator_data(sort_column, sort_order, start_date, end_date)
+    
+    def get_ventilator_table(self, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.ventilator_handler.get_ventilator_table(sort_column, sort_order, start_date, end_date)
+    
+    def get_ventilator_table_with_specific_filter(self, filter_column, filter_value, sort_column=None, sort_order='ASC', start_date=None, end_date=None):
+        return self.ventilator_handler.get_ventilator_table_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
+    
+    def get_ventilator_columns(self):
+        return self.ventilator_handler.get_ventilator_columns()
     
     def validate_file(self, filename):
         """Validate uploaded file"""

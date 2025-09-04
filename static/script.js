@@ -59,6 +59,18 @@ let viewStates = {
             filterColumn: '',
             filterValue: ''
         }
+    },
+    'ventilator': {
+        tableHtml: '',
+        hasData: false,
+        filters: {
+            startDate: '',
+            endDate: '',
+            sortColumn: '',
+            sortOrder: 'ASC',
+            filterColumn: '',
+            filterValue: ''
+        }
     }
 };
 
@@ -71,6 +83,7 @@ function showContent(content) {
     document.getElementById('selisih-tarif').style.display = 'none';
     document.getElementById('los').style.display = 'none';
     document.getElementById('inacbg').style.display = 'none';
+    document.getElementById('ventilator').style.display = 'none';
     
     // Show the selected content
     document.getElementById(content).style.display = 'block';
@@ -89,6 +102,8 @@ function showContent(content) {
         loadDataView('los');
     } else if (content === 'inacbg') {
         loadDataView('inacbg');
+    } else if (content === 'ventilator') {
+        loadDataView('ventilator');
     }
 }
 
@@ -97,16 +112,54 @@ function updateActiveMenu(content) {
     // Remove active class from all menu items
     const menuItems = document.querySelectorAll('.menu-item > a');
     menuItems.forEach(item => item.classList.remove('active'));
+    const subItems = document.querySelectorAll('.submenu-item, .submenu-item a');
+    subItems.forEach(item => item.classList.remove('active'));
     
     // Add active class to the clicked menu item
     if (content === 'home') {
         document.querySelector('.menu-item > a[onclick*="home"]').classList.add('active');
     } else if (content === 'keuangan' || content === 'pasien') {
         document.querySelector('.menu-item > a[onclick*="analytics-dropdown"]').classList.add('active');
-    } else if (content === 'selisih-tarif' || content === 'los' || content === 'inacbg') {
+    } else if (content === 'selisih-tarif' || content === 'los' || content === 'inacbg' || content === 'ventilator') {
         document.querySelector('.menu-item > a[onclick*="analisa-dropdown"]').classList.add('active');
     }
+
+    // Highlight the active submenu item
+    const submenuSelectorMap = {
+        'keuangan': "#analytics-dropdown .submenu-item a[onclick*='keuangan']",
+        'pasien': "#analytics-dropdown .submenu-item a[onclick*='pasien']",
+        'selisih-tarif': "#analisa-dropdown .submenu-item a[onclick*='selisih-tarif']",
+        'los': "#analisa-dropdown .submenu-item a[onclick*='los']",
+        'inacbg': "#analisa-dropdown .submenu-item a[onclick*='inacbg']",
+        'ventilator': "#analisa-dropdown .submenu-item a[onclick*='ventilator']"
+    };
+    const activeSubItem = document.querySelector(submenuSelectorMap[content]);
+    if (activeSubItem) {
+        activeSubItem.classList.add('active');
+        const parentLi = activeSubItem.closest('.submenu-item');
+        if (parentLi) parentLi.classList.add('active');
+        // Ensure the parent submenu is expanded
+        const parentSubmenu = activeSubItem.closest('.submenu');
+        if (parentSubmenu) {
+            parentSubmenu.style.display = 'block';
+            const parentMenuItem = parentSubmenu.closest('.menu-item');
+            if (parentMenuItem) parentMenuItem.classList.add('active');
+        }
+    }
 }
+
+// Make entire submenu-row clickable, not just the text
+document.addEventListener('DOMContentLoaded', () => {
+    const submenuItems = document.querySelectorAll('.submenu-item');
+    submenuItems.forEach((li) => {
+        li.addEventListener('click', (event) => {
+            // If anchor itself was clicked, let default handler run
+            if ((event.target && event.target.closest('a'))) return;
+            const anchor = li.querySelector('a');
+            if (anchor) anchor.click();
+        });
+    });
+});
 
 // Function to toggle the dropdown visibility on click
 function toggleDropdown(id) {
@@ -207,8 +260,14 @@ function handleFormSubmit(event) {
                 filters: { ...viewStates['inacbg'].filters }
             });
             
+            updateViewState('ventilator', { 
+                tableHtml: tableHtml, 
+                hasData: true,
+                filters: { ...viewStates['ventilator'].filters }
+            });
+            
             // Show success message
-            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, dan Analisa INACBG.');
+            alert('File berhasil diproses! Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, Analisa INACBG, dan Analisa Ventilator.');
         } else {
             alert('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.');
         }
@@ -254,6 +313,10 @@ function loadDataView(viewType) {
         title = 'INACBG';
         description = 'data yang dikelompokkan berdasarkan INACBG dengan statistik agregat';
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        title = 'Ventilator';
+        description = 'penggunaan ventilator dengan informasi detail';
+        prefix = 'ventilator';
     }
     
     const state = viewStates[viewType];
@@ -377,6 +440,8 @@ function loadSortingColumns(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     fetch(endpoint)
@@ -417,6 +482,8 @@ function loadFilterColumns(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     fetch(endpoint)
@@ -466,6 +533,8 @@ function applySorting(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
@@ -527,6 +596,8 @@ function applyDateFilter(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     const startDate = document.getElementById(`${prefix}StartDate`).value;
@@ -597,6 +668,8 @@ function clearDateFilter(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     // Clear date inputs
@@ -663,6 +736,8 @@ function applySpecificFilter(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
@@ -737,6 +812,8 @@ function clearSpecificFilter(viewType) {
         prefix = 'los';
     } else if (viewType === 'inacbg') {
         prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
     }
     
     // Clear filter inputs

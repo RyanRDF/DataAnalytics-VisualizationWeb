@@ -39,6 +39,7 @@
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('selisih-tarif')">Analisa Selisih Tarif</a></li>
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('los')">Analisa LOS</a></li>
           <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('inacbg')">Analisa INACBG</a></li>
+          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('ventilator')">Analisa Ventilator</a></li>
         </ul>
       </li>
     </ul>
@@ -58,7 +59,13 @@
     <!-- Home Content -->
     <div id="home" class="content-section">
       <div class="home-container">
-        <!-- Home content dikosongkan, hanya container yang tersisa -->
+        <h2>Selamat Datang di Dashboard Analytics</h2>
+        <p>Dashboard ini menyediakan berbagai analisis data untuk:</p>
+        <ul>
+          <li><strong>E-Claim:</strong> Analisis keuangan dan data pasien</li>
+          <li><strong>Analisa:</strong> Selisih tarif, LOS, dan INACBG</li>
+        </ul>
+        <p>Untuk memulai, silakan upload file .txt menggunakan form di sidebar.</p>
       </div>
     </div>
 
@@ -181,7 +188,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label for="pasienFilterColumn">Nilai yang Dicari:</label>
+          <label for="pasienFilterValue">Nilai yang Dicari:</label>
           <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
         </div>
         <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
@@ -402,6 +409,78 @@
         </div>
         <button id="inacbgApplySpecificFilter" class="specific-filter-btn">Cari</button>
         <button id="inacbgClearSpecificFilter" class="clear-specific-btn">Clear</button>
+      </div>
+      
+      <div class="table-container">
+        <div class="no-data-container">
+          <h3>Data Belum Tersedia</h3>
+          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
+          <div class="upload-instructions">
+            <h4>Cara Menampilkan Data:</h4>
+            <ol>
+              <li>Upload file .txt menggunakan form di sebelah kiri</li>
+              <li>Pilih rentang waktu yang diinginkan</li>
+              <li>Klik tombol "Filter Data"</li>
+              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analisis Ventilator Content -->
+    <div id="ventilator" class="content-section" style="display:none;">
+      <h2>Analisis Ventilator</h2>
+      <p>Menampilkan analisis data penggunaan ventilator dengan informasi detail</p>
+      
+      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
+      
+      <!-- Date Range Filter Controls (Paling Atas) -->
+      <div class="date-filter-controls">
+        <div class="filter-group">
+          <label for="ventilatorStartDate">Tanggal Mulai:</label>
+          <input type="date" id="ventilatorStartDate" class="date-input">
+        </div>
+        <div class="filter-group">
+          <label for="ventilatorEndDate">Tanggal Akhir:</label>
+          <input type="date" id="ventilatorEndDate" class="date-input">
+        </div>
+        <button id="ventilatorApplyDateFilter" class="filter-btn">Filter Data</button>
+        <button id="ventilatorClearDateFilter" class="clear-btn">Clear Filter</button>
+      </div>
+      
+      <!-- Sorting Controls (Tengah) -->
+      <div class="sorting-controls">
+        <div class="sort-group">
+          <label for="ventilatorSortColumn">Sort By:</label>
+          <select id="ventilatorSortColumn" class="sort-select">
+            <option value="">Pilih Kolom</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label for="ventilatorSortOrder">Order:</label>
+          <select id="ventilatorSortOrder" class="sort-select">
+            <option value="ASC">ASC</option>
+            <option value="DESC">DESC</option>
+          </select>
+        </div>
+        <button id="ventilatorApplySort" class="sort-btn">Apply Sort</button>
+      </div>
+      
+      <!-- Specific Data Filter Controls (Paling Bawah) -->
+      <div class="specific-filter-controls">
+        <div class="filter-group">
+          <label for="ventilatorFilterColumn">Pilih Kolom:</label>
+          <select id="ventilatorFilterColumn" class="filter-select">
+            <option value="">Pilih Kolom</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="ventilatorFilterValue">Nilai yang Dicari:</label>
+          <input type="text" id="ventilatorFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
+        </div>
+        <button id="ventilatorApplySpecificFilter" class="specific-filter-btn">Cari</button>
+        <button id="ventilatorClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
