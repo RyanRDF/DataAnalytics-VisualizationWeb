@@ -44,16 +44,28 @@ def upload_file():
             data_handler.cleanup_file(filepath)
             return render_template('index.html', table_html="", has_data=False, error=error)
         
-        # Get raw data table
+        # Get processed data table
         table_html, has_data = data_handler.get_raw_data_table()
+        
+        # Get processing summary
+        processing_summary = data_handler.get_processing_summary()
         
         # Clean up the uploaded file
         data_handler.cleanup_file(filepath)
         
-        return render_template('index.html', table_html=table_html, has_data=has_data)
+        return render_template('index.html', table_html=table_html, has_data=has_data, processing_summary=processing_summary)
         
     except Exception as e:
         return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
+
+@app.route('/processing-info')
+def processing_info():
+    """Get data processing summary"""
+    if not data_handler.has_data():
+        return jsonify({"error": "No data available"}), 400
+    
+    processing_summary = data_handler.get_processing_summary()
+    return jsonify(processing_summary)
 
 @app.route('/keuangan')
 def keuangan():

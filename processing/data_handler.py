@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+from .data_processor import DataProcessor
 from .financial_handler import FinancialHandler
 from .patient_handler import PatientHandler
 from .selisih_tarif_handler import SelisihTarifHandler
@@ -11,6 +12,7 @@ from .ventilator_handler import VentilatorHandler
 class DataHandler:
     def __init__(self):
         self.current_df = None
+        self.data_processor = DataProcessor()
         # Initialize specialized handlers
         self.financial_handler = FinancialHandler(self)
         self.patient_handler = PatientHandler(self)
@@ -20,17 +22,25 @@ class DataHandler:
         self.ventilator_handler = VentilatorHandler(self)
     
     def load_data_from_file(self, filepath):
-        """Load data from uploaded file"""
+        """Load data from uploaded file and process it"""
         try:
             # Read the uploaded file with tab separator
             df = pd.read_csv(filepath, sep='\t')
             self.current_df = df
-            return df, None
+            
+            # Load raw data into processor and process it
+            self.data_processor.load_raw_data(df)
+            processed_df = self.data_processor.process_data()
+            
+            # Update current_df to use processed data
+            self.current_df = processed_df
+            
+            return processed_df, None
         except Exception as e:
-            return None, f"Error loading file: {str(e)}"
+            return None, f"Error loading and processing file: {str(e)}"
     
     def get_raw_data_table(self):
-        """Get raw data as HTML table"""
+        """Get processed data as HTML table (shows processed data, not raw)"""
         if self.current_df is None:
             return "", False
         
@@ -39,6 +49,24 @@ class DataHandler:
             return table_html, True
         except Exception as e:
             return "", False
+    
+    def get_processed_data(self):
+        """Get processed data"""
+        if self.data_processor.has_processed_data():
+            return self.data_processor.get_processed_data()
+        return None
+    
+    def get_raw_data(self):
+        """Get raw data before processing"""
+        if self.data_processor.has_data():
+            return self.data_processor.get_raw_data()
+        return None
+    
+    def get_processing_summary(self):
+        """Get summary of data processing"""
+        if self.data_processor.has_processed_data():
+            return self.data_processor.get_processing_summary()
+        return {"error": "No processed data available"}
     
     # Patient data methods - delegate to patient handler
     def process_patient_data(self):

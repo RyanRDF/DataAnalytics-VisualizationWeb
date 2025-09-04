@@ -66,6 +66,28 @@
           <li><strong>Analisa:</strong> Selisih tarif, LOS, dan INACBG</li>
         </ul>
         <p>Untuk memulai, silakan upload file .txt menggunakan form di sidebar.</p>
+        
+        <!-- Data Processing Information -->
+        {% if processing_summary %}
+        <div class="processing-info-container">
+          <h3>📊 Informasi Pemrosesan Data</h3>
+          <div class="processing-summary">
+            <p><strong>Total Baris Data:</strong> {{ processing_summary.total_rows }}</p>
+            <p><strong>Penyesuaian Harga Diterapkan:</strong> {{ processing_summary.pricing_adjustments_applied }}</p>
+            <div class="inacbg-breakdown">
+              <h4>Breakdown INACBG:</h4>
+              <ul>
+                <li>Digit 4 = '0' (79%): {{ processing_summary.inacbg_0_count }} baris</li>
+                <li>Digit 4 = 'I/II/III' (73%): {{ processing_summary.inacbg_i_ii_iii_count }} baris</li>
+                <li>Lainnya (100%): {{ processing_summary.inacbg_other_count }} baris</li>
+              </ul>
+            </div>
+            <div class="processing-note">
+              <p><strong>Catatan:</strong> Data yang ditampilkan telah diproses dengan penyesuaian harga berdasarkan digit ke-4 INACBG.</p>
+            </div>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
 

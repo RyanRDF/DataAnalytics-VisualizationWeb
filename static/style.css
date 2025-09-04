@@ -907,3 +907,74 @@ p {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
+/* Processing Info Container Styles */
+.processing-info-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-top: 25px;
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.3);
+}
+
+.processing-info-container h3 {
+    margin: 0 0 20px 0;
+    font-size: 22px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.processing-summary p {
+    margin: 10px 0;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.processing-summary strong {
+    color: white;
+    font-weight: 600;
+}
+
+.inacbg-breakdown {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    backdrop-filter: blur(10px);
+}
+
+.inacbg-breakdown h4 {
+    margin: 0 0 15px 0;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.inacbg-breakdown ul {
+    margin: 0;
+    padding-left: 20px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.inacbg-breakdown li {
+    margin: 8px 0;
+    font-size: 15px;
+}
+
+.processing-note {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.processing-note p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-style: italic;
+}
