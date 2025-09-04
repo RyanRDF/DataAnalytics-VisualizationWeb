@@ -1,6 +1,21 @@
 import pandas as pd
 import json
-import numpy as np
+
+def format_rupiah(value):
+    """Format numeric value to Indonesian Rupiah format (Rp. 1.000.000)"""
+    if pd.isna(value) or value == 0 or value == '' or value is None:
+        return "Rp. 0"
+    
+    try:
+        # Convert to integer to remove decimals
+        int_value = int(float(value))
+        
+        # Format with thousand separators
+        formatted = f"{int_value:,}".replace(",", ".")
+        
+        return f"Rp. {formatted}"
+    except (ValueError, TypeError):
+        return "Rp. 0"
 
 class VentilatorHandler:
     def __init__(self, data_handler):
@@ -141,6 +156,12 @@ class VentilatorHandler:
                 if col in ventilator_df.columns:
                     ventilator_df[col] = pd.to_numeric(ventilator_df[col], errors='coerce').fillna(0)
             
+            # Format financial columns to Indonesian Rupiah format
+            financial_columns = ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH']
+            for col in financial_columns:
+                if col in ventilator_df.columns:
+                    ventilator_df[col] = ventilator_df[col].apply(format_rupiah)
+            
             # Apply date filtering if specified (handle DD/MM/YYYY format from data)
             if start_date or end_date:
                 try:
@@ -176,7 +197,15 @@ class VentilatorHandler:
                 try:
                     # Handle numeric columns for proper sorting
                     if sort_column in ['LOS', 'VENT_HOUR', 'TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH']:
-                        ventilator_df = ventilator_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                        # For financial columns that are now formatted as strings, we need to sort by the original numeric values
+                        if sort_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH']:
+                            # Create temporary numeric columns for sorting
+                            temp_col = f"{sort_column}_NUM"
+                            ventilator_df[temp_col] = ventilator_df[sort_column].str.replace('Rp. ', '').str.replace('.', '').astype(float)
+                            ventilator_df = ventilator_df.sort_values(by=temp_col, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                            ventilator_df = ventilator_df.drop(temp_col, axis=1)
+                        else:
+                            ventilator_df = ventilator_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                     else:
                         # For non-numeric columns, convert to string for sorting
                         ventilator_df = ventilator_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
@@ -219,9 +248,24 @@ class VentilatorHandler:
                     
                     # Apply filter (case-insensitive search)
                     if ventilator_df[filter_column].dtype == 'object':  # String columns
-                        ventilator_df = ventilator_df[
-                            ventilator_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
+                        # Check if it's a formatted financial column
+                        if filter_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH']:
+                            # For financial columns, try to match the formatted value or numeric value
+                            try:
+                                # Try to convert filter value to numeric and format it
+                                numeric_value = float(filter_value)
+                                formatted_value = format_rupiah(numeric_value)
+                                ventilator_df = ventilator_df[ventilator_df[filter_column] == formatted_value]
+                            except ValueError:
+                                # If conversion fails, try string search
+                                ventilator_df = ventilator_df[
+                                    ventilator_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                                ]
+                        else:
+                            # Regular string search
+                            ventilator_df = ventilator_df[
+                                ventilator_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                            ]
                     else:  # Numeric columns
                         # Try to convert filter value to numeric for exact match
                         try:

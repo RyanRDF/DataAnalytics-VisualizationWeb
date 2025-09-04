@@ -1,5 +1,21 @@
 import pandas as pd
 
+def format_rupiah(value):
+    """Format numeric value to Indonesian Rupiah format (Rp. 1.000.000)"""
+    if pd.isna(value) or value == 0 or value == '' or value is None:
+        return "Rp. 0"
+    
+    try:
+        # Convert to integer to remove decimals
+        int_value = int(float(value))
+        
+        # Format with thousand separators
+        formatted = f"{int_value:,}".replace(",", ".")
+        
+        return f"Rp. {formatted}"
+    except (ValueError, TypeError):
+        return "Rp. 0"
+
 class LOSHandler:
     def __init__(self, data_handler):
         self.data_handler = data_handler
@@ -93,6 +109,12 @@ class LOSHandler:
                 if col in los_df.columns:
                     los_df[col] = pd.to_numeric(los_df[col], errors='coerce').fillna(0)
             
+            # Format financial columns to Indonesian Rupiah format
+            financial_columns = ['TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']
+            for col in financial_columns:
+                if col in los_df.columns:
+                    los_df[col] = los_df[col].apply(format_rupiah)
+            
             # Apply date filtering if specified (handle DD/MM/YYYY format from data)
             if start_date or end_date:
                 try:
@@ -128,7 +150,15 @@ class LOSHandler:
                 try:
                     # Handle numeric columns for proper sorting
                     if sort_column in ['LOS', 'TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']:
-                        los_df = los_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                        # For financial columns that are now formatted as strings, we need to sort by the original numeric values
+                        if sort_column in ['TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']:
+                            # Create temporary numeric columns for sorting
+                            temp_col = f"{sort_column}_NUM"
+                            los_df[temp_col] = los_df[sort_column].str.replace('Rp. ', '').str.replace('.', '').astype(float)
+                            los_df = los_df.sort_values(by=temp_col, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                            los_df = los_df.drop(temp_col, axis=1)
+                        else:
+                            los_df = los_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                     else:
                         # For non-numeric columns, convert to string for sorting
                         los_df = los_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
@@ -171,9 +201,24 @@ class LOSHandler:
                     
                     # Apply filter (case-insensitive search)
                     if los_df[filter_column].dtype == 'object':  # String columns
-                        los_df = los_df[
-                            los_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
+                        # Check if it's a formatted financial column
+                        if filter_column in ['TOTAL_CLAIM', 'TOTAL_BILING_RS', 'SELISIH']:
+                            # For financial columns, try to match the formatted value or numeric value
+                            try:
+                                # Try to convert filter value to numeric and format it
+                                numeric_value = float(filter_value)
+                                formatted_value = format_rupiah(numeric_value)
+                                los_df = los_df[los_df[filter_column] == formatted_value]
+                            except ValueError:
+                                # If conversion fails, try string search
+                                los_df = los_df[
+                                    los_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                                ]
+                        else:
+                            # Regular string search
+                            los_df = los_df[
+                                los_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                            ]
                     else:  # Numeric columns
                         # Try to convert filter value to numeric for exact match
                         try:

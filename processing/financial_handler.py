@@ -1,6 +1,22 @@
 import pandas as pd
 import numpy as np
 
+def format_rupiah(value):
+    """Format numeric value to Indonesian Rupiah format (Rp. 1.000.000)"""
+    if pd.isna(value) or value == 0 or value == '' or value is None:
+        return "Rp. 0"
+    
+    try:
+        # Convert to integer to remove decimals
+        int_value = int(float(value))
+        
+        # Format with thousand separators
+        formatted = f"{int_value:,}".replace(",", ".")
+        
+        return f"Rp. {formatted}"
+    except (ValueError, TypeError):
+        return "Rp. 0"
+
 class FinancialHandler:
     def __init__(self, data_handler):
         self.data_handler = data_handler
@@ -33,6 +49,12 @@ class FinancialHandler:
             financial_df['TOTAL_TARIF'] = pd.to_numeric(financial_df['TOTAL_TARIF'], errors='coerce').fillna(0)
             financial_df['TARIF_RS'] = pd.to_numeric(financial_df['TARIF_RS'], errors='coerce').fillna(0)
             
+            # Rename columns as requested
+            financial_df = financial_df.rename(columns={
+                'TOTAL_TARIF': 'TOTAL_CLAIM',
+                'TARIF_RS': 'TOTAL_BILLING_RS'
+            })
+            
             # Apply date filtering if specified (handle DD/MM/YYYY format from data)
             if start_date or end_date:
                 try:
@@ -64,24 +86,24 @@ class FinancialHandler:
                     return None, f"Error processing date filter: {str(e)}"
             
             # Calculate derived columns
-            # TOTAL_TARIF/HARI (TOTAL_TARIF divided by LOS)
-            financial_df['TOTAL_TARIF/HARI'] = np.where(
+            # TOTAL_CLAIM/HARI (TOTAL_CLAIM divided by LOS)
+            financial_df['TOTAL_CLAIM/HARI'] = np.where(
                 financial_df['LOS'] > 0, 
-                financial_df['TOTAL_TARIF'] / financial_df['LOS'], 
+                financial_df['TOTAL_CLAIM'] / financial_df['LOS'], 
                 0
             )
             
-            # TARIF_RS/HARI (TARIF_RS divided by LOS)
-            financial_df['TARIF_RS/HARI'] = np.where(
+            # TOTAL_BILLING_RS/HARI (TOTAL_BILLING_RS divided by LOS)
+            financial_df['TOTAL_BILLING_RS/HARI'] = np.where(
                 financial_df['LOS'] > 0, 
-                financial_df['TARIF_RS'] / financial_df['LOS'], 
+                financial_df['TOTAL_BILLING_RS'] / financial_df['LOS'], 
                 0
             )
             
-            # LABA (TOTAL_TARIF - TARIF_RS, if negative then output 0, if positive then show the output as it is)
+            # LABA (TOTAL_CLAIM - TOTAL_BILLING_RS, if negative then output 0, if positive then show the output as it is)
             financial_df['LABA'] = np.where(
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'] > 0,
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'],
+                financial_df['TOTAL_CLAIM'] - financial_df['TOTAL_BILLING_RS'] > 0,
+                financial_df['TOTAL_CLAIM'] - financial_df['TOTAL_BILLING_RS'],
                 0
             )
             
@@ -92,10 +114,10 @@ class FinancialHandler:
                 0
             )
             
-            # RUGI (TOTAL_TARIF - TARIF_RS, if negative then output is in absolute, if positive then show the output 0)
+            # RUGI (TOTAL_CLAIM - TOTAL_BILLING_RS, if negative then output is in absolute, if positive then show the output 0)
             financial_df['RUGI'] = np.where(
-                financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS'] < 0,
-                abs(financial_df['TOTAL_TARIF'] - financial_df['TARIF_RS']),
+                financial_df['TOTAL_CLAIM'] - financial_df['TOTAL_BILLING_RS'] < 0,
+                abs(financial_df['TOTAL_CLAIM'] - financial_df['TOTAL_BILLING_RS']),
                 0
             )
             
@@ -107,16 +129,30 @@ class FinancialHandler:
             )
             
             # Round numeric columns to 2 decimal places
-            numeric_columns = ['TOTAL_TARIF/HARI', 'TARIF_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']
+            numeric_columns = ['TOTAL_CLAIM/HARI', 'TOTAL_BILLING_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']
             for col in numeric_columns:
                 financial_df[col] = financial_df[col].round(2)
+            
+            # Format financial columns to Indonesian Rupiah format
+            financial_columns = ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'TOTAL_CLAIM/HARI', 'TOTAL_BILLING_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']
+            for col in financial_columns:
+                if col in financial_df.columns:
+                    financial_df[col] = financial_df[col].apply(format_rupiah)
             
             # Apply sorting if specified
             if sort_column and sort_column in financial_df.columns:
                 try:
                     # Handle numeric columns for proper sorting
-                    if sort_column in ['LOS', 'TOTAL_TARIF', 'TARIF_RS', 'TOTAL_TARIF/HARI', 'TARIF_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
-                        financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                    if sort_column in ['LOS', 'TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'TOTAL_CLAIM/HARI', 'TOTAL_BILLING_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
+                        # For financial columns that are now formatted as strings, we need to sort by the original numeric values
+                        if sort_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'TOTAL_CLAIM/HARI', 'TOTAL_BILLING_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
+                            # Create temporary numeric columns for sorting
+                            temp_col = f"{sort_column}_NUM"
+                            financial_df[temp_col] = financial_df[sort_column].str.replace('Rp. ', '').str.replace('.', '').astype(float)
+                            financial_df = financial_df.sort_values(by=temp_col, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                            financial_df = financial_df.drop(temp_col, axis=1)
+                        else:
+                            financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                     else:
                         # For non-numeric columns, convert to string for sorting
                         financial_df = financial_df.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
@@ -159,9 +195,24 @@ class FinancialHandler:
                     
                     # Apply filter (case-insensitive search)
                     if financial_df[filter_column].dtype == 'object':  # String columns
-                        financial_df = financial_df[
-                            financial_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
+                        # Check if it's a formatted financial column
+                        if filter_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'TOTAL_CLAIM/HARI', 'TOTAL_BILLING_RS/HARI', 'LABA', 'LABA/HARI', 'RUGI', 'RUGI/HARI']:
+                            # For financial columns, try to match the formatted value or numeric value
+                            try:
+                                # Try to convert filter value to numeric and format it
+                                numeric_value = float(filter_value)
+                                formatted_value = format_rupiah(numeric_value)
+                                financial_df = financial_df[financial_df[filter_column] == formatted_value]
+                            except ValueError:
+                                # If conversion fails, try string search
+                                financial_df = financial_df[
+                                    financial_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                                ]
+                        else:
+                            # Regular string search
+                            financial_df = financial_df[
+                                financial_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                            ]
                     else:  # Numeric columns
                         # Try to convert filter value to numeric for exact match
                         try:

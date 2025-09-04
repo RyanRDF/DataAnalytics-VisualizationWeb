@@ -1,5 +1,21 @@
 import pandas as pd
 
+def format_rupiah(value):
+    """Format numeric value to Indonesian Rupiah format (Rp. 1.000.000)"""
+    if pd.isna(value) or value == 0 or value == '' or value is None:
+        return "Rp. 0"
+    
+    try:
+        # Convert to integer to remove decimals
+        int_value = int(float(value))
+        
+        # Format with thousand separators
+        formatted = f"{int_value:,}".replace(",", ".")
+        
+        return f"Rp. {formatted}"
+    except (ValueError, TypeError):
+        return "Rp. 0"
+
 class INACBGHandler:
     def __init__(self, data_handler):
         self.data_handler = data_handler
@@ -99,12 +115,26 @@ class INACBGHandler:
             
             grouped = grouped[final_columns]
             
+            # Format financial columns to Indonesian Rupiah format
+            financial_columns = ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH', 'ARPP', 'TOTAL_PENUNJANG', 'TOTAL_OBAT', 'TOTAL_BMHP_ALKES', 'TOTAL_SEWA_ALAT']
+            for col in financial_columns:
+                if col in grouped.columns:
+                    grouped[col] = grouped[col].apply(format_rupiah)
+            
             # Apply sorting if specified
             if sort_column and sort_column in grouped.columns:
                 try:
                     # Handle numeric columns for proper sorting
-                    if sort_column in ['JML_PASIEN', 'MIN_LOS', 'AV_LOS', 'MAX_LOS', 'TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH', 'ARPP']:
-                        grouped = grouped.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                    if sort_column in ['JML_PASIEN', 'MIN_LOS', 'AV_LOS', 'MAX_LOS', 'TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH', 'ARPP', 'TOTAL_PENUNJANG', 'TOTAL_OBAT', 'TOTAL_BMHP_ALKES', 'TOTAL_SEWA_ALAT']:
+                        # For financial columns that are now formatted as strings, we need to sort by the original numeric values
+                        if sort_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH', 'ARPP', 'TOTAL_PENUNJANG', 'TOTAL_OBAT', 'TOTAL_BMHP_ALKES', 'TOTAL_SEWA_ALAT']:
+                            # Create temporary numeric columns for sorting
+                            temp_col = f"{sort_column}_NUM"
+                            grouped[temp_col] = grouped[sort_column].str.replace('Rp. ', '').str.replace('.', '').astype(float)
+                            grouped = grouped.sort_values(by=temp_col, ascending=(sort_order.upper() == 'ASC'), na_position='last')
+                            grouped = grouped.drop(temp_col, axis=1)
+                        else:
+                            grouped = grouped.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
                     else:
                         # For non-numeric columns, convert to string for sorting
                         grouped = grouped.sort_values(by=sort_column, ascending=(sort_order.upper() == 'ASC'), na_position='last')
@@ -147,9 +177,24 @@ class INACBGHandler:
                     
                     # Apply filter (case-insensitive search)
                     if inacbg_df[filter_column].dtype == 'object':  # String columns
-                        inacbg_df = inacbg_df[
-                            inacbg_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
-                        ]
+                        # Check if it's a formatted financial column
+                        if filter_column in ['TOTAL_CLAIM', 'TOTAL_BILLING_RS', 'SELISIH', 'ARPP', 'TOTAL_PENUNJANG', 'TOTAL_OBAT', 'TOTAL_BMHP_ALKES', 'TOTAL_SEWA_ALAT']:
+                            # For financial columns, try to match the formatted value or numeric value
+                            try:
+                                # Try to convert filter value to numeric and format it
+                                numeric_value = float(filter_value)
+                                formatted_value = format_rupiah(numeric_value)
+                                inacbg_df = inacbg_df[inacbg_df[filter_column] == formatted_value]
+                            except ValueError:
+                                # If conversion fails, try string search
+                                inacbg_df = inacbg_df[
+                                    inacbg_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                                ]
+                        else:
+                            # Regular string search
+                            inacbg_df = inacbg_df[
+                                inacbg_df[filter_column].astype(str).str.lower().str.contains(filter_value_str, na=False)
+                            ]
                     else:  # Numeric columns
                         # Try to convert filter value to numeric for exact match
                         try:
