@@ -54,7 +54,27 @@
   </div>
 
   <div class="main-content">
-    <h1>Welcome to Data Analytics Dashboard</h1>
+    <div class="header-section">
+      <h1>Welcome to Data Analytics Dashboard</h1>
+      
+      <!-- Dataset Switcher -->
+      <div class="dataset-switcher">
+        <div class="dataset-dropdown" id="datasetDropdown">
+          <button class="dataset-btn" id="datasetBtn" onclick="toggleDatasetDropdown()">
+            <span id="currentDatasetName">No Dataset Selected</span>
+            <span class="dropdown-arrow">▼</span>
+          </button>
+          <div class="dataset-dropdown-content" id="datasetDropdownContent">
+            <div class="dataset-list" id="datasetList">
+              <div class="loading-datasets">Loading datasets...</div>
+            </div>
+            <div class="dataset-actions">
+              <button class="refresh-datasets-btn" onclick="refreshDatasets()">🔄 Refresh</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Home Content -->
     <div id="home" class="content-section">

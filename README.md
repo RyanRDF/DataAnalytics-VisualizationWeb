@@ -1,143 +1,159 @@
-# Data Analytics Visualization Web
+# 📊 Data Analytics Dashboard
 
-Aplikasi web untuk analisis dan visualisasi data dengan fitur filtering, sorting, dan analisis berbagai jenis data.
+Aplikasi web untuk analisis data medis dengan fitur pemrosesan otomatis berdasarkan INACBG dan sistem penyimpanan dataset yang cerdas.
 
-## Fitur Utama
+## 🚀 Fitur Utama
 
-- **Upload File**: Upload file .txt dengan format tab-separated
-- **Menu E-Claim**: 
-  - Analisis Keuangan (dengan perhitungan laba rugi)
-  - Analisis Pasien (informasi medis lengkap)
-- **Menu Analisa**:
-  - Analisa Selisih Tarif (selisih antara tarif yang dikenakan dan tarif standar)
-  - Analisa LOS (Length of Stay - lama rawat inap pasien)
+### 📁 **Upload & Pemrosesan Data**
+- Upload file `.txt` dengan format tab-separated
+- **Pemrosesan Otomatis**: Data diproses berdasarkan digit ke-4 INACBG
+  - Digit '0' → Harga dikalikan 79%
+  - Digit 'I/II/III' → Harga dikalikan 73%
+- **Penyimpanan Dataset**: Data tersimpan otomatis untuk akses cepat
 
-## Struktur Kode
+### 🔄 **Dataset Switcher**
+- Dropdown di pojok kanan atas untuk beralih antar dataset
+- Menampilkan nama file dan waktu upload
+- Beralih dataset tanpa perlu upload ulang
 
-### Frontend
-- `templates/index.html` - Template HTML utama dengan sidebar dan konten
-- `static/style.css` - Styling CSS
-- `static/script.js` - JavaScript untuk interaksi dan state management
+### 📈 **Menu Analisis**
 
-### Backend
-- `app.py` - Flask application dengan routing untuk semua menu
-- `processing/` - Modul untuk pemrosesan data
-  - `__init__.py` - Import semua handler
-  - `data_handler.py` - Handler utama yang mengkoordinasikan semua handler khusus
-  - `financial_handler.py` - Handler khusus untuk data keuangan
-  - `patient_handler.py` - Handler khusus untuk data pasien
-  - `selisih_tarif_handler.py` - Handler khusus untuk analisa selisih tarif
+#### **E-Claim**
+- **Keuangan**: Analisis laba rugi dengan perhitungan otomatis
+- **Pasien**: Informasi medis lengkap pasien
 
-## Struktur Data
+#### **Analisa**
+- **Selisih Tarif**: Perbandingan tarif claim vs billing RS
+- **LOS**: Analisis lama rawat inap pasien
+- **INACBG**: Pengelompokan data berdasarkan INACBG
+- **Ventilator**: Analisis penggunaan ventilator
 
-### Analisis Keuangan
-Kolom yang ditampilkan:
-- KODE_RS, KELAS_RS, KELAS_RAWAT, KODE_TARIF
-- ADMISSION_DATE, DISCHARGE_DATE, LOS, NAMA_PASIEN, NOKARTU
-- TOTAL_TARIF, TARIF_RS
-- TOTAL_TARIF/HARI, TARIF_RS/HARI, LABA, LABA/HARI, RUGI, RUGI/HARI
+### 🔍 **Fitur Filter & Sort**
+- **Filter Tanggal**: Rentang waktu admission
+- **Sorting**: Berdasarkan kolom apapun (ASC/DESC)
+- **Filter Spesifik**: Pencarian berdasarkan nilai kolom
+- **Clear Filter**: Reset semua filter
 
-### Analisis Pasien
-Kolom yang ditampilkan:
-- KODE_RS, KELAS_RS, KELAS_RAWAT, KODE_TARIF
-- ADMISSION_DATE, DISCHARGE_DATE, LOS, NAMA_PASIEN
-- NOKARTU, BIRTH_DATE, BIRTH_WEIGHT, SEX, DISCHARGE_STATUS
-- DIAGLIST, PROCLIST, ADL1, ADL2
-- IN_SP, IN_SR, IN_SI, IN_SD, INACBG, SUBACUTE, CHRONIC
-- SP, SR, SI, SD, DESKRIPSI_INACBG
-- MRN, UMUR_TAHUN, UMUR_HARI, DPJP, SEP, PAYOR_ID
-- CODER_ID, VERSI_INACBG, VERSI_GROUPER
+## 🛠️ Cara Instalasi
 
-### Analisa Selisih Tarif
-Kolom yang ditampilkan:
-- SEP, RM, LOS, PDX, SDX, PROCLIST, INACBG
-- DESKRIPSI_INACBG, TOTAL_CLAIM, TOTAL_BILING_RS, SELISIH
-- ADMISSION_DATE, DISCHARGE_DATE
+### 1. **Persyaratan Sistem**
+- Python 3.7+
+- Browser modern (Chrome, Firefox, Safari, Edge)
 
-**Keterangan kolom:**
-- **SEP** = dari kolom SEP
-- **RM** = dari kolom MRN
-- **LOS** = dari kolom LOS
-- **PDX** = Primary Diagnosis (index pertama dari DIAGLIST, sebelum separator `;`)
-- **SDX** = Secondary Diagnosis (setelah separator `;` dari DIAGLIST)
-- **PR** = dari PROCLIST
-- **INACBG** = dari INACBG
-- **DESC INACBG** = dari DESKRIPSI_INACBG
-- **TOTAL_CLAIM** = dari TOTAL_TARIF
-- **TOTAL_BILING RS** = dari TARIF_RS
-- **SELISIH** = TOTAL_CLAIM - TOTAL_BILING_RS
-- **ADMISSION_DATE** = dari ADMISSION_DATE
-- **DISCHARGE_DATE** = dari DISCHARGE_DATE
+### 2. **Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
 
-### Analisa LOS (Length of Stay)
-Kolom yang ditampilkan:
-- SEP, MRN, PDX, SDX, PROCLIST, INACBG, LOS, CARA_PULANG
-- TOTAL_CLAIM, TOTAL_BILING_RS, SELISIH
-- ADMISSION_DATE, DISCHARGE_DATE
+### 3. **Jalankan Aplikasi**
+```bash
+python app.py
+```
 
-**Keterangan kolom:**
-- **SEP** = dari kolom SEP
-- **MRN** = dari kolom MRN
-- **PDX** = Primary Diagnosis (index pertama dari DIAGLIST, sebelum separator `;`)
-- **SDX** = Secondary Diagnosis (setelah separator `;` dari DIAGLIST)
-- **PR** = dari PROCLIST
-- **INACBG** = dari INACBG
-- **LOS** = dari kolom LOS
-- **CARA_PULANG** = dari DISCHARGE_STATUS (1=Persetujuan Dokter, 2=Dirujuk, 3=Persetujuan Sendiri, 4=Meninggal)
-- **TOTAL_CLAIM** = dari TOTAL_TARIF
-- **TOTAL_BILING RS** = dari TARIF_RS
-- **SELISIH** = TOTAL_CLAIM - TOTAL_BILING_RS
-- **ADMISSION_DATE** = dari ADMISSION_DATE
-- **DISCHARGE_DATE** = dari DISCHARGE_DATE
+### 4. **Akses Aplikasi**
+Buka browser dan kunjungi: `http://localhost:5000`
 
-## Fitur Filtering dan Sorting
+## 📖 Cara Penggunaan
 
-Setiap menu memiliki fitur:
-1. **Filter Tanggal**: Filter berdasarkan rentang tanggal admission
-2. **Sorting**: Sort berdasarkan kolom tertentu (ASC/DESC)
-3. **Filter Spesifik**: Filter berdasarkan nilai kolom tertentu
-4. **Clear Filter**: Hapus semua filter yang diterapkan
+### **Langkah 1: Upload Data**
+1. Klik "Choose File" di sidebar
+2. Pilih file `.txt` yang ingin dianalisis
+3. Klik "Process File"
+4. Data akan diproses dan tersimpan otomatis
 
-## Cara Penggunaan
+### **Langkah 2: Pilih Analisis**
+1. Klik menu yang diinginkan di sidebar:
+   - **E-Claim** → Keuangan atau Pasien
+   - **Analisa** → Selisih Tarif, LOS, INACBG, atau Ventilator
 
-1. **Upload File**: Upload file .txt melalui form di sidebar
-2. **Pilih Menu**: Klik menu yang diinginkan di sidebar
-3. **Filter Data**: Pilih rentang tanggal dan klik "Filter Data"
-4. **Sorting**: Pilih kolom dan urutan sorting
-5. **Filter Tambahan**: Gunakan filter kolom spesifik jika diperlukan
+### **Langkah 3: Filter Data**
+1. **Filter Tanggal** (opsional):
+   - Pilih tanggal mulai dan akhir
+   - Klik "Filter Data"
 
-## Instalasi
+2. **Sorting** (opsional):
+   - Pilih kolom untuk sorting
+   - Pilih urutan (ASC/DESC)
+   - Klik "Apply Sort"
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+3. **Filter Spesifik** (opsional):
+   - Pilih kolom yang ingin difilter
+   - Masukkan nilai yang dicari
+   - Klik "Cari"
 
-2. Jalankan aplikasi:
-   ```bash
-   python app.py
-   ```
+### **Langkah 4: Beralih Dataset**
+1. Klik dropdown di pojok kanan atas
+2. Pilih dataset yang ingin digunakan
+3. Data akan berubah secara otomatis
 
-3. Buka browser dan akses `http://localhost:5000`
+## 📊 Format Data Input
 
-## Dependencies
+File harus berformat **tab-separated (.txt)** dengan kolom:
+- `INACBG` - Kode INACBG (format: K-4-17-I)
+- `TARIF_RS` - Tarif rumah sakit
+- `PENUNJANG` - Biaya penunjang
+- `RADIOLOGI` - Biaya radiologi
+- `LABORATORIUM` - Biaya laboratorium
+- `ADMISSION_DATE` - Tanggal masuk (DD/MM/YYYY)
+- `DISCHARGE_DATE` - Tanggal keluar (DD/MM/YYYY)
+- `LOS` - Lama rawat inap
+- `NAMA_PASIEN` - Nama pasien
+- Dan kolom lainnya sesuai kebutuhan
 
-- Flask
-- Pandas
-- NumPy
+## 🔧 Struktur Aplikasi
 
-## Struktur Modular
+```
+DataAnalytics-VisualizationWeb/
+├── app.py                 # Aplikasi Flask utama
+├── requirements.txt       # Dependencies
+├── templates/
+│   └── index.html        # Template HTML
+├── static/
+│   ├── style.css         # Styling CSS
+│   └── script.js         # JavaScript
+├── processing/
+│   ├── data_handler.py   # Handler utama
+│   ├── data_processor.py # Pemrosesan INACBG
+│   ├── data_storage.py   # Penyimpanan dataset
+│   └── *_handler.py      # Handler khusus per menu
+└── saved_data/           # Dataset tersimpan
+    ├── metadata.json     # Metadata dataset
+    └── *.pkl            # File data
+```
 
-Aplikasi menggunakan struktur modular dimana setiap jenis data memiliki handler terpisah:
+## ⚡ Keunggulan
 
-- **DataHandler**: Handler utama yang mengkoordinasikan semua handler khusus
-- **FinancialHandler**: Khusus untuk pemrosesan data keuangan
-- **PatientHandler**: Khusus untuk pemrosesan data pasien  
-- **SelisihTarifHandler**: Khusus untuk pemrosesan data selisih tarif
-- **LOSHandler**: Khusus untuk pemrosesan data LOS (Length of Stay)
+- **Pemrosesan Otomatis**: Data diproses sesuai aturan INACBG
+- **Dataset Management**: Simpan dan beralih antar dataset dengan mudah
+- **Interface Modern**: UI yang responsif dan user-friendly
+- **Filter Canggih**: Multiple filter dan sorting options
+- **Real-time Updates**: Perubahan data langsung terlihat
+- **Mobile Friendly**: Bekerja di desktop dan mobile
 
-Struktur ini memungkinkan:
-- Kode yang lebih rapi dan mudah dikelola
-- Pemisahan logika bisnis yang jelas
-- Kemudahan dalam maintenance dan pengembangan
-- Reusability kode yang lebih baik
+## 🐛 Troubleshooting
+
+### **Error "No data available"**
+- Pastikan file sudah diupload
+- Periksa format file (harus .txt dengan tab separator)
+
+### **Error "Missing columns"**
+- Pastikan file memiliki kolom yang diperlukan
+- Periksa nama kolom sesuai format yang diminta
+
+### **Dataset tidak muncul**
+- Klik tombol "🔄 Refresh" di dropdown dataset
+- Pastikan file sudah berhasil diupload
+
+## 📝 Dependencies
+
+- **Flask** - Web framework
+- **Pandas** - Data manipulation
+- **NumPy** - Numerical computing
+
+## 🤝 Kontribusi
+
+Silakan buat issue atau pull request untuk perbaikan dan fitur baru.
+
+## 📄 Lisensi
+
+Proyek ini dibuat untuk keperluan analisis data medis.

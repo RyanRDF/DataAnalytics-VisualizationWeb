@@ -358,9 +358,12 @@ function handleFormSubmit(event) {
             });
             
             // Show success message
-            notificationSystem.success('Data tersedia di menu Keuangan, Pasien, Analisa Selisih Tarif, Analisa LOS, Analisa INACBG, dan Analisa Ventilator.', 'File Uploaded');
+            notificationSystem.success('File uploaded successfully!', 'Success');
+            
+            // Refresh dataset list to include the new dataset
+            loadDatasets();
         } else {
-            notificationSystem.warning('File berhasil diupload tetapi tidak ada data yang dapat ditampilkan.', 'No Data');
+            notificationSystem.warning('No data found in file.', 'No Data');
         }
         
         // Reset form
@@ -370,7 +373,7 @@ function handleFormSubmit(event) {
     })
     .catch(error => {
         console.error('Error uploading file:', error);
-        notificationSystem.error('Terjadi kesalahan saat mengupload file.', 'Upload Error');
+        notificationSystem.error('Upload failed. Please try again.', 'Error');
     })
     .finally(() => {
         // Restore button state
@@ -632,7 +635,7 @@ function applySorting(viewType) {
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
     
     if (!sortColumn) {
-        notificationSystem.warning('Silakan pilih kolom untuk sorting', 'Sorting Required');
+        notificationSystem.warning('Please select a column to sort', 'Required');
         return;
     }
     
@@ -650,7 +653,7 @@ function applySorting(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                notificationSystem.error('Error: ' + data.error, 'Sorting Error');
+                notificationSystem.error('Error: ' + data.error, 'Error');
                 return;
             }
             
@@ -664,7 +667,7 @@ function applySorting(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} sorting:`, error);
-            notificationSystem.error('Terjadi kesalahan saat melakukan sorting', 'Sorting Error');
+            notificationSystem.error('Sorting failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
@@ -697,7 +700,7 @@ function applyDateFilter(viewType) {
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
     
     if (!startDate && !endDate) {
-        notificationSystem.warning('Silakan pilih minimal satu tanggal untuk filtering', 'Date Required');
+        notificationSystem.warning('Please select at least one date', 'Required');
         return;
     }
     
@@ -722,7 +725,7 @@ function applyDateFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                notificationSystem.error('Error: ' + data.error, 'Filter Error');
+                notificationSystem.error('Error: ' + data.error, 'Error');
                 return;
             }
             
@@ -736,7 +739,7 @@ function applyDateFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} date filter:`, error);
-            notificationSystem.error('Terjadi kesalahan saat melakukan filtering', 'Filter Error');
+            notificationSystem.error('Filtering failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
@@ -790,7 +793,7 @@ function clearDateFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                notificationSystem.error('Error: ' + data.error, 'Filter Error');
+                notificationSystem.error('Error: ' + data.error, 'Error');
                 return;
             }
             
@@ -804,7 +807,7 @@ function clearDateFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error clearing ${viewType} date filter:`, error);
-            notificationSystem.error('Terjadi kesalahan saat membersihkan filter', 'Clear Filter Error');
+            notificationSystem.error('Clear failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
@@ -839,7 +842,7 @@ function applySpecificFilter(viewType) {
     const endDate = document.getElementById(`${prefix}EndDate`).value;
     
     if (!filterColumn || !filterValue) {
-        notificationSystem.warning('Silakan pilih kolom dan masukkan nilai yang dicari', 'Search Required');
+        notificationSystem.warning('Please select column and enter search value', 'Required');
         return;
     }
     
@@ -866,7 +869,7 @@ function applySpecificFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                notificationSystem.error('Error: ' + data.error, 'Filter Error');
+                notificationSystem.error('Error: ' + data.error, 'Error');
                 return;
             }
             
@@ -880,7 +883,7 @@ function applySpecificFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error applying ${viewType} specific filter:`, error);
-            notificationSystem.error('Terjadi kesalahan saat melakukan pencarian', 'Search Error');
+            notificationSystem.error('Search failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
@@ -938,7 +941,7 @@ function clearSpecificFilter(viewType) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                notificationSystem.error('Error: ' + data.error, 'Filter Error');
+                notificationSystem.error('Error: ' + data.error, 'Error');
                 return;
             }
             
@@ -952,7 +955,7 @@ function clearSpecificFilter(viewType) {
         })
         .catch(error => {
             console.error(`Error clearing ${viewType} specific filter:`, error);
-            notificationSystem.error('Terjadi kesalahan saat membersihkan filter', 'Clear Filter Error');
+            notificationSystem.error('Clear failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
@@ -963,11 +966,180 @@ function clearSpecificFilter(viewType) {
 
 // Test function for notifications (can be called from browser console)
 function testNotifications() {
-    notificationSystem.success('File berhasil diproses!', 'File Uploaded');
-    setTimeout(() => notificationSystem.error('Terjadi kesalahan saat mengupload file.', 'Upload Error'), 500);
-    setTimeout(() => notificationSystem.warning('Silakan pilih kolom untuk sorting', 'Sorting Required'), 1000);
-    setTimeout(() => notificationSystem.info('Data tersedia di menu Keuangan', 'Information'), 1500);
+    notificationSystem.success('File processed!', 'Success');
+    setTimeout(() => notificationSystem.error('Upload failed.', 'Error'), 500);
+    setTimeout(() => notificationSystem.warning('Please select column to sort', 'Required'), 1000);
+    setTimeout(() => notificationSystem.info('Data available in menu', 'Info'), 1500);
 }
+
+// Dataset Management
+let currentDatasetId = null;
+let datasets = [];
+
+// Dataset dropdown functionality
+function toggleDatasetDropdown() {
+    const dropdown = document.getElementById('datasetDropdown');
+    dropdown.classList.toggle('open');
+    
+    // Load datasets when dropdown is opened for the first time
+    if (dropdown.classList.contains('open') && datasets.length === 0) {
+        loadDatasets();
+    }
+}
+
+// Load saved datasets from server
+async function loadDatasets() {
+    const datasetList = document.getElementById('datasetList');
+    datasetList.innerHTML = '<div class="loading-datasets">Loading datasets...</div>';
+    
+    try {
+        const response = await fetch('/saved-datasets');
+        const data = await response.json();
+        
+        if (data.error) {
+            datasetList.innerHTML = `<div class="no-datasets"><p>Error loading datasets: ${data.error}</p></div>`;
+            return;
+        }
+        
+        datasets = data.datasets || [];
+        renderDatasetList();
+        
+    } catch (error) {
+        console.error('Error loading datasets:', error);
+        datasetList.innerHTML = '<div class="no-datasets"><p>Error loading datasets. Please try again.</p></div>';
+    }
+}
+
+// Render the dataset list in the dropdown
+function renderDatasetList() {
+    const datasetList = document.getElementById('datasetList');
+    
+    if (datasets.length === 0) {
+        datasetList.innerHTML = `
+            <div class="no-datasets">
+                <p>No saved datasets found.</p>
+                <p>Upload a file to create your first dataset.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const datasetItems = datasets.map(dataset => {
+        const savedAt = new Date(dataset.saved_at).toLocaleString();
+        const isActive = dataset.dataset_id === currentDatasetId;
+        
+        return `
+            <div class="dataset-item ${isActive ? 'active' : ''}" onclick="switchToDataset('${dataset.dataset_id}')">
+                <div class="dataset-info">
+                    <div class="dataset-name">${dataset.display_name}</div>
+                    <div class="dataset-meta">
+                        <span>📅 ${savedAt}</span>
+                        <span>📊 ${dataset.row_count} rows</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    datasetList.innerHTML = datasetItems;
+}
+
+// Switch to a different dataset
+async function switchToDataset(datasetId) {
+    const datasetBtn = document.getElementById('datasetBtn');
+    const currentDatasetName = document.getElementById('currentDatasetName');
+    
+    // Show loading state
+    currentDatasetName.textContent = 'Switching...';
+    datasetBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`/switch-dataset/${datasetId}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            notificationSystem.error('Error: ' + data.error, 'Error');
+            return;
+        }
+        
+        // Update current dataset
+        currentDatasetId = datasetId;
+        const dataset = datasets.find(d => d.dataset_id === datasetId);
+        currentDatasetName.textContent = dataset ? dataset.display_name : 'Unknown Dataset';
+        
+        // Update the page content
+        if (data.table_html) {
+            // Update home content if it's currently visible
+            const homeContent = document.getElementById('home');
+            if (homeContent && homeContent.style.display !== 'none') {
+                const tableContainer = homeContent.querySelector('.table-container');
+                if (tableContainer) {
+                    tableContainer.innerHTML = data.table_html;
+                }
+            }
+            
+            // Update processing summary if available
+            if (data.processing_summary) {
+                updateProcessingSummary(data.processing_summary);
+            }
+        }
+        
+        // Close dropdown
+        document.getElementById('datasetDropdown').classList.remove('open');
+        
+        // Refresh dataset list to update active state
+        renderDatasetList();
+        
+        notificationSystem.success(`Switched to: ${dataset ? dataset.display_name : 'Unknown'}`, 'Switched');
+        
+    } catch (error) {
+        console.error('Error switching dataset:', error);
+        notificationSystem.error('Switch failed. Please try again.', 'Error');
+    } finally {
+        datasetBtn.disabled = false;
+    }
+}
+
+// Refresh datasets list
+function refreshDatasets() {
+    loadDatasets();
+}
+
+// Update processing summary display
+function updateProcessingSummary(summary) {
+    const processingContainer = document.querySelector('.processing-info-container');
+    if (!processingContainer) return;
+    
+    // Update the summary content
+    const summaryElement = processingContainer.querySelector('.processing-summary');
+    if (summaryElement) {
+        summaryElement.innerHTML = `
+            <p><strong>Total Baris Data:</strong> ${summary.total_rows}</p>
+            <p><strong>Penyesuaian Harga Diterapkan:</strong> ${summary.pricing_adjustments_applied}</p>
+            <div class="inacbg-breakdown">
+                <h4>Breakdown INACBG:</h4>
+                <ul>
+                    <li>Digit 4 = '0' (79%): ${summary.inacbg_0_count} baris</li>
+                    <li>Digit 4 = 'I/II/III' (73%): ${summary.inacbg_i_ii_iii_count} baris</li>
+                    <li>Lainnya (100%): ${summary.inacbg_other_count} baris</li>
+                </ul>
+            </div>
+            <div class="processing-note">
+                <p><strong>Catatan:</strong> Data yang ditampilkan telah diproses dengan penyesuaian harga berdasarkan digit ke-4 INACBG.</p>
+            </div>
+        `;
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('datasetDropdown');
+    const dropdownContent = document.getElementById('datasetDropdownContent');
+    
+    if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+    }
+});
 
 // Initialize the page with Home content as default
 document.addEventListener('DOMContentLoaded', function() {
@@ -979,6 +1151,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadBtn) {
         uploadBtn.disabled = true;
     }
+    
+    // Load datasets on page load
+    loadDatasets();
     
     // Test notifications on page load (remove this line in production)
     // setTimeout(() => testNotifications(), 1000);

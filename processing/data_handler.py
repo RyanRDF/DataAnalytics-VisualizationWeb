@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from .data_processor import DataProcessor
+from .data_storage import DataStorage
 from .financial_handler import FinancialHandler
 from .patient_handler import PatientHandler
 from .selisih_tarif_handler import SelisihTarifHandler
@@ -13,6 +14,7 @@ class DataHandler:
     def __init__(self):
         self.current_df = None
         self.data_processor = DataProcessor()
+        self.data_storage = DataStorage()
         # Initialize specialized handlers
         self.financial_handler = FinancialHandler(self)
         self.patient_handler = PatientHandler(self)
@@ -26,7 +28,6 @@ class DataHandler:
         try:
             # Read the uploaded file with tab separator
             df = pd.read_csv(filepath, sep='\t')
-            self.current_df = df
             
             # Load raw data into processor and process it
             self.data_processor.load_raw_data(df)
@@ -34,6 +35,11 @@ class DataHandler:
             
             # Update current_df to use processed data
             self.current_df = processed_df
+            
+            # Save the processed dataset
+            filename = os.path.basename(filepath)
+            processing_summary = self.data_processor.get_processing_summary()
+            dataset_id = self.data_storage.save_dataset(filename, processed_df, processing_summary)
             
             return processed_df, None
         except Exception as e:
@@ -67,6 +73,30 @@ class DataHandler:
         if self.data_processor.has_processed_data():
             return self.data_processor.get_processing_summary()
         return {"error": "No processed data available"}
+    
+    def get_saved_datasets(self):
+        """Get list of saved datasets"""
+        return self.data_storage.get_saved_datasets()
+    
+    def switch_dataset(self, dataset_id):
+        """Switch to a different saved dataset"""
+        try:
+            processed_df, processing_summary = self.data_storage.load_dataset(dataset_id)
+            self.current_df = processed_df
+            return True, None
+        except Exception as e:
+            return False, str(e)
+    
+    def get_current_dataset_info(self):
+        """Get information about current dataset"""
+        current_id = self.data_storage.get_current_dataset_id()
+        if current_id:
+            return self.data_storage.get_dataset_info(current_id)
+        return None
+    
+    def delete_dataset(self, dataset_id):
+        """Delete a saved dataset"""
+        return self.data_storage.delete_dataset(dataset_id)
     
     # Patient data methods - delegate to patient handler
     def process_patient_data(self):

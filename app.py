@@ -67,6 +67,50 @@ def processing_info():
     processing_summary = data_handler.get_processing_summary()
     return jsonify(processing_summary)
 
+@app.route('/saved-datasets')
+def saved_datasets():
+    """Get list of saved datasets"""
+    try:
+        datasets = data_handler.get_saved_datasets()
+        return jsonify({"datasets": datasets})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/switch-dataset/<dataset_id>')
+def switch_dataset(dataset_id):
+    """Switch to a different saved dataset"""
+    try:
+        success, error = data_handler.switch_dataset(dataset_id)
+        if success:
+            # Get updated data table
+            table_html, has_data = data_handler.get_raw_data_table()
+            processing_summary = data_handler.get_processing_summary()
+            current_dataset_info = data_handler.get_current_dataset_info()
+            
+            return jsonify({
+                "success": True,
+                "table_html": table_html,
+                "has_data": has_data,
+                "processing_summary": processing_summary,
+                "current_dataset": current_dataset_info
+            })
+        else:
+            return jsonify({"error": error}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/delete-dataset/<dataset_id>', methods=['DELETE'])
+def delete_dataset(dataset_id):
+    """Delete a saved dataset"""
+    try:
+        success = data_handler.delete_dataset(dataset_id)
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"error": "Dataset not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/keuangan')
 def keuangan():
     if not data_handler.has_data():
