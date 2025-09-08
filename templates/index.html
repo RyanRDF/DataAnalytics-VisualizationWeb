@@ -16,7 +16,9 @@
 </head>
 <body>
   <div class="sidebar">
-    <div class="logo">DAV</div>
+    <div class="logo-container">
+      <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="logo-image">
+    </div>
     <ul class="menu">
       <!-- Home Menu -->
       <li class="menu-item">
@@ -79,13 +81,41 @@
     <!-- Home Content -->
     <div id="home" class="content-section">
       <div class="home-container">
-        <h2>Selamat Datang di Dashboard Analytics</h2>
-        <p>Dashboard ini menyediakan berbagai analisis data untuk:</p>
-        <ul>
-          <li><strong>E-Claim:</strong> Analisis keuangan dan data pasien</li>
-          <li><strong>Analisa:</strong> Selisih tarif, LOS, dan INACBG</li>
-        </ul>
-        <p>Untuk memulai, silakan upload file .txt menggunakan form di sidebar.</p>
+        <div class="welcome-section">
+          <h2 class="welcome-title">Selamat Datang di Dashboard Analytics</h2>
+          <p class="welcome-subtitle">Dashboard ini menyediakan berbagai analisis data untuk:</p>
+        </div>
+        
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <h3>E-Claim</h3>
+            <p>Analisis keuangan dan data pasien dengan perhitungan laba rugi yang akurat</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Analisa</h3>
+            <p>Selisih tarif, LOS, dan INACBG dengan visualisasi data yang interaktif</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🏥</div>
+            <h3>Pasien</h3>
+            <p>Manajemen data pasien dengan informasi medis lengkap dan terstruktur</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">⚕️</div>
+            <h3>Ventilator</h3>
+            <p>Monitoring penggunaan ventilator dengan analisis detail dan laporan</p>
+          </div>
+        </div>
+        
+        <div class="getting-started">
+          <h3>🚀 Cara Memulai</h3>
+          <p>Untuk memulai, silakan upload file .txt menggunakan form di sidebar.</p>
+        </div>
         
         <!-- Data Processing Information -->
         {% if processing_summary %}

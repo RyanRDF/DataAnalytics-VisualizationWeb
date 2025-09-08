@@ -167,17 +167,36 @@ let viewStates = {
 
 // Function to show content based on button clicked
 function showContent(content) {
-    // Hide all content first
-    document.getElementById('home').style.display = 'none';
-    document.getElementById('keuangan').style.display = 'none';
-    document.getElementById('pasien').style.display = 'none';
-    document.getElementById('selisih-tarif').style.display = 'none';
-    document.getElementById('los').style.display = 'none';
-    document.getElementById('inacbg').style.display = 'none';
-    document.getElementById('ventilator').style.display = 'none';
+    // Get all content sections
+    const contentSections = ['home', 'keuangan', 'pasien', 'selisih-tarif', 'los', 'inacbg', 'ventilator'];
     
-    // Show the selected content
-    document.getElementById(content).style.display = 'block';
+    // Add fade out animation to all visible sections
+    contentSections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section.style.display !== 'none') {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                section.style.display = 'none';
+            }, 300);
+        }
+    });
+    
+    // Show the selected content with fade in animation
+    setTimeout(() => {
+        const selectedContent = document.getElementById(content);
+        selectedContent.style.display = 'block';
+        selectedContent.style.opacity = '0';
+        selectedContent.style.transform = 'translateY(20px)';
+        
+        // Trigger reflow
+        selectedContent.offsetHeight;
+        
+        // Add fade in animation
+        selectedContent.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        selectedContent.style.opacity = '1';
+        selectedContent.style.transform = 'translateY(0)';
+    }, 300);
     
     // Update active menu item
     updateActiveMenu(content);
@@ -1155,7 +1174,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load datasets on page load
     loadDatasets();
     
+    // Add animation to feature cards
+    animateFeatureCards();
+    
     // Test notifications on page load (remove this line in production)
     // setTimeout(() => testNotifications(), 1000);
 });
+
+// Function to animate feature cards on scroll
+function animateFeatureCards() {
+    const featureCards = document.querySelectorAll('.feature-card');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, index * 100);
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    
+    featureCards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+}
 
