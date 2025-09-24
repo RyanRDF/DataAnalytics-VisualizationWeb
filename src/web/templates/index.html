@@ -8,56 +8,139 @@
   <!-- Google Fonts - Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Muat CSS dan JS dari static -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="logo-container">
-      <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="logo-image">
-    </div>
-    <ul class="menu">
-      <!-- Home Menu -->
-      <li class="menu-item">
-        <a href="javascript:void(0);" onclick="showContent('home')" class="active main-menu-item">Home</a>
-      </li>
-      <li class="menu-item">
-        <a href="javascript:void(0);" class="dropdown-btn main-menu-item" onclick="toggleDropdown('analytics-dropdown')">
-          E-Claim <span class="arrow">▼</span>
-        </a>
-        <ul class="submenu" id="analytics-dropdown">
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('keuangan')">Keuangan</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('pasien')">Pasien</a></li>
-        </ul>
-      </li>
-      <li class="menu-item">
-        <a href="javascript:void(0);" class="dropdown-btn main-menu-item" onclick="toggleDropdown('analisa-dropdown')">
-          Analisa <span class="arrow">▼</span>
-        </a>
-        <ul class="submenu" id="analisa-dropdown">
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('selisih-tarif')">Analisa Selisih Tarif</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('los')">Analisa LOS</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('inacbg')">Analisa INACBG</a></li>
-          <li class="submenu-item"><a href="javascript:void(0);" onclick="showContent('ventilator')">Analisa Ventilator</a></li>
-        </ul>
-      </li>
-    </ul>
+  <!-- Sidebar Toggle Button -->
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <span id="toggleIcon">☰</span>
+  </button>
 
-    <!-- Form upload file -->
-    <form class="file-upload-container" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
-      <label for="fileInput" class="file-upload-label">Upload .txt File</label>
-      <input type="file" id="fileInput" name="file" accept=".txt" onchange="handleFileUpload(event)" required>
-      <p id="fileInfo">No file selected.</p>
-      <button type="submit" id="uploadBtn" disabled>Process File</button>
-    </form>
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Logo Section -->
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="logo-image">
+        <div class="logo-text">
+          <h3>Data Analytics</h3>
+          <p>Dashboard</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+      <ul class="nav-menu">
+        <!-- Home -->
+        <li class="nav-item">
+          <a href="javascript:void(0);" onclick="showContent('home')" class="nav-link active">
+            <div class="nav-icon">🏠</div>
+            <span class="nav-text">Home</span>
+          </a>
+        </li>
+
+        <!-- E-Claim Section -->
+        <li class="nav-item has-submenu">
+          <a href="javascript:void(0);" class="nav-link dropdown-toggle" onclick="toggleDropdown('eclaim-dropdown')">
+            <div class="nav-icon">💰</div>
+            <span class="nav-text">E-Claim</span>
+            <div class="nav-arrow">▼</div>
+          </a>
+          <ul class="submenu" id="eclaim-dropdown">
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('keuangan')" class="submenu-link">
+                <div class="submenu-icon">📊</div>
+                <span>Keuangan</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('pasien')" class="submenu-link">
+                <div class="submenu-icon">👥</div>
+                <span>Pasien</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showFileUpload()" class="submenu-link">
+                <div class="submenu-icon">📁</div>
+                <span>Upload File</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Analytics Section -->
+        <li class="nav-item has-submenu">
+          <a href="javascript:void(0);" class="nav-link dropdown-toggle" onclick="toggleDropdown('analytics-dropdown')">
+            <div class="nav-icon">📈</div>
+            <span class="nav-text">Analytics</span>
+            <div class="nav-arrow">▼</div>
+          </a>
+          <ul class="submenu" id="analytics-dropdown">
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('selisih-tarif')" class="submenu-link">
+                <div class="submenu-icon">⚖️</div>
+                <span>Selisih Tarif</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('los')" class="submenu-link">
+                <div class="submenu-icon">⏱️</div>
+                <span>Length of Stay</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('inacbg')" class="submenu-link">
+                <div class="submenu-icon">🏥</div>
+                <span>INACBG</span>
+              </a>
+            </li>
+            <li class="submenu-item">
+              <a href="javascript:void(0);" onclick="showContent('ventilator')" class="submenu-link">
+                <div class="submenu-icon">🫁</div>
+                <span>Ventilator</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+
+    
+    <!-- Data Management Section -->
+    <div class="sidebar-section">
+      <div class="section-header">
+        <div class="section-icon">🗂️</div>
+        <h4>Data Management</h4>
+      </div>
+      <div class="data-info" id="dataInfo">
+        <div class="data-status">
+          <div class="status-indicator"></div>
+          <span>No data uploaded</span>
+        </div>
+      </div>
+      <button id="clearAllDataBtn" class="clear-btn" onclick="clearAllData()" disabled>
+        <div class="btn-icon">🗑️</div>
+        <span>Clear All Data</span>
+      </button>
+    </div>
   </div>
 
   <div class="main-content">
     <div class="header-section">
       <h1>Welcome to Data Analytics Dashboard</h1>
+      <div class="header-actions">
+        <a href="/login" class="login-btn">
+          <span>🔐 Login</span>
+        </a>
+      </div>
     </div>
 
     <!-- Home Content -->
@@ -106,6 +189,17 @@
           <div class="processing-summary">
             <p><strong>Total Baris Data:</strong> {{ processing_summary.total_rows }}</p>
             <p><strong>Penyesuaian Harga Diterapkan:</strong> {{ processing_summary.pricing_adjustments_applied }}</p>
+            {% if processing_summary.upload_count %}
+            <div class="accumulation-info">
+              <h4>📁 Informasi Upload:</h4>
+              <ul>
+                <li><strong>Total File Upload:</strong> {{ processing_summary.upload_count }} file</li>
+                {% if processing_summary.accumulated_rows %}
+                <li><strong>Total Baris Terakumulasi:</strong> {{ processing_summary.accumulated_rows }} baris</li>
+                {% endif %}
+              </ul>
+            </div>
+            {% endif %}
             <div class="inacbg-breakdown">
               <h4>Breakdown INACBG:</h4>
               <ul>
@@ -116,6 +210,9 @@
             </div>
             <div class="processing-note">
               <p><strong>Catatan:</strong> Data yang ditampilkan telah diproses dengan penyesuaian harga berdasarkan digit ke-4 INACBG.</p>
+              {% if processing_summary.upload_count and processing_summary.upload_count > 1 %}
+              <p><strong>Akumulasi:</strong> Data dari {{ processing_summary.upload_count }} file telah digabungkan.</p>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -129,52 +226,62 @@
       <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="startDate">Tanggal Mulai:</label>
-          <input type="date" id="startDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="startDate">Tanggal Mulai</label>
+            <input type="date" id="startDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="endDate">Tanggal Akhir</label>
+            <input type="date" id="endDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="sortColumn">Sort By</label>
+            <select id="sortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="sortOrder">Order</label>
+            <select id="sortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="filterColumn">Pilih Kolom</label>
+            <select id="filterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="filterValue">Nilai yang Dicari</label>
+            <input type="text" id="filterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="endDate">Tanggal Akhir:</label>
-          <input type="date" id="endDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="applyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="clearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="applyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="clearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="sortColumn">Sort By:</label>
-          <select id="sortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="sortOrder">Order:</label>
-          <select id="sortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="applySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="filterColumn">Pilih Kolom:</label>
-          <select id="filterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="filterValue">Nilai yang Dicari:</label>
-          <input type="text" id="filterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="applySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="clearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -201,52 +308,62 @@
       
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="pasienStartDate">Tanggal Mulai:</label>
-          <input type="date" id="pasienStartDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="pasienStartDate">Tanggal Mulai</label>
+            <input type="date" id="pasienStartDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="pasienEndDate">Tanggal Akhir</label>
+            <input type="date" id="pasienEndDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="pasienSortColumn">Sort By</label>
+            <select id="pasienSortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="pasienSortOrder">Order</label>
+            <select id="pasienSortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="pasienFilterColumn">Pilih Kolom</label>
+            <select id="pasienFilterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="pasienFilterValue">Nilai yang Dicari</label>
+            <input type="text" id="pasienFilterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="pasienEndDate">Tanggal Akhir:</label>
-          <input type="date" id="pasienEndDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="pasienApplyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="pasienClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="pasienApplyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="pasienClearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="pasienSortColumn">Sort By:</label>
-          <select id="pasienSortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="pasienSortOrder">Order:</label>
-          <select id="pasienSortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="pasienApplySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="pasienFilterColumn">Pilih Kolom:</label>
-          <select id="pasienFilterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="pasienFilterValue">Nilai yang Dicari:</label>
-          <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="pasienApplySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="pasienClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -273,52 +390,62 @@
       
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="selisihStartDate">Tanggal Mulai:</label>
-          <input type="date" id="selisihStartDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="selisihStartDate">Tanggal Mulai</label>
+            <input type="date" id="selisihStartDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="selisihEndDate">Tanggal Akhir</label>
+            <input type="date" id="selisihEndDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="selisihSortColumn">Sort By</label>
+            <select id="selisihSortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="selisihSortOrder">Order</label>
+            <select id="selisihSortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="selisihFilterColumn">Pilih Kolom</label>
+            <select id="selisihFilterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="selisihFilterValue">Nilai yang Dicari</label>
+            <input type="text" id="selisihFilterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="selisihEndDate">Tanggal Akhir:</label>
-          <input type="date" id="selisihEndDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="selisihApplyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="selisihClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="selisihApplyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="selisihClearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="selisihSortColumn">Sort By:</label>
-          <select id="selisihSortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="selisihSortOrder">Order:</label>
-          <select id="selisihSortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="selisihApplySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="selisihFilterColumn">Pilih Kolom:</label>
-          <select id="selisihFilterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="selisihFilterValue">Nilai yang Dicari:</label>
-          <input type="text" id="selisihFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="selisihApplySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="selisihClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -345,52 +472,62 @@
       
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="losStartDate">Tanggal Mulai:</label>
-          <input type="date" id="losStartDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="losStartDate">Tanggal Mulai</label>
+            <input type="date" id="losStartDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="losEndDate">Tanggal Akhir</label>
+            <input type="date" id="losEndDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="losSortColumn">Sort By</label>
+            <select id="losSortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="losSortOrder">Order</label>
+            <select id="losSortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="losFilterColumn">Pilih Kolom</label>
+            <select id="losFilterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="losFilterValue">Nilai yang Dicari</label>
+            <input type="text" id="losFilterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="losEndDate">Tanggal Akhir:</label>
-          <input type="date" id="losEndDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="losApplyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="losClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="losApplyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="losClearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="losSortColumn">Sort By:</label>
-          <select id="losSortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="losSortOrder">Order:</label>
-          <select id="losSortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="losApplySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="losFilterColumn">Pilih Kolom:</label>
-          <select id="losFilterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="losFilterValue">Nilai yang Dicari:</label>
-          <input type="text" id="losFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="losApplySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="losClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -417,52 +554,62 @@
       
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="inacbgStartDate">Tanggal Mulai:</label>
-          <input type="date" id="inacbgStartDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="inacbgStartDate">Tanggal Mulai</label>
+            <input type="date" id="inacbgStartDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="inacbgEndDate">Tanggal Akhir</label>
+            <input type="date" id="inacbgEndDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="inacbgSortColumn">Sort By</label>
+            <select id="inacbgSortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="inacbgSortOrder">Order</label>
+            <select id="inacbgSortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="inacbgFilterColumn">Pilih Kolom</label>
+            <select id="inacbgFilterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="inacbgFilterValue">Nilai yang Dicari</label>
+            <input type="text" id="inacbgFilterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="inacbgEndDate">Tanggal Akhir:</label>
-          <input type="date" id="inacbgEndDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="inacbgApplyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="inacbgClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="inacbgApplyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="inacbgClearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="inacbgSortColumn">Sort By:</label>
-          <select id="inacbgSortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="inacbgSortOrder">Order:</label>
-          <select id="inacbgSortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="inacbgApplySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="inacbgFilterColumn">Pilih Kolom:</label>
-          <select id="inacbgFilterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="inacbgFilterValue">Nilai yang Dicari:</label>
-          <input type="text" id="inacbgFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="inacbgApplySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="inacbgClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -489,52 +636,62 @@
       
       <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
-      <!-- Date Range Filter Controls (Paling Atas) -->
-      <div class="date-filter-controls">
-        <div class="filter-group">
-          <label for="ventilatorStartDate">Tanggal Mulai:</label>
-          <input type="date" id="ventilatorStartDate" class="date-input">
+      <!-- Search Controls Layout - Top Row (6 controls) -->
+      <div class="search-controls-container">
+        <div class="search-controls-top-row">
+          <!-- Black Controls (2) -->
+          <div class="search-control black-control">
+            <label for="ventilatorStartDate">Tanggal Mulai</label>
+            <input type="date" id="ventilatorStartDate" class="search-input">
+          </div>
+          <div class="search-control black-control">
+            <label for="ventilatorEndDate">Tanggal Akhir</label>
+            <input type="date" id="ventilatorEndDate" class="search-input">
+          </div>
+          
+          <!-- Red Controls (2) -->
+          <div class="search-control red-control">
+            <label for="ventilatorSortColumn">Sort By</label>
+            <select id="ventilatorSortColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control red-control">
+            <label for="ventilatorSortOrder">Order</label>
+            <select id="ventilatorSortOrder" class="search-select">
+              <option value="ASC">ASC</option>
+              <option value="DESC">DESC</option>
+            </select>
+          </div>
+          
+          <!-- Green Controls (2) -->
+          <div class="search-control green-control">
+            <label for="ventilatorFilterColumn">Pilih Kolom</label>
+            <select id="ventilatorFilterColumn" class="search-select">
+              <option value="">Pilih Kolom</option>
+            </select>
+          </div>
+          <div class="search-control green-control">
+            <label for="ventilatorFilterValue">Nilai yang Dicari</label>
+            <input type="text" id="ventilatorFilterValue" class="search-input" placeholder="Masukkan nilai">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="ventilatorEndDate">Tanggal Akhir:</label>
-          <input type="date" id="ventilatorEndDate" class="date-input">
+        
+        <!-- Bottom Row (2 main action buttons) -->
+        <div class="search-controls-bottom-row">
+          <div class="search-control light-blue-control">
+            <button id="ventilatorApplyAllFilters" class="search-btn primary-btn">
+              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <span>Search</span>
+            </button>
+          </div>
+          <div class="search-control light-blue-control">
+            <button id="ventilatorClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <span>Clear</span>
+            </button>
+          </div>
         </div>
-        <button id="ventilatorApplyDateFilter" class="filter-btn">Filter Data</button>
-        <button id="ventilatorClearDateFilter" class="clear-btn">Clear Filter</button>
-      </div>
-      
-      <!-- Sorting Controls (Tengah) -->
-      <div class="sorting-controls">
-        <div class="sort-group">
-          <label for="ventilatorSortColumn">Sort By:</label>
-          <select id="ventilatorSortColumn" class="sort-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="ventilatorSortOrder">Order:</label>
-          <select id="ventilatorSortOrder" class="sort-select">
-            <option value="ASC">ASC</option>
-            <option value="DESC">DESC</option>
-          </select>
-        </div>
-        <button id="ventilatorApplySort" class="sort-btn">Apply Sort</button>
-      </div>
-      
-      <!-- Specific Data Filter Controls (Paling Bawah) -->
-      <div class="specific-filter-controls">
-        <div class="filter-group">
-          <label for="ventilatorFilterColumn">Pilih Kolom:</label>
-          <select id="ventilatorFilterColumn" class="filter-select">
-            <option value="">Pilih Kolom</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="ventilatorFilterValue">Nilai yang Dicari:</label>
-          <input type="text" id="ventilatorFilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari">
-        </div>
-        <button id="ventilatorApplySpecificFilter" class="specific-filter-btn">Cari</button>
-        <button id="ventilatorClearSpecificFilter" class="clear-specific-btn">Clear</button>
       </div>
       
       <div class="table-container">
@@ -550,6 +707,47 @@
               <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
             </ol>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Upload Content -->
+    <div id="file-upload" class="content-section" style="display:none;">
+      <h2>Upload File Data</h2>
+      <p>Upload file .txt untuk memproses data E-Claim</p>
+      
+      <div class="upload-container">
+        <form class="file-upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
+          <div class="upload-header">
+            <div class="upload-icon">📁</div>
+            <h3>Pilih File untuk Upload</h3>
+            <p>Silakan pilih file .txt yang berisi data E-Claim</p>
+          </div>
+          
+          <div class="file-input-wrapper">
+            <input type="file" id="fileInput" name="file" accept=".txt" onchange="handleFileUpload(event)" required>
+            <label for="fileInput" class="file-input-label">
+              <div class="file-input-icon">📄</div>
+              <span>Choose .txt file</span>
+            </label>
+          </div>
+          
+          <div class="file-info" id="fileInfo">No file selected</div>
+          
+          <button type="submit" id="uploadBtn" class="upload-btn" disabled>
+            <div class="btn-icon">⚡</div>
+            <span>Process File</span>
+          </button>
+        </form>
+        
+        <div class="upload-instructions">
+          <h4>📋 Instruksi Upload:</h4>
+          <ul>
+            <li>Pastikan file berformat .txt</li>
+            <li>File harus berisi data E-Claim yang valid</li>
+            <li>Data akan diproses dan tersedia untuk analisis</li>
+            <li>File yang sama dapat diupload berkali-kali untuk akumulasi data</li>
+          </ul>
         </div>
       </div>
     </div>

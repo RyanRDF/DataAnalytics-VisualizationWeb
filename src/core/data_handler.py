@@ -22,6 +22,8 @@ class DataHandler:
     def __init__(self):
         self.current_df = None
         self.data_processor = DataProcessor()
+        self.accumulated_data = None  # Store accumulated data
+        self.upload_count = 0  # Track number of uploads
         
         # Initialize specialized handlers
         self.financial_handler = FinancialHandler(self)
@@ -33,7 +35,7 @@ class DataHandler:
     
     def load_data_from_file(self, filepath: str) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
         """
-        Load data from uploaded file and process it
+        Load data from uploaded file and process it, accumulating with existing data
         
         Args:
             filepath: Path to the uploaded file
@@ -43,10 +45,19 @@ class DataHandler:
         """
         try:
             # Read the uploaded file with tab separator
-            df = pd.read_csv(filepath, sep='\t')
+            new_df = pd.read_csv(filepath, sep='\t')
             
-            # Load raw data into processor and process it
-            self.data_processor.load_raw_data(df)
+            # If this is the first upload, initialize accumulated data
+            if self.accumulated_data is None:
+                self.accumulated_data = new_df.copy()
+                self.upload_count = 1
+            else:
+                # Append new data to accumulated data
+                self.accumulated_data = pd.concat([self.accumulated_data, new_df], ignore_index=True)
+                self.upload_count += 1
+            
+            # Load accumulated data into processor and process it
+            self.data_processor.load_raw_data(self.accumulated_data)
             processed_df = self.data_processor.process_data()
             
             # Update current_df to use processed data
@@ -87,7 +98,13 @@ class DataHandler:
     def get_processing_summary(self) -> dict:
         """Get summary of data processing"""
         if self.data_processor.has_processed_data():
-            return self.data_processor.get_processing_summary()
+            summary = self.data_processor.get_processing_summary()
+            # Add accumulation info
+            summary['upload_count'] = self.upload_count
+            summary['total_files'] = self.upload_count
+            if self.accumulated_data is not None:
+                summary['accumulated_rows'] = len(self.accumulated_data)
+            return summary
         return {"error": "No processed data available"}
     
     def has_data(self) -> bool:
@@ -139,3 +156,26 @@ class DataHandler:
         except Exception as e:
             # Could not remove file
             pass
+    
+    def clear_all_data(self):
+        """
+        Clear all accumulated data and reset to initial state
+        """
+        self.current_df = None
+        self.accumulated_data = None
+        self.upload_count = 0
+        self.data_processor = DataProcessor()  # Reset processor
+    
+    def get_accumulation_info(self) -> dict:
+        """
+        Get information about data accumulation
+        
+        Returns:
+            Dictionary with accumulation information
+        """
+        return {
+            'upload_count': self.upload_count,
+            'has_data': self.has_data(),
+            'accumulated_rows': len(self.accumulated_data) if self.accumulated_data is not None else 0,
+            'processed_rows': len(self.current_df) if self.current_df is not None else 0
+        }

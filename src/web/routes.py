@@ -20,7 +20,105 @@ class WebRoutes:
         
         @self.app.route('/')
         def index():
+            return render_template('login.html')
+        
+        @self.app.route('/login')
+        def login():
+            return render_template('login.html')
+        
+        @self.app.route('/main')
+        def main():
             return render_template('index.html', table_html="", has_data=False)
+        
+        @self.app.route('/auth/login', methods=['POST'])
+        def auth_login():
+            """Handle login authentication"""
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
+            remember_me = data.get('remember_me', False)
+            
+            # For demo purposes, accept any valid email/password
+            if email and password and len(password) >= 6:
+                # In a real application, you would validate against a database
+                response_data = {
+                    'success': True,
+                    'message': 'Login berhasil!',
+                    'user': {
+                        'email': email,
+                        'name': email.split('@')[0].title()
+                    }
+                }
+                
+                # Set session or JWT token here
+                # For now, we'll just return success
+                return jsonify(response_data)
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Email atau password tidak valid!'
+                }), 400
+        
+        @self.app.route('/auth/register', methods=['POST'])
+        def auth_register():
+            """Handle user registration"""
+            data = request.get_json()
+            name = data.get('name')
+            email = data.get('email')
+            password = data.get('password')
+            confirm_password = data.get('confirm_password')
+            agree_terms = data.get('agree_terms', False)
+            
+            # Validate input
+            if not name or len(name) < 2:
+                return jsonify({
+                    'success': False,
+                    'message': 'Nama minimal 2 karakter'
+                }), 400
+            
+            if not email or '@' not in email:
+                return jsonify({
+                    'success': False,
+                    'message': 'Format email tidak valid'
+                }), 400
+            
+            if not password or len(password) < 6:
+                return jsonify({
+                    'success': False,
+                    'message': 'Password minimal 6 karakter'
+                }), 400
+            
+            if password != confirm_password:
+                return jsonify({
+                    'success': False,
+                    'message': 'Password tidak sama'
+                }), 400
+            
+            if not agree_terms:
+                return jsonify({
+                    'success': False,
+                    'message': 'Anda harus menyetujui syarat dan ketentuan'
+                }), 400
+            
+            # In a real application, you would save to database
+            # For demo purposes, we'll just return success
+            return jsonify({
+                'success': True,
+                'message': 'Registrasi berhasil! Silakan login dengan akun baru Anda.',
+                'user': {
+                    'name': name,
+                    'email': email
+                }
+            })
+        
+        @self.app.route('/auth/logout', methods=['POST'])
+        def auth_logout():
+            """Handle user logout"""
+            # Clear session or JWT token here
+            return jsonify({
+                'success': True,
+                'message': 'Logout berhasil!'
+            })
         
         @self.app.route('/upload', methods=['POST'])
         def upload_file():
@@ -70,6 +168,18 @@ class WebRoutes:
             
             processing_summary = self.data_handler.get_processing_summary()
             return jsonify(processing_summary)
+        
+        @self.app.route('/clear-all-data', methods=['POST'])
+        def clear_all_data():
+            """Clear all accumulated data"""
+            self.data_handler.clear_all_data()
+            return jsonify({"message": "All data cleared successfully"})
+        
+        @self.app.route('/accumulation-info')
+        def accumulation_info():
+            """Get data accumulation information"""
+            accumulation_info = self.data_handler.get_accumulation_info()
+            return jsonify(accumulation_info)
         
         # Register analysis routes
         self._register_analysis_routes()

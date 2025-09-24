@@ -168,7 +168,7 @@ let viewStates = {
 // Function to show content based on button clicked
 function showContent(content) {
     // Get all content sections
-    const contentSections = ['home', 'keuangan', 'pasien', 'selisih-tarif', 'los', 'inacbg', 'ventilator'];
+    const contentSections = ['home', 'keuangan', 'pasien', 'selisih-tarif', 'los', 'inacbg', 'ventilator', 'file-upload'];
     
     // Add fade out animation to all visible sections
     contentSections.forEach(sectionId => {
@@ -217,31 +217,47 @@ function showContent(content) {
     }
 }
 
+// Function to show file upload content
+function showFileUpload() {
+    showContent('file-upload');
+}
+
 // Function to update active menu item
 function updateActiveMenu(content) {
     // Remove active class from all menu items
-    const menuItems = document.querySelectorAll('.menu-item > a');
+    const menuItems = document.querySelectorAll('.nav-link');
     menuItems.forEach(item => item.classList.remove('active'));
-    const subItems = document.querySelectorAll('.submenu-item, .submenu-item a');
+    const subItems = document.querySelectorAll('.submenu-link');
     subItems.forEach(item => item.classList.remove('active'));
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
     
     // Add active class to the clicked menu item
     if (content === 'home') {
-        document.querySelector('.menu-item > a[onclick*="home"]').classList.add('active');
-    } else if (content === 'keuangan' || content === 'pasien') {
-        document.querySelector('.menu-item > a[onclick*="analytics-dropdown"]').classList.add('active');
+        document.querySelector('.nav-link[onclick*="home"]').classList.add('active');
+    } else if (content === 'keuangan' || content === 'pasien' || content === 'file-upload') {
+        const eclaimItem = document.querySelector('.nav-item.has-submenu');
+        if (eclaimItem) {
+            eclaimItem.classList.add('active');
+            eclaimItem.querySelector('.nav-link').classList.add('active');
+        }
     } else if (content === 'selisih-tarif' || content === 'los' || content === 'inacbg' || content === 'ventilator') {
-        document.querySelector('.menu-item > a[onclick*="analisa-dropdown"]').classList.add('active');
+        const analyticsItem = document.querySelectorAll('.nav-item.has-submenu')[1];
+        if (analyticsItem) {
+            analyticsItem.classList.add('active');
+            analyticsItem.querySelector('.nav-link').classList.add('active');
+        }
     }
 
     // Highlight the active submenu item
     const submenuSelectorMap = {
-        'keuangan': "#analytics-dropdown .submenu-item a[onclick*='keuangan']",
-        'pasien': "#analytics-dropdown .submenu-item a[onclick*='pasien']",
-        'selisih-tarif': "#analisa-dropdown .submenu-item a[onclick*='selisih-tarif']",
-        'los': "#analisa-dropdown .submenu-item a[onclick*='los']",
-        'inacbg': "#analisa-dropdown .submenu-item a[onclick*='inacbg']",
-        'ventilator': "#analisa-dropdown .submenu-item a[onclick*='ventilator']"
+        'keuangan': "#eclaim-dropdown .submenu-link[onclick*='keuangan']",
+        'pasien': "#eclaim-dropdown .submenu-link[onclick*='pasien']",
+        'file-upload': "#eclaim-dropdown .submenu-link[onclick*='showFileUpload']",
+        'selisih-tarif': "#analytics-dropdown .submenu-link[onclick*='selisih-tarif']",
+        'los': "#analytics-dropdown .submenu-link[onclick*='los']",
+        'inacbg': "#analytics-dropdown .submenu-link[onclick*='inacbg']",
+        'ventilator': "#analytics-dropdown .submenu-link[onclick*='ventilator']"
     };
     const activeSubItem = document.querySelector(submenuSelectorMap[content]);
     if (activeSubItem) {
@@ -252,7 +268,7 @@ function updateActiveMenu(content) {
         const parentSubmenu = activeSubItem.closest('.submenu');
         if (parentSubmenu) {
             parentSubmenu.style.display = 'block';
-            const parentMenuItem = parentSubmenu.closest('.menu-item');
+            const parentMenuItem = parentSubmenu.closest('.nav-item');
             if (parentMenuItem) parentMenuItem.classList.add('active');
         }
     }
@@ -274,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Function to toggle the dropdown visibility on click
 function toggleDropdown(id) {
     var dropdown = document.getElementById(id);
-    var parentMenuItem = dropdown.closest('.menu-item');
+    var parentMenuItem = dropdown.closest('.nav-item');
     if (dropdown.style.display === "block") {
         dropdown.style.display = "none";
         parentMenuItem.classList.remove("active");
@@ -376,8 +392,11 @@ function handleFormSubmit(event) {
                 filters: { ...viewStates['ventilator'].filters }
             });
             
+            // Update data management info
+            updateDataManagementInfo();
+            
             // Show success message
-            notificationSystem.success('File uploaded successfully!', 'Success');
+            notificationSystem.success('File uploaded and accumulated successfully!', 'Success');
             
         } else {
             notificationSystem.warning('No data found in file.', 'No Data');
@@ -438,52 +457,62 @@ function loadDataView(viewType) {
         <p>Menampilkan analisis data ${description}</p>
         <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
         
-        <!-- Date Range Filter Controls (Paling Atas) -->
-        <div class="date-filter-controls">
-            <div class="filter-group">
-                <label for="${prefix}StartDate">Tanggal Mulai:</label>
-                <input type="date" id="${prefix}StartDate" class="date-input" value="${state.filters.startDate}">
+        <!-- Search Controls Layout - Top Row (6 controls) -->
+        <div class="search-controls-container">
+            <div class="search-controls-top-row">
+                <!-- Black Controls (2) -->
+                <div class="search-control black-control">
+                    <label for="${prefix}StartDate">Tanggal Mulai</label>
+                    <input type="date" id="${prefix}StartDate" class="search-input" value="${state.filters.startDate}">
+                </div>
+                <div class="search-control black-control">
+                    <label for="${prefix}EndDate">Tanggal Akhir</label>
+                    <input type="date" id="${prefix}EndDate" class="search-input" value="${state.filters.endDate}">
+                </div>
+                
+                <!-- Red Controls (2) -->
+                <div class="search-control red-control">
+                    <label for="${prefix}SortColumn">Sort By</label>
+                    <select id="${prefix}SortColumn" class="search-select">
+                        <option value="">Pilih Kolom</option>
+                    </select>
+                </div>
+                <div class="search-control red-control">
+                    <label for="${prefix}SortOrder">Order</label>
+                    <select id="${prefix}SortOrder" class="search-select">
+                        <option value="ASC" ${state.filters.sortOrder === 'ASC' ? 'selected' : ''}>ASC</option>
+                        <option value="DESC" ${state.filters.sortOrder === 'DESC' ? 'selected' : ''}>DESC</option>
+                    </select>
+                </div>
+                
+                <!-- Green Controls (2) -->
+                <div class="search-control green-control">
+                    <label for="${prefix}FilterColumn">Pilih Kolom</label>
+                    <select id="${prefix}FilterColumn" class="search-select">
+                        <option value="">Pilih Kolom</option>
+                    </select>
+                </div>
+                <div class="search-control green-control">
+                    <label for="${prefix}FilterValue">Nilai yang Dicari</label>
+                    <input type="text" id="${prefix}FilterValue" class="search-input" placeholder="Masukkan nilai" value="${state.filters.filterValue}">
+                </div>
             </div>
-            <div class="filter-group">
-                <label for="${prefix}EndDate">Tanggal Akhir:</label>
-                <input type="date" id="${prefix}EndDate" class="date-input" value="${state.filters.endDate}">
+            
+            <!-- Bottom Row (2 main action buttons) -->
+            <div class="search-controls-bottom-row">
+                <div class="search-control light-blue-control">
+                    <button id="${prefix}ApplyAllFilters" class="search-btn primary-btn">
+                        <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
+                        <span>Search</span>
+                    </button>
+                </div>
+                <div class="search-control light-blue-control">
+                    <button id="${prefix}ClearAllFilters" class="search-btn secondary-btn">
+                        <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
+                        <span>Clear</span>
+                    </button>
+                </div>
             </div>
-            <button id="${prefix}ApplyDateFilter" class="filter-btn">Filter Data</button>
-            <button id="${prefix}ClearDateFilter" class="clear-btn">Clear Filter</button>
-        </div>
-        
-        <!-- Sorting Controls (Tengah) -->
-        <div class="sorting-controls">
-            <div class="sort-group">
-                <label for="${prefix}SortColumn">Sort By:</label>
-                <select id="${prefix}SortColumn" class="sort-select">
-                    <option value="">Pilih Kolom</option>
-                </select>
-            </div>
-            <div class="sort-group">
-                <label for="${prefix}SortOrder">Order:</label>
-                <select id="${prefix}SortOrder" class="sort-select">
-                    <option value="ASC" ${state.filters.sortOrder === 'ASC' ? 'selected' : ''}>ASC</option>
-                    <option value="DESC" ${state.filters.sortOrder === 'DESC' ? 'selected' : ''}>DESC</option>
-                </select>
-            </div>
-            <button id="${prefix}ApplySort" class="sort-btn">Apply Sort</button>
-        </div>
-        
-        <!-- Specific Data Filter Controls (Paling Bawah) -->
-        <div class="specific-filter-controls">
-            <div class="filter-group">
-                <label for="${prefix}FilterColumn">Pilih Kolom:</label>
-                <select id="${prefix}FilterColumn" class="filter-select">
-                    <option value="">Pilih Kolom</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="${prefix}FilterValue">Nilai yang Dicari:</label>
-                <input type="text" id="${prefix}FilterValue" class="filter-input" placeholder="Masukkan nilai yang dicari" value="${state.filters.filterValue}">
-            </div>
-            <button id="${prefix}ApplySpecificFilter" class="specific-filter-btn">Cari</button>
-            <button id="${prefix}ClearSpecificFilter" class="clear-specific-btn">Clear</button>
         </div>
         
         <div class="table-container">
@@ -529,11 +558,12 @@ function loadDataView(viewType) {
     }
     
     // Attach event listeners
-    document.getElementById(`${prefix}ApplySort`).addEventListener('click', () => applySorting(viewType));
-    document.getElementById(`${prefix}ApplyDateFilter`).addEventListener('click', () => applyDateFilter(viewType));
-    document.getElementById(`${prefix}ClearDateFilter`).addEventListener('click', () => clearDateFilter(viewType));
-    document.getElementById(`${prefix}ApplySpecificFilter`).addEventListener('click', () => applySpecificFilter(viewType));
-    document.getElementById(`${prefix}ClearSpecificFilter`).addEventListener('click', () => clearSpecificFilter(viewType));
+    document.getElementById(`${prefix}ApplyAllFilters`).addEventListener('click', () => applyAllFilters(viewType));
+    
+    // Add both click and double-click listeners for clear button
+    const clearBtn = document.getElementById(`${prefix}ClearAllFilters`);
+    clearBtn.addEventListener('click', () => clearAllFilters(viewType));
+    clearBtn.addEventListener('dblclick', () => clearFiltersOnly(viewType));
 }
 
 // Generic function to load available columns for sorting
@@ -693,8 +723,8 @@ function applySorting(viewType) {
         });
 }
 
-// Generic function to apply date filter
-function applyDateFilter(viewType) {
+// Generic function to apply all filters (flexible - handles 1, 2, or 3 features)
+function applyAllFilters(viewType) {
     let prefix;
     
     if (viewType === 'keuangan') {
@@ -715,30 +745,51 @@ function applyDateFilter(viewType) {
     const endDate = document.getElementById(`${prefix}EndDate`).value;
     const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
     const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
+    const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
+    const filterValue = document.getElementById(`${prefix}FilterValue`).value;
     
-    if (!startDate && !endDate) {
-        notificationSystem.warning('Please select at least one date', 'Required');
+    // Check if at least one filter is applied
+    if (!startDate && !endDate && !filterColumn && !filterValue) {
+        notificationSystem.warning('Please select at least one filter criteria', 'Required');
         return;
     }
     
     // Update filters state
-    updateFiltersState(viewType, { startDate, endDate, sortColumn, sortOrder });
+    updateFiltersState(viewType, { startDate, endDate, sortColumn, sortOrder, filterColumn, filterValue });
     
     // Show loading state
-    const applyFilterBtn = document.getElementById(`${prefix}ApplyDateFilter`);
-    const originalText = applyFilterBtn.textContent;
-    applyFilterBtn.textContent = 'Filtering...';
+    const applyFilterBtn = document.getElementById(`${prefix}ApplyAllFilters`);
+    const originalText = applyFilterBtn.querySelector('span').textContent;
+    applyFilterBtn.querySelector('span').textContent = 'Searching...';
     applyFilterBtn.disabled = true;
     
-    // Build query parameters
+    // Build query parameters for all available filters
     const params = new URLSearchParams();
+    
+    // Add date filters if provided
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
+    
+    // Add sorting if provided
     if (sortColumn) params.append('sort_column', sortColumn);
     if (sortOrder) params.append('sort_order', sortOrder);
     
+    // Add specific filter if provided
+    if (filterColumn && filterValue) {
+        params.append('filter_column', filterColumn);
+        params.append('filter_value', filterValue);
+    }
+    
+    // Determine which API endpoint to use based on filters
+    let endpoint = `/${viewType}/filter`;
+    
+    // If specific filter is applied, use specific-filter endpoint
+    if (filterColumn && filterValue) {
+        endpoint = `/${viewType}/specific-filter`;
+    }
+    
     // Make API call to get filtered data
-    fetch(`/${viewType}/filter?${params.toString()}`)
+    fetch(`${endpoint}?${params.toString()}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -752,21 +803,29 @@ function applyDateFilter(viewType) {
                 tableContainer.innerHTML = data.table_html;
                 // Update state
                 updateViewState(viewType, { tableHtml: data.table_html, hasData: true });
+                
+                // Show success message with applied filters info
+                let appliedFilters = [];
+                if (startDate || endDate) appliedFilters.push('Date Range');
+                if (sortColumn) appliedFilters.push('Sorting');
+                if (filterColumn && filterValue) appliedFilters.push('Specific Filter');
+                
+                notificationSystem.success(`Data filtered successfully! Applied: ${appliedFilters.join(', ')}`, 'Success');
             }
         })
         .catch(error => {
-            console.error(`Error applying ${viewType} date filter:`, error);
-            notificationSystem.error('Filtering failed. Please try again.', 'Error');
+            console.error(`Error applying ${viewType} filters:`, error);
+            notificationSystem.error('Search failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
-            applyFilterBtn.textContent = originalText;
+            applyFilterBtn.querySelector('span').textContent = originalText;
             applyFilterBtn.disabled = false;
         });
 }
 
-// Generic function to clear date filter
-function clearDateFilter(viewType) {
+// Generic function to clear all filters and show all data
+function clearAllFilters(viewType) {
     let prefix;
     
     if (viewType === 'keuangan') {
@@ -783,30 +842,32 @@ function clearDateFilter(viewType) {
         prefix = 'ventilator';
     }
     
-    // Clear date inputs
+    // Clear all inputs
     document.getElementById(`${prefix}StartDate`).value = '';
     document.getElementById(`${prefix}EndDate`).value = '';
+    document.getElementById(`${prefix}SortColumn`).value = '';
+    document.getElementById(`${prefix}SortOrder`).value = 'ASC';
+    document.getElementById(`${prefix}FilterColumn`).value = '';
+    document.getElementById(`${prefix}FilterValue`).value = '';
     
     // Update filters state
-    updateFiltersState(viewType, { startDate: '', endDate: '' });
-    
-    // Reload original data without filters
-    const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
-    const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
+    updateFiltersState(viewType, { 
+        startDate: '', 
+        endDate: '', 
+        sortColumn: '', 
+        sortOrder: 'ASC', 
+        filterColumn: '', 
+        filterValue: '' 
+    });
     
     // Show loading state
-    const clearFilterBtn = document.getElementById(`${prefix}ClearDateFilter`);
-    const originalText = clearFilterBtn.textContent;
-    clearFilterBtn.textContent = 'Clearing...';
+    const clearFilterBtn = document.getElementById(`${prefix}ClearAllFilters`);
+    const originalText = clearFilterBtn.querySelector('span').textContent;
+    clearFilterBtn.querySelector('span').textContent = 'Loading...';
     clearFilterBtn.disabled = true;
     
-    // Build query parameters for sorting only
-    const params = new URLSearchParams();
-    if (sortColumn) params.append('sort_column', sortColumn);
-    if (sortOrder) params.append('sort_order', sortOrder);
-    
-    // Make API call to get original data
-    fetch(`/${viewType}/filter?${params.toString()}`)
+    // Make API call to get all data (no filters)
+    fetch(`/${viewType}/filter`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -814,23 +875,64 @@ function clearDateFilter(viewType) {
                 return;
             }
             
-            // Update the table with original data
+            // Update the table with all data
             const tableContainer = document.querySelector(`#${viewType} .table-container`);
             if (tableContainer && data.table_html) {
                 tableContainer.innerHTML = data.table_html;
                 // Update state
                 updateViewState(viewType, { tableHtml: data.table_html, hasData: true });
+                notificationSystem.success('All filters cleared! Showing all data.', 'Success');
             }
         })
         .catch(error => {
-            console.error(`Error clearing ${viewType} date filter:`, error);
+            console.error(`Error clearing ${viewType} filters:`, error);
             notificationSystem.error('Clear failed. Please try again.', 'Error');
         })
         .finally(() => {
             // Restore button state
-            clearFilterBtn.textContent = originalText;
+            clearFilterBtn.querySelector('span').textContent = originalText;
             clearFilterBtn.disabled = false;
         });
+}
+
+// Generic function to clear filters only (without reloading data)
+function clearFiltersOnly(viewType) {
+    let prefix;
+    
+    if (viewType === 'keuangan') {
+        prefix = '';
+    } else if (viewType === 'pasien') {
+        prefix = 'pasien';
+    } else if (viewType === 'selisih-tarif') {
+        prefix = 'selisih';
+    } else if (viewType === 'los') {
+        prefix = 'los';
+    } else if (viewType === 'inacbg') {
+        prefix = 'inacbg';
+    } else if (viewType === 'ventilator') {
+        prefix = 'ventilator';
+    }
+    
+    // Clear all inputs
+    document.getElementById(`${prefix}StartDate`).value = '';
+    document.getElementById(`${prefix}EndDate`).value = '';
+    document.getElementById(`${prefix}SortColumn`).value = '';
+    document.getElementById(`${prefix}SortOrder`).value = 'ASC';
+    document.getElementById(`${prefix}FilterColumn`).value = '';
+    document.getElementById(`${prefix}FilterValue`).value = '';
+    
+    // Update filters state
+    updateFiltersState(viewType, { 
+        startDate: '', 
+        endDate: '', 
+        sortColumn: '', 
+        sortOrder: 'ASC', 
+        filterColumn: '', 
+        filterValue: '' 
+    });
+    
+    // Show notification
+    notificationSystem.info('Filters cleared! Use Search button to apply new filters.', 'Info');
 }
 
 // Generic function to apply specific filter
@@ -1018,6 +1120,95 @@ function updateProcessingSummary(summary) {
 }
 
 
+// Function to update data management information
+function updateDataManagementInfo() {
+    fetch('/accumulation-info')
+        .then(response => response.json())
+        .then(data => {
+            const dataInfo = document.getElementById('dataInfo');
+            const clearBtn = document.getElementById('clearAllDataBtn');
+            
+            if (data.has_data) {
+                dataInfo.innerHTML = `
+                    <div class="data-status">
+                        <div class="status-indicator active"></div>
+                        <span>${data.upload_count} files uploaded</span>
+                    </div>
+                    <div class="data-status">
+                        <div class="status-indicator active"></div>
+                        <span>${data.accumulated_rows} total rows</span>
+                    </div>
+                `;
+                clearBtn.disabled = false;
+            } else {
+                dataInfo.innerHTML = `
+                    <div class="data-status">
+                        <div class="status-indicator"></div>
+                        <span>No data uploaded</span>
+                    </div>
+                `;
+                clearBtn.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching accumulation info:', error);
+        });
+}
+
+// Function to clear all accumulated data
+function clearAllData() {
+    if (!confirm('Are you sure you want to clear all accumulated data? This action cannot be undone.')) {
+        return;
+    }
+    
+    const clearBtn = document.getElementById('clearAllDataBtn');
+    const originalText = clearBtn.querySelector('span').textContent;
+    
+    // Show loading state
+    clearBtn.querySelector('span').textContent = 'Clearing...';
+    clearBtn.disabled = true;
+    
+    fetch('/clear-all-data', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Clear all view states
+        Object.keys(viewStates).forEach(viewType => {
+            updateViewState(viewType, {
+                tableHtml: '',
+                hasData: false,
+                filters: {
+                    startDate: '',
+                    endDate: '',
+                    sortColumn: '',
+                    sortOrder: 'ASC',
+                    filterColumn: '',
+                    filterValue: ''
+                }
+            });
+        });
+        
+        // Update data management info
+        updateDataManagementInfo();
+        
+        // Show success message
+        notificationSystem.success('All data cleared successfully!', 'Success');
+        
+        // Return to home view
+        showContent('home');
+    })
+    .catch(error => {
+        console.error('Error clearing data:', error);
+        notificationSystem.error('Failed to clear data. Please try again.', 'Error');
+    })
+    .finally(() => {
+        // Restore button state
+        clearBtn.querySelector('span').textContent = originalText;
+        clearBtn.disabled = false;
+    });
+}
+
 // Initialize the page with Home content as default
 document.addEventListener('DOMContentLoaded', function() {
     // Show Home content by default
@@ -1029,9 +1220,14 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadBtn.disabled = true;
     }
     
+    // Initialize data management info
+    updateDataManagementInfo();
     
     // Add animation to feature cards
     animateFeatureCards();
+    
+    // Initialize sidebar functionality
+    initializeSidebar();
     
     // Test notifications on page load (remove this line in production)
     // setTimeout(() => testNotifications(), 1000);
@@ -1060,4 +1256,428 @@ function animateFeatureCards() {
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
+}
+
+// ===== SIDEBAR FUNCTIONALITY =====
+
+// Initialize sidebar functionality
+function initializeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    // Load saved sidebar state
+    const savedWidth = localStorage.getItem('sidebarWidth');
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (savedWidth && !isCollapsed) {
+        sidebar.style.width = savedWidth + 'px';
+        mainContent.style.marginLeft = savedWidth + 'px';
+    }
+    
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        sidebarToggle.classList.add('active');
+        mainContent.style.marginLeft = '60px';
+    }
+    
+    // Initialize resize functionality
+    initializeSidebarResize();
+    
+    // Initialize responsive behavior
+    initializeResponsiveSidebar();
+    
+    // Ensure main content is properly adjusted on load
+    ensureMainContentSync();
+}
+
+// Initialize sidebar resize functionality
+function initializeSidebarResize() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    let isResizing = false;
+    let startX, startWidth;
+    let animationFrameId = null;
+    
+    // Throttle function for smooth resize
+    function throttle(func, delay) {
+        let timeoutId;
+        let lastExecTime = 0;
+        return function (...args) {
+            const currentTime = Date.now();
+            
+            if (currentTime - lastExecTime > delay) {
+                func.apply(this, args);
+                lastExecTime = currentTime;
+            } else {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                    lastExecTime = Date.now();
+                }, delay - (currentTime - lastExecTime));
+            }
+        };
+    }
+    
+    // Smooth resize function
+    function smoothResize(newWidth) {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+        
+        animationFrameId = requestAnimationFrame(() => {
+            // Update sidebar width and positioning
+            sidebar.style.width = newWidth + 'px';
+            sidebar.style.minWidth = newWidth + 'px';
+            sidebar.style.maxWidth = newWidth + 'px';
+            sidebar.style.position = 'fixed';
+            sidebar.style.left = '0';
+            sidebar.style.top = '0';
+            sidebar.style.zIndex = '1001';
+            
+            // Update main content to match sidebar width and prevent overlap
+            mainContent.style.marginLeft = newWidth + 'px';
+            mainContent.style.width = `calc(100% - ${newWidth}px)`;
+            mainContent.style.backgroundColor = 'var(--gray-50)';
+            mainContent.style.position = 'relative';
+            mainContent.style.zIndex = '1';
+            mainContent.style.left = '0';
+            mainContent.style.top = '0';
+            
+            // Update all dashboard elements to ensure they fit properly
+            const contentSections = document.querySelectorAll('.content-section');
+            const headerSections = document.querySelectorAll('.header-section');
+            const homeContainers = document.querySelectorAll('.home-container');
+            const featuresGrids = document.querySelectorAll('.features-grid');
+            const featureCards = document.querySelectorAll('.feature-card');
+            
+            // Apply responsive styles to all dashboard elements
+            [...contentSections, ...headerSections, ...homeContainers, ...featuresGrids].forEach(element => {
+                if (element) {
+                    element.style.width = '100%';
+                    element.style.boxSizing = 'border-box';
+                    element.style.overflowX = 'hidden';
+                }
+            });
+            
+            featureCards.forEach(card => {
+                if (card) {
+                    card.style.width = '100%';
+                    card.style.boxSizing = 'border-box';
+                }
+            });
+            
+            // Force reflow to ensure changes are applied
+            mainContent.offsetHeight;
+        });
+    }
+    
+    // Mouse events for resize
+    sidebar.addEventListener('mousedown', (e) => {
+        if (e.target === sidebar || e.target.classList.contains('sidebar')) {
+            const rect = sidebar.getBoundingClientRect();
+            const handleWidth = 4;
+            
+            if (rect.right - e.clientX <= handleWidth) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = sidebar.offsetWidth;
+                
+                sidebar.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                
+                e.preventDefault();
+            }
+        }
+    });
+    
+    // Throttled mousemove handler
+    const throttledMouseMove = throttle((e) => {
+        if (isResizing) {
+            const newWidth = startWidth + (e.clientX - startX);
+            const minWidth = 200;
+            const maxWidth = 400;
+            
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                smoothResize(newWidth);
+            }
+        }
+    }, 16); // ~60fps
+    
+    document.addEventListener('mousemove', throttledMouseMove);
+    
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            sidebar.classList.remove('resizing');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Get final width and ensure main content is properly adjusted
+            const finalWidth = sidebar.offsetWidth;
+            
+            // Force update main content to match final sidebar width
+            mainContent.style.marginLeft = finalWidth + 'px';
+            mainContent.style.width = `calc(100% - ${finalWidth}px)`;
+            mainContent.style.backgroundColor = 'var(--gray-50)';
+            
+            // Save final width to localStorage
+            localStorage.setItem('sidebarWidth', finalWidth);
+            
+            // Cancel any pending animation frame
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
+            // Force reflow to ensure all changes are applied
+            mainContent.offsetHeight;
+        }
+    });
+}
+
+// Ensure main content is synchronized with sidebar width
+function ensureMainContentSync() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (sidebar && mainContent) {
+        const sidebarWidth = sidebar.offsetWidth;
+        
+        // Ensure sidebar positioning
+        sidebar.style.position = 'fixed';
+        sidebar.style.left = '0';
+        sidebar.style.top = '0';
+        sidebar.style.zIndex = '1001';
+        
+        // Ensure main content matches sidebar width and prevents overlap
+        mainContent.style.marginLeft = sidebarWidth + 'px';
+        mainContent.style.width = `calc(100% - ${sidebarWidth}px)`;
+        mainContent.style.backgroundColor = 'var(--gray-50)';
+        mainContent.style.position = 'relative';
+        mainContent.style.zIndex = '1';
+        mainContent.style.left = '0';
+        mainContent.style.top = '0';
+        
+        // Ensure all dashboard elements are properly sized
+        const contentSections = document.querySelectorAll('.content-section');
+        const headerSections = document.querySelectorAll('.header-section');
+        const homeContainers = document.querySelectorAll('.home-container');
+        const featuresGrids = document.querySelectorAll('.features-grid');
+        const featureCards = document.querySelectorAll('.feature-card');
+        
+        // Apply responsive styles to all dashboard elements
+        [...contentSections, ...headerSections, ...homeContainers, ...featuresGrids].forEach(element => {
+            if (element) {
+                element.style.width = '100%';
+                element.style.boxSizing = 'border-box';
+                element.style.overflowX = 'hidden';
+            }
+        });
+        
+        featureCards.forEach(card => {
+            if (card) {
+                card.style.width = '100%';
+                card.style.boxSizing = 'border-box';
+            }
+        });
+        
+        // Force reflow
+        mainContent.offsetHeight;
+    }
+}
+
+// Initialize responsive sidebar behavior
+function initializeResponsiveSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    // Check if mobile view
+    function checkMobileView() {
+        return window.innerWidth <= 768;
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const isMobile = checkMobileView();
+        
+        if (isMobile) {
+            // Mobile view
+            sidebar.classList.remove('collapsed');
+            sidebarToggle.style.display = 'flex';
+            sidebar.style.width = '280px';
+            sidebar.style.minWidth = '280px';
+            sidebar.style.maxWidth = '280px';
+            
+            if (!sidebar.classList.contains('open')) {
+                sidebar.style.transform = 'translateX(-100%)';
+            }
+            
+            // Update main content margin
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.style.marginLeft = '0';
+                mainContent.style.width = '100%';
+            }
+        } else {
+            // Desktop view
+            sidebarToggle.style.display = 'none';
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+            sidebar.style.transform = '';
+            sidebar.style.minWidth = '';
+            sidebar.style.maxWidth = '';
+            
+            // Restore saved state
+            const savedWidth = localStorage.getItem('sidebarWidth');
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            const mainContent = document.querySelector('.main-content');
+            
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                sidebar.style.width = '60px';
+                if (mainContent) {
+                    mainContent.style.marginLeft = '60px';
+                    mainContent.style.width = 'calc(100% - 60px)';
+                }
+            } else if (savedWidth) {
+                sidebar.style.width = savedWidth + 'px';
+                if (mainContent) {
+                    mainContent.style.marginLeft = savedWidth + 'px';
+                    mainContent.style.width = `calc(100% - ${savedWidth}px)`;
+                }
+            } else {
+                sidebar.style.width = '280px';
+                if (mainContent) {
+                    mainContent.style.marginLeft = '280px';
+                    mainContent.style.width = 'calc(100% - 280px)';
+                }
+            }
+            
+            // Force desktop margin
+            if (mainContent) {
+                const sidebarWidth = sidebar.style.width || '280px';
+                mainContent.style.marginLeft = sidebarWidth;
+                mainContent.style.width = `calc(100% - ${sidebarWidth})`;
+            }
+        }
+    });
+    
+    // Add overlay click event
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+    
+    // Initial check
+    const isMobile = checkMobileView();
+    if (isMobile) {
+        sidebarToggle.style.display = 'flex';
+        sidebar.style.width = '280px';
+        sidebar.style.minWidth = '280px';
+        sidebar.style.maxWidth = '280px';
+        sidebar.style.transform = 'translateX(-100%)';
+        
+        // Update main content margin
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.style.marginLeft = '0';
+            mainContent.style.width = '100%';
+        }
+    } else {
+        sidebarToggle.style.display = 'none';
+        sidebar.style.transform = '';
+        
+        // Restore saved state or use default
+        const savedWidth = localStorage.getItem('sidebarWidth');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const mainContent = document.querySelector('.main-content');
+        
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            sidebar.style.width = '60px';
+            if (mainContent) {
+                mainContent.style.marginLeft = '60px';
+                mainContent.style.width = 'calc(100% - 60px)';
+            }
+        } else if (savedWidth) {
+            sidebar.style.width = savedWidth + 'px';
+            if (mainContent) {
+                mainContent.style.marginLeft = savedWidth + 'px';
+                mainContent.style.width = `calc(100% - ${savedWidth}px)`;
+            }
+        } else {
+            sidebar.style.width = '280px';
+            if (mainContent) {
+                mainContent.style.marginLeft = '280px';
+                mainContent.style.width = 'calc(100% - 280px)';
+            }
+        }
+        
+        // Force desktop margin
+        if (mainContent) {
+            const sidebarWidth = sidebar.style.width || '280px';
+            mainContent.style.marginLeft = sidebarWidth;
+            mainContent.style.width = `calc(100% - ${sidebarWidth})`;
+        }
+    }
+}
+
+// Toggle sidebar (mobile)
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile toggle
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+        
+        if (sidebar.classList.contains('open')) {
+            toggleIcon.textContent = '✕';
+            sidebar.style.transform = 'translateX(0)';
+        } else {
+            toggleIcon.textContent = '☰';
+            sidebar.style.transform = 'translateX(-100%)';
+        }
+    } else {
+        // Desktop collapse/expand
+        sidebar.classList.toggle('collapsed');
+        sidebarToggle.classList.toggle('active');
+        
+        const mainContent = document.querySelector('.main-content');
+        
+        if (sidebar.classList.contains('collapsed')) {
+            sidebar.style.width = '60px';
+            sidebar.style.minWidth = '60px';
+            sidebar.style.maxWidth = '60px';
+            if (mainContent) mainContent.style.marginLeft = '60px';
+            toggleIcon.textContent = '→';
+            localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+            const savedWidth = localStorage.getItem('sidebarWidth') || '280';
+            sidebar.style.width = savedWidth + 'px';
+            sidebar.style.minWidth = '';
+            sidebar.style.maxWidth = '';
+            if (mainContent) mainContent.style.marginLeft = savedWidth + 'px';
+            toggleIcon.textContent = '☰';
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
+    }
+}
+
+// Close sidebar (mobile)
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+    sidebar.style.transform = 'translateX(-100%)';
+    toggleIcon.textContent = '☰';
 }
