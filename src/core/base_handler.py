@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 
 from ..utils.validators import validate_required_columns, validate_date_range, validate_sort_parameters
 from ..utils.data_processing import apply_date_filter, apply_sorting, apply_specific_filter
+from .database_query_service import DatabaseQueryService
 
 
 class BaseHandler(ABC):
@@ -19,6 +20,7 @@ class BaseHandler(ABC):
         self.data_handler = data_handler
         self.required_columns = self._get_required_columns()
         self.view_name = self._get_view_name()
+        self.db_query_service = DatabaseQueryService()
     
     @abstractmethod
     def _get_required_columns(self) -> List[str]:
@@ -28,6 +30,11 @@ class BaseHandler(ABC):
     @abstractmethod
     def _get_view_name(self) -> str:
         """Get the view name for this handler"""
+        pass
+    
+    @abstractmethod
+    def _query_database(self, filters: Dict[str, Any]) -> pd.DataFrame:
+        """Query data from database with filters"""
         pass
     
     @abstractmethod
@@ -49,38 +56,27 @@ class BaseHandler(ABC):
         Returns:
             Tuple of (processed_dataframe, error_message)
         """
-        # Validate data availability
-        if self.data_handler.current_df is None:
-            return None, "No data available. Please upload a file first."
-        
-        # Validate required columns
-        is_valid, error = validate_required_columns(self.data_handler.current_df, self.required_columns)
-        if not is_valid:
-            return None, error
-        
-        # Validate date range
-        is_valid, error = validate_date_range(start_date, end_date)
-        if not is_valid:
-            return None, error
-        
-        # Validate sort column
-        available_columns = list(self.data_handler.current_df.columns)
-        is_valid, error = validate_sort_parameters(sort_column, available_columns)
-        if not is_valid:
-            return None, error
-        
         try:
-            # Create a copy with required columns
-            df = self.data_handler.current_df[self.required_columns].copy()
+            # Prepare filters
+            filters = {}
+            if start_date:
+                filters['start_date'] = start_date
+            if end_date:
+                filters['end_date'] = end_date
+            
+            # Get data from database
+            df = self._query_database(filters)
+            
+            if df.empty:
+                return None, f"No {self.view_name} data available in database. Please import data first."
             
             # Apply specific processing logic
             df = self._process_data(df)
             
-            # Apply date filtering
-            df = apply_date_filter(df, start_date, end_date)
-            
             # Apply sorting
-            df = apply_sorting(df, sort_column, sort_order)
+            if sort_column and sort_column in df.columns:
+                ascending = sort_order.upper() == 'ASC'
+                df = df.sort_values(by=sort_column, ascending=ascending)
             
             return df, None
             
@@ -172,8 +168,13 @@ class BaseHandler(ABC):
         Returns:
             List of column names
         """
-        if self.data_handler.current_df is None:
-            return []
-        
-        # Return columns that exist in the current data
-        return [col for col in self.required_columns if col in self.data_handler.current_df.columns]
+        try:
+            # Get sample data from database to determine available columns
+            sample_df = self._query_database({})
+            if sample_df.empty:
+                return self.required_columns
+            
+            return list(sample_df.columns)
+        except Exception as e:
+            print(f"Error getting columns: {e}")
+            return self.required_columns

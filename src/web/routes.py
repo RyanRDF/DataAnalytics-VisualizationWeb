@@ -7,6 +7,7 @@ from datetime import datetime
 
 from ..core.data_handler import DataHandler
 from ..core.database import db, User
+from ..core.data_import_service import DataImportService
 
 
 class WebRoutes:
@@ -15,6 +16,7 @@ class WebRoutes:
     def __init__(self, app, data_handler: DataHandler):
         self.app = app
         self.data_handler = data_handler
+        self.data_import_service = DataImportService()
         self._register_routes()
     
     def _register_routes(self):
@@ -167,46 +169,67 @@ class WebRoutes:
                 if error:
                     return render_template('index.html', table_html="", has_data=False, error=error)
                 
-                # Load data from file
-                df, error = self.data_handler.load_data_from_file(filepath)
-                if error:
-                    self.data_handler.cleanup_file(filepath)
-                    return render_template('index.html', table_html="", has_data=False, error=error)
-                
-                # Get processed data table
-                table_html, has_data = self.data_handler.get_raw_data_table()
-                
-                # Get processing summary
-                processing_summary = self.data_handler.get_processing_summary()
+                # Import data to database
+                import_result = self.data_import_service.import_file_to_database(filepath)
                 
                 # Clean up the uploaded file
                 self.data_handler.cleanup_file(filepath)
                 
-                return render_template('index.html', table_html=table_html, has_data=has_data, processing_summary=processing_summary)
+                if not import_result['success']:
+                    return render_template('index.html', table_html="", has_data=False, error=import_result['error'])
+                
+                # Get database stats
+                from ..core.database_query_service import DatabaseQueryService
+                db_query_service = DatabaseQueryService()
+                db_stats = db_query_service.get_database_stats()
+                
+                # Show success message with import stats
+                success_message = f"Data berhasil diimport ke database! {import_result['message']}"
+                
+                return render_template('index.html', 
+                                     table_html="", 
+                                     has_data=True, 
+                                     success_message=success_message,
+                                     import_stats=import_result['stats'],
+                                     db_stats=db_stats)
                 
             except Exception as e:
                 return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
         
         @self.app.route('/processing-info')
         def processing_info():
-            """Get data processing summary"""
-            if not self.data_handler.has_data():
-                return jsonify({"error": "No data available"}), 400
-            
-            processing_summary = self.data_handler.get_processing_summary()
-            return jsonify(processing_summary)
+            """Get database statistics"""
+            from ..core.database_query_service import DatabaseQueryService
+            db_query_service = DatabaseQueryService()
+            db_stats = db_query_service.get_database_stats()
+            return jsonify(db_stats)
         
         @self.app.route('/clear-all-data', methods=['POST'])
         def clear_all_data():
-            """Clear all accumulated data"""
-            self.data_handler.clear_all_data()
-            return jsonify({"message": "All data cleared successfully"})
+            """Clear all database data"""
+            try:
+                # Import the clear tool
+                import sys
+                import os
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'tools'))
+                from clear_all_tables import clear_all_tables
+                
+                # Clear all tables
+                result = clear_all_tables()
+                if result:
+                    return jsonify({"message": "All database data cleared successfully"})
+                else:
+                    return jsonify({"error": "Failed to clear database data"}), 500
+            except Exception as e:
+                return jsonify({"error": f"Error clearing data: {str(e)}"}), 500
         
         @self.app.route('/accumulation-info')
         def accumulation_info():
-            """Get data accumulation information"""
-            accumulation_info = self.data_handler.get_accumulation_info()
-            return jsonify(accumulation_info)
+            """Get database information"""
+            from ..core.database_query_service import DatabaseQueryService
+            db_query_service = DatabaseQueryService()
+            db_stats = db_query_service.get_database_stats()
+            return jsonify(db_stats)
         
         # Register analysis routes
         self._register_analysis_routes()

@@ -15,46 +15,42 @@ class FinancialHandler(BaseHandler):
     def _get_required_columns(self) -> List[str]:
         """Get list of required columns for financial analysis"""
         return [
-            'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF', 
-            'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN', 
-            'NOKARTU', 'TOTAL_TARIF', 'TARIF_RS'
+            'kunjungan_id', 'mrn', 'nama_pasien', 'no_kartu_bpjs', 'dpjp',
+            'admission_date', 'discharge_date', 'los', 'kelas_rawat',
+            'kode_inacbg', 'sep', 'total_tarif', 'tarif_rs'
         ]
     
     def _get_view_name(self) -> str:
         """Get the view name for this handler"""
         return "financial"
     
+    def _query_database(self, filters: Dict[str, Any]) -> pd.DataFrame:
+        """Query financial data from database"""
+        return self.db_query_service.get_financial_data(filters)
+    
     def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process financial data with required calculations"""
-        # Convert LOS to numeric, handling any non-numeric values
-        df['LOS'] = safe_numeric_conversion(df['LOS'])
+        if df.empty:
+            return df
         
-        # Convert TOTAL_TARIF and TARIF_RS to numeric
-        df['TOTAL_TARIF'] = safe_numeric_conversion(df['TOTAL_TARIF'])
-        df['TARIF_RS'] = safe_numeric_conversion(df['TARIF_RS'])
+        # Convert numeric columns
+        numeric_columns = ['los', 'total_tarif', 'tarif_rs']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = safe_numeric_conversion(df[col])
         
         # Calculate additional financial metrics
-        df['SELISIH_TARIF'] = df['TOTAL_TARIF'] - df['TARIF_RS']
-        df['PERSENTASE_SELISIH'] = (df['SELISIH_TARIF'] / df['TARIF_RS'] * 100).round(2)
-        df['TARIF_PER_HARI'] = (df['TOTAL_TARIF'] / df['LOS']).round(2)
+        if 'total_tarif' in df.columns and 'tarif_rs' in df.columns:
+            df['selisih_tarif'] = df['total_tarif'] - df['tarif_rs']
+            df['persentase_selisih'] = (df['selisih_tarif'] / df['tarif_rs'] * 100).round(2)
+        
+        if 'total_tarif' in df.columns and 'los' in df.columns:
+            df['tarif_per_hari'] = (df['total_tarif'] / df['los']).round(2)
         
         # Format currency columns
-        df['TOTAL_TARIF_FORMATTED'] = df['TOTAL_TARIF'].apply(format_rupiah)
-        df['TARIF_RS_FORMATTED'] = df['TARIF_RS'].apply(format_rupiah)
-        df['SELISIH_TARIF_FORMATTED'] = df['SELISIH_TARIF'].apply(format_rupiah)
-        df['TARIF_PER_HARI_FORMATTED'] = df['TARIF_PER_HARI'].apply(format_rupiah)
-        
-        # Reorder columns for better display
-        column_order = [
-            'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF',
-            'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN', 'NOKARTU',
-            'TOTAL_TARIF', 'TOTAL_TARIF_FORMATTED', 'TARIF_RS', 'TARIF_RS_FORMATTED',
-            'SELISIH_TARIF', 'SELISIH_TARIF_FORMATTED', 'PERSENTASE_SELISIH',
-            'TARIF_PER_HARI', 'TARIF_PER_HARI_FORMATTED'
-        ]
-        
-        # Only include columns that exist in the dataframe
-        existing_columns = [col for col in column_order if col in df.columns]
-        df = df[existing_columns]
+        currency_columns = ['total_tarif', 'tarif_rs', 'selisih_tarif', 'tarif_per_hari']
+        for col in currency_columns:
+            if col in df.columns:
+                df[f'{col}_formatted'] = df[col].apply(format_rupiah)
         
         return df
