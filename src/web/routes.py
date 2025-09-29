@@ -1,10 +1,12 @@
 """
 Flask routes for the web application
 """
-from flask import render_template, request, redirect, url_for, jsonify
+from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
+from datetime import datetime
 
 from ..core.data_handler import DataHandler
+from ..core.database import db, User
 
 
 class WebRoutes:
@@ -32,26 +34,41 @@ class WebRoutes:
         
         @self.app.route('/auth/login', methods=['POST'])
         def auth_login():
-            """Handle login authentication"""
+            """Handle login authentication with database"""
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
             remember_me = data.get('remember_me', False)
             
-            # For demo purposes, accept any valid email/password
-            if email and password and len(password) >= 6:
-                # In a real application, you would validate against a database
+            if not email or not password:
+                return jsonify({
+                    'success': False,
+                    'message': 'Email dan password harus diisi!'
+                }), 400
+            
+            # Find user in database
+            user = User.query.filter_by(email=email, is_active=True).first()
+            
+            if user and user.check_password(password):
+                # Update last login
+                user.last_login = datetime.utcnow()
+                
+                # Create session
+                session_token = user.create_session()
+                
+                db.session.commit()
+                
                 response_data = {
                     'success': True,
                     'message': 'Login berhasil!',
-                    'user': {
-                        'email': email,
-                        'name': email.split('@')[0].title()
-                    }
+                    'user': user.to_dict(),
+                    'session_token': session_token
                 }
                 
-                # Set session or JWT token here
-                # For now, we'll just return success
+                # Set session
+                session['user_id'] = user.id
+                session['session_token'] = session_token
+                
                 return jsonify(response_data)
             else:
                 return jsonify({
@@ -67,8 +84,6 @@ class WebRoutes:
             email = data.get('email')
             password = data.get('password')
             confirm_password = data.get('confirm_password')
-            agree_terms = data.get('agree_terms', False)
-            
             # Validate input
             if not name or len(name) < 2:
                 return jsonify({
@@ -94,22 +109,34 @@ class WebRoutes:
                     'message': 'Password tidak sama'
                 }), 400
             
-            if not agree_terms:
+            # Check if user already exists
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
                 return jsonify({
                     'success': False,
-                    'message': 'Anda harus menyetujui syarat dan ketentuan'
+                    'message': 'Email sudah terdaftar!'
                 }), 400
             
-            # In a real application, you would save to database
-            # For demo purposes, we'll just return success
-            return jsonify({
-                'success': True,
-                'message': 'Registrasi berhasil! Silakan login dengan akun baru Anda.',
-                'user': {
-                    'name': name,
-                    'email': email
-                }
-            })
+            # Create new user
+            try:
+                user = User(name=name, email=email)
+                user.set_password(password)
+                
+                db.session.add(user)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Registrasi berhasil! Silakan login dengan akun baru Anda.',
+                    'user': user.to_dict()
+                })
+            
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': 'Terjadi kesalahan saat registrasi!'
+                }), 500
         
         @self.app.route('/auth/logout', methods=['POST'])
         def auth_logout():

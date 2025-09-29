@@ -182,10 +182,8 @@ function handleRegister(event) {
     const email = formData.get('email');
     const password = formData.get('password');
     const confirmPassword = formData.get('confirm_password');
-    const agreeTerms = formData.get('agree-terms');
-    
     // Validate form
-    if (!validateRegisterForm(name, email, password, confirmPassword, agreeTerms)) {
+    if (!validateRegisterForm(name, email, password, confirmPassword)) {
         return;
     }
     
@@ -210,8 +208,7 @@ function handleRegister(event) {
             name: name,
             email: email,
             password: password,
-            confirm_password: confirmPassword,
-            agree_terms: agreeTerms
+            confirm_password: confirmPassword
         })
     })
     .then(response => response.json())
@@ -284,7 +281,7 @@ function validateLoginForm(email, password) {
     return isValid;
 }
 
-function validateRegisterForm(name, email, password, confirmPassword, agreeTerms) {
+function validateRegisterForm(name, email, password, confirmPassword) {
     let isValid = true;
     
     // Clear previous errors
@@ -326,12 +323,6 @@ function validateRegisterForm(name, email, password, confirmPassword, agreeTerms
         isValid = false;
     } else if (password !== confirmPassword) {
         showFieldError('register-confirm-password', 'Password tidak sama');
-        isValid = false;
-    }
-    
-    // Validate terms agreement
-    if (!agreeTerms) {
-        showNotification('Anda harus menyetujui syarat dan ketentuan', 'warning');
         isValid = false;
     }
     
