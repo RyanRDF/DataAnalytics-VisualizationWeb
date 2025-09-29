@@ -79,8 +79,17 @@ show_*.py
 view_*.py
 final_*.py
 
-# Documentation
-docs/
-*.md
-!README.md
+# Project specific
+sampel_data.txt
+*.sample
+*.example
+
+# Backup files
+*.bak
+*.backup
+*_backup.*
+
+# Migration files (keep in migrations folder)
+migrations/*.sql
+!migrations/create_hospital_tables.sql
 
