@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Muat CSS dan JS dari static -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2.0">
+  <script src="{{ url_for('static', filename='script.js') }}?v=2.0" defer></script>
 </head>
 <body>
   <!-- Sidebar Toggle Button -->
@@ -137,6 +137,10 @@
     <div class="header-section">
       <h1>Welcome to Data Analytics Dashboard</h1>
       <div class="header-actions">
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          <span class="theme-icon" id="themeIcon">🌙</span>
+        </button>
         <a href="/login" class="login-btn">
           <span>🔐 Login</span>
         </a>

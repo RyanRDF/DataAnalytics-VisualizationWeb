@@ -1,3 +1,60 @@
+// Theme Management System
+class ThemeManager {
+    constructor() {
+        this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.themeIcon = document.getElementById('themeIcon');
+        this.init();
+    }
+
+    init() {
+        // Apply saved theme
+        this.applyTheme(this.currentTheme);
+        
+        // Update icon
+        this.updateIcon();
+    }
+
+    toggleTheme() {
+        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.applyTheme(this.currentTheme);
+        this.updateIcon();
+        this.saveTheme();
+        
+        // Show notification
+        if (window.notificationSystem) {
+            const themeName = this.currentTheme === 'dark' ? 'Dark' : 'Light';
+            window.notificationSystem.show(
+                `Switched to ${themeName} mode`,
+                'success',
+                'Theme Changed'
+            );
+        }
+    }
+
+    applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        this.currentTheme = theme;
+    }
+
+    updateIcon() {
+        if (this.themeIcon) {
+            this.themeIcon.textContent = this.currentTheme === 'dark' ? '☀️' : '🌙';
+        }
+    }
+
+    saveTheme() {
+        localStorage.setItem('theme', this.currentTheme);
+    }
+}
+
+// Initialize theme manager
+const themeManager = new ThemeManager();
+
+// Global function for theme toggle
+function toggleTheme() {
+    themeManager.toggleTheme();
+}
+
 // Modern Notification System
 class NotificationSystem {
     constructor() {

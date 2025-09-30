@@ -5,9 +5,9 @@ from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
 from datetime import datetime
 
-from ..core.data_handler import DataHandler
-from ..core.database import db, User
-from ..core.data_import_service import DataImportService
+from core.data_handler import DataHandler
+from core.database import db, User
+from core.data_import_service import DataImportService
 
 
 class WebRoutes:
@@ -179,7 +179,7 @@ class WebRoutes:
                     return render_template('index.html', table_html="", has_data=False, error=import_result['error'])
                 
                 # Get database stats
-                from ..core.database_query_service import DatabaseQueryService
+                from core.database_query_service import DatabaseQueryService
                 db_query_service = DatabaseQueryService()
                 db_stats = db_query_service.get_database_stats()
                 
@@ -199,7 +199,7 @@ class WebRoutes:
         @self.app.route('/processing-info')
         def processing_info():
             """Get database statistics"""
-            from ..core.database_query_service import DatabaseQueryService
+            from core.database_query_service import DatabaseQueryService
             db_query_service = DatabaseQueryService()
             db_stats = db_query_service.get_database_stats()
             return jsonify(db_stats)
@@ -226,7 +226,7 @@ class WebRoutes:
         @self.app.route('/accumulation-info')
         def accumulation_info():
             """Get database information"""
-            from ..core.database_query_service import DatabaseQueryService
+            from core.database_query_service import DatabaseQueryService
             db_query_service = DatabaseQueryService()
             db_stats = db_query_service.get_database_stats()
             return jsonify(db_stats)

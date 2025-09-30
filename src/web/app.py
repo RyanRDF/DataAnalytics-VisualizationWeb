@@ -4,9 +4,9 @@ Main Flask application
 from flask import Flask
 import os
 
-from ..core.data_handler import DataHandler
-from ..core.database import init_db, db
-from .routes import WebRoutes
+from core.data_handler import DataHandler
+from core.database import init_db, db
+from web.routes import WebRoutes
 
 
 def create_app():

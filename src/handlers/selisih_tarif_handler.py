@@ -2,11 +2,11 @@
 Selisih Tarif data handler
 """
 import pandas as pd
-from typing import List
+from typing import List, Dict, Any
 
-from ..core.base_handler import BaseHandler
-from ..utils.formatters import format_rupiah
-from ..utils.data_processing import safe_numeric_conversion, extract_diagnosis_codes
+from core.base_handler import BaseHandler
+from utils.formatters import format_rupiah
+from utils.data_processing import safe_numeric_conversion, extract_diagnosis_codes
 
 
 class SelisihTarifHandler(BaseHandler):
@@ -22,6 +22,10 @@ class SelisihTarifHandler(BaseHandler):
     def _get_view_name(self) -> str:
         """Get the view name for this handler"""
         return "selisih tarif"
+    
+    def _query_database(self, filters: Dict[str, Any]) -> pd.DataFrame:
+        """Query selisih tarif data from database with filters"""
+        return self.db_query_service.get_selisih_tarif_data(filters)
     
     def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process selisih tarif data with required calculations"""

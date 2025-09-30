@@ -2,11 +2,11 @@
 Financial data handler
 """
 import pandas as pd
-from typing import List
+from typing import List, Dict, Any
 
-from ..core.base_handler import BaseHandler
-from ..utils.formatters import format_rupiah
-from ..utils.data_processing import safe_numeric_conversion
+from core.base_handler import BaseHandler
+from utils.formatters import format_rupiah
+from utils.data_processing import safe_numeric_conversion
 
 
 class FinancialHandler(BaseHandler):

@@ -5,13 +5,13 @@ import pandas as pd
 import os
 from typing import Optional, Tuple
 
-from .data_processor import DataProcessor
-from ..handlers.financial_handler import FinancialHandler
-from ..handlers.patient_handler import PatientHandler
-from ..handlers.selisih_tarif_handler import SelisihTarifHandler
-from ..handlers.los_handler import LOSHandler
-from ..handlers.inacbg_handler import INACBGHandler
-from ..handlers.ventilator_handler import VentilatorHandler
+from core.data_processor import DataProcessor
+from handlers.financial_handler import FinancialHandler
+from handlers.patient_handler import PatientHandler
+from handlers.selisih_tarif_handler import SelisihTarifHandler
+from handlers.los_handler import LOSHandler
+from handlers.inacbg_handler import INACBGHandler
+from handlers.ventilator_handler import VentilatorHandler
 
 
 class DataHandler:

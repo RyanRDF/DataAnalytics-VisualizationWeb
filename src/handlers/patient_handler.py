@@ -2,10 +2,10 @@
 Patient data handler
 """
 import pandas as pd
-from typing import List
+from typing import List, Dict, Any
 
-from ..core.base_handler import BaseHandler
-from ..utils.data_processing import safe_numeric_conversion, calculate_age_in_days
+from core.base_handler import BaseHandler
+from utils.data_processing import safe_numeric_conversion, calculate_age_in_days
 
 
 class PatientHandler(BaseHandler):
@@ -27,6 +27,10 @@ class PatientHandler(BaseHandler):
     def _get_view_name(self) -> str:
         """Get the view name for this handler"""
         return "patient"
+    
+    def _query_database(self, filters: Dict[str, Any]) -> pd.DataFrame:
+        """Query patient data from database with filters"""
+        return self.db_query_service.get_patient_data(filters)
     
     def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process patient data with all required columns"""
