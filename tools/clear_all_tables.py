@@ -4,9 +4,11 @@ Tool untuk mengclear semua isi tabel dengan aman
 """
 
 import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from datetime import datetime
-from src.core.database import db, User, UserSession, DataUploadLog, Pasien, Dokter, Diagnosa, Prosedur, Kunjungan, RincianBiaya, KunjunganDiagnosa, KunjunganProsedur
-from src.web.app import create_app
+from core.database import db, User, UserSession, DataUploadLog, Pasien, Dokter, Diagnosa, Prosedur, Kunjungan, RincianBiaya, KunjunganDiagnosa, KunjunganProsedur
+from web.app import create_app
 
 def clear_all_tables():
     """Clear semua isi tabel dengan aman (urutan yang benar untuk FK)"""

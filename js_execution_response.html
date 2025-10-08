@@ -17,8 +17,8 @@
   <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 
   <!-- Muat CSS dan JS dari static -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9.0">
-  <script src="{{ url_for('static', filename='script.js') }}?v=3.0" defer></script>
+  <link rel="stylesheet" href="/static/style.css?v=9.0">
+  <script src="/static/script.js?v=3.0" defer></script>
   
   <!-- FORCE OVERRIDE DASHBOARD BLUE - INLINE CSS -->
   <style>
@@ -207,7 +207,7 @@
   <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
     <!-- Navbar Brand -->
     <a class="navbar-brand ps-3" href="#" onclick="showContent('home')">
-      <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="navbar-logo me-2">
+      <img src="/static/logo_ihc.png" alt="IHC Logo" class="navbar-logo me-2">
       IHC Data Analytics
     </a>
     
@@ -227,25 +227,10 @@
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user fa-fw"></i>
-          {% if current_user %}
-            {{ current_user.username }}
-          {% endif %}
+          
         </a>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-          {% if current_user %}
-          <li><h6 class="dropdown-header">
-            <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
-          </h6></li>
-          <li><h6 class="dropdown-header text-muted small">
-            <i class="fas fa-envelope me-2"></i>{{ current_user.email }}
-          </h6></li>
-          {% if user_session %}
-          <li><h6 class="dropdown-header text-muted small">
-            <i class="fas fa-clock me-2"></i>Login: {{ user_session.login_time.strftime('%H:%M') }}
-          </h6></li>
-          {% endif %}
-          <li><hr class="dropdown-divider" /></li>
-          {% endif %}
+          
           <li><a class="dropdown-item" href="#!">Settings</a></li>
           <li><a class="dropdown-item" href="#!">Activity Log</a></li>
           <li><hr class="dropdown-divider" /></li>
@@ -325,19 +310,7 @@
         <!-- Sidebar Footer -->
         <div class="sb-sidenav-footer">
           <!-- Session Info -->
-          {% if current_user %}
-          <div class="small mb-2">
-            <i class="fas fa-user-circle me-1"></i>
-            <strong>{{ current_user.username }}</strong>
-          </div>
-          {% if user_session %}
-          <div class="small text-muted mb-2">
-            <i class="fas fa-clock me-1"></i>
-            Login: {{ user_session.login_time.strftime('%H:%M') }}
-          </div>
-          {% endif %}
-          <hr class="my-2">
-          {% endif %}
+          
           
           <!-- Data Status -->
           <div class="small">Data Status:</div>
@@ -469,59 +442,7 @@
         </div>
         
         <!-- Data Processing Information -->
-        {% if processing_summary %}
-            <div class="card mb-4">
-              <div class="card-header">
-                <i class="fas fa-chart-bar me-1"></i>
-                Informasi Pemrosesan Data
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6">
-            <p><strong>Total Baris Data:</strong> {{ processing_summary.total_rows }}</p>
-            <p><strong>Penyesuaian Harga Diterapkan:</strong> {{ processing_summary.pricing_adjustments_applied }}</p>
-                  </div>
-                  <div class="col-md-6">
-            {% if processing_summary.upload_count %}
-                    <p><strong>Total File Upload:</strong> {{ processing_summary.upload_count }} file</p>
-                {% if processing_summary.accumulated_rows %}
-                    <p><strong>Total Baris Terakumulasi:</strong> {{ processing_summary.accumulated_rows }} baris</p>
-                    {% endif %}
-                {% endif %}
-                  </div>
-                </div>
-                
-                <h5 class="mt-3">Breakdown INACBG:</h5>
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
-                      <h6>Digit 4 = '0' (79%)</h6>
-                      <span class="badge bg-primary">{{ processing_summary.inacbg_0_count }} baris</span>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
-                      <h6>Digit 4 = 'I/II/III' (73%)</h6>
-                      <span class="badge bg-success">{{ processing_summary.inacbg_i_ii_iii_count }} baris</span>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
-                      <h6>Lainnya (100%)</h6>
-                      <span class="badge bg-warning">{{ processing_summary.inacbg_other_count }} baris</span>
-                    </div>
-            </div>
-            </div>
-                
-                <div class="alert alert-info mt-3">
-                  <strong>Catatan:</strong> Data yang ditampilkan telah diproses dengan penyesuaian harga berdasarkan digit ke-4 INACBG.
-              {% if processing_summary.upload_count and processing_summary.upload_count > 1 %}
-                  <br><strong>Akumulasi:</strong> Data dari {{ processing_summary.upload_count }} file telah digabungkan.
-              {% endif %}
-            </div>
-          </div>
-        </div>
-        {% endif %}
+        
     </div>
 
     <!-- Keuangan Content -->
@@ -575,13 +496,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="applyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="clearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -657,13 +578,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="pasienApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="pasienClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -739,13 +660,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="selisihApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="selisihClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -821,13 +742,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="losApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="losClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -903,13 +824,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="inacbgApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="inacbgClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -985,13 +906,13 @@
         <div class="search-controls-bottom-row">
           <div class="search-control light-blue-control">
             <button id="ventilatorApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
+              <img src="/static/Search_Logo-removebg-preview.png" alt="Search" class="btn-icon">
               <span>Search</span>
             </button>
           </div>
           <div class="search-control light-blue-control">
             <button id="ventilatorClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
+              <img src="/static/Clear_Logo-removebg-preview.png" alt="Clear" class="btn-icon">
               <span>Clear</span>
             </button>
           </div>
@@ -1020,28 +941,22 @@
       <h2>Upload File Data</h2>
       <p>Upload file .txt untuk memproses data E-Claim</p>
       
-      {% if success_message %}
+      
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <i class="fas fa-check-circle me-2"></i>
-        {{ success_message }}
+        Data berhasil diproses! Data berhasil diproses: 0 baris baru, 18 duplikat
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
-      {% endif %}
       
-      {% if import_stats %}
-      <div data-import-stats="{{ import_stats | tojson }}" style="display: none;"></div>
-      {% endif %}
       
-      {% if error %}
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ error }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endif %}
+      
+      <div data-import-stats="{"duplicate_rows": 18, "failed_rows": 0, "inserted_rows": 0, "integrity_score": 100, "new_rows": 0, "total_rows": 18}" style="display: none;"></div>
+      
+      
+      
       
       <div class="upload-container">
-        <form class="file-upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
+        <form class="file-upload-form" action="/upload" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
           <div class="upload-header">
             <div class="upload-icon">📁</div>
             <h3>Pilih File untuk Upload</h3>

@@ -4,10 +4,12 @@ Flask routes for the web application
 from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
 from datetime import datetime
+from functools import wraps
 
 from core.data_handler import DataHandler
-from core.database import db, User
+from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog
 from core.data_import_service import DataImportService
+from core.robust_data_extractor import RobustDataExtractor
 
 
 class WebRoutes:
@@ -17,7 +19,62 @@ class WebRoutes:
         self.app = app
         self.data_handler = data_handler
         self.data_import_service = DataImportService()
+        self.robust_extractor = RobustDataExtractor()
         self._register_routes()
+    
+    def login_required(self, f):
+        """Decorator to require login for routes"""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            if not user_id or not session_token:
+                return redirect(url_for('login'))
+            
+            # Verify session is still valid
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).filter(UserSession.expires_at > datetime.utcnow()).first()
+            
+            if not user_session:
+                session.clear()
+                return redirect(url_for('login'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+        
+    def api_login_required(self, f):
+        """Decorator to require login for API routes (returns JSON)"""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            if not user_id or not session_token:
+                return jsonify({
+                    'success': False,
+                    'message': 'Anda harus login terlebih dahulu!'
+                }), 401
+            
+            # Verify session is still valid
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).filter(UserSession.expires_at > datetime.utcnow()).first()
+            
+            if not user_session:
+                session.clear()
+                return jsonify({
+                    'success': False,
+                    'message': 'Session expired. Silakan login kembali!'
+                }), 401
+            
+            return f(*args, **kwargs)
+        return decorated_function
     
     def _register_routes(self):
         """Register all Flask routes"""
@@ -31,8 +88,24 @@ class WebRoutes:
             return render_template('login.html')
         
         @self.app.route('/main')
+        @self.login_required
         def main():
-            return render_template('index.html', table_html="", has_data=False)
+            # Get current user and session info
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            user = User.query.get(user_id)
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).first()
+            
+            return render_template('index.html', 
+                                 table_html="", 
+                                 has_data=False,
+                                 current_user=user,
+                                 user_session=user_session)
         
         @self.app.route('/auth/login', methods=['POST'])
         def auth_login():
@@ -41,6 +114,10 @@ class WebRoutes:
             email = data.get('email')
             password = data.get('password')
             remember_me = data.get('remember_me', False)
+            
+            # Get client info
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent')
             
             if not email or not password:
                 return jsonify({
@@ -56,7 +133,26 @@ class WebRoutes:
                 user.last_login = datetime.utcnow()
                 
                 # Create session
-                session_token = user.create_session()
+                session_token = user.create_session(ip_address=ip_address, user_agent=user_agent)
+                
+                # Log successful login
+                login_log = LoginLog(
+                    user_id=user.user_id,
+                    username=user.username,
+                    email=user.email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status='success'
+                )
+                db.session.add(login_log)
+                
+                # Log activity
+                user.log_activity(
+                    activity_type='login',
+                    description='User logged in successfully',
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
                 
                 db.session.commit()
                 
@@ -68,11 +164,23 @@ class WebRoutes:
                 }
                 
                 # Set session
-                session['user_id'] = user.id
+                session['user_id'] = user.user_id
                 session['session_token'] = session_token
                 
                 return jsonify(response_data)
             else:
+                # Log failed login attempt
+                login_log = LoginLog(
+                    username=email,  # Store attempted email as username
+                    email=email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status='failed',
+                    failure_reason='Invalid credentials'
+                )
+                db.session.add(login_log)
+                db.session.commit()
+                
                 return jsonify({
                     'success': False,
                     'message': 'Email atau password tidak valid!'
@@ -82,15 +190,27 @@ class WebRoutes:
         def auth_register():
             """Handle user registration"""
             data = request.get_json()
-            name = data.get('name')
+            username = data.get('username')
+            full_name = data.get('full_name')
             email = data.get('email')
             password = data.get('password')
             confirm_password = data.get('confirm_password')
+            
+            # Get client info
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent')
+            
             # Validate input
-            if not name or len(name) < 2:
+            if not username or len(username) < 3:
                 return jsonify({
                     'success': False,
-                    'message': 'Nama minimal 2 karakter'
+                    'message': 'Username minimal 3 karakter'
+                }), 400
+            
+            if not full_name or len(full_name) < 2:
+                return jsonify({
+                    'success': False,
+                    'message': 'Nama lengkap minimal 2 karakter'
                 }), 400
             
             if not email or '@' not in email:
@@ -112,20 +232,41 @@ class WebRoutes:
                 }), 400
             
             # Check if user already exists
-            existing_user = User.query.filter_by(email=email).first()
+            existing_user = User.query.filter(
+                (User.email == email) | (User.username == username)
+            ).first()
             if existing_user:
-                return jsonify({
-                    'success': False,
-                    'message': 'Email sudah terdaftar!'
-                }), 400
+                if existing_user.email == email:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Email sudah terdaftar!'
+                    }), 400
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Username sudah digunakan!'
+                    }), 400
             
             # Create new user
             try:
-                user = User(name=name, email=email)
+                user = User(
+                    username=username,
+                    full_name=full_name,
+                    email=email,
+                    role='user'  # Default role
+                )
                 user.set_password(password)
                 
                 db.session.add(user)
                 db.session.commit()
+                
+                # Log registration activity
+                user.log_activity(
+                    activity_type='register',
+                    description='User registered successfully',
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
                 
                 return jsonify({
                     'success': True,
@@ -143,66 +284,186 @@ class WebRoutes:
         @self.app.route('/auth/logout', methods=['POST'])
         def auth_logout():
             """Handle user logout"""
-            # Clear session or JWT token here
+            # Get client info
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent')
+            
+            # Get current user
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            if user_id and session_token:
+                # Find user session
+                user_session = UserSession.query.filter_by(
+                    user_id=user_id,
+                    session_token=session_token,
+                    is_active=True
+                ).first()
+                
+                if user_session:
+                    # Deactivate session
+                    user_session.is_active = False
+                    user_session.logout_time = datetime.utcnow()
+                    
+                    # Log logout activity
+                    user = User.query.get(user_id)
+                    if user:
+                        user.log_activity(
+                            activity_type='logout',
+                            description='User logged out',
+                            ip_address=ip_address,
+                            user_agent=user_agent,
+                            session_id=user_session.session_id
+                        )
+                    
+                    db.session.commit()
+            
+            # Clear session
+            session.clear()
+            
             return jsonify({
                 'success': True,
                 'message': 'Logout berhasil!'
             })
         
         @self.app.route('/upload', methods=['POST'])
+        @self.api_login_required
         def upload_file():
+            # Get user info from session (already validated by login_required decorator)
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            # Get current user session for logging
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).first()
+
             if 'file' not in request.files:
                 return redirect(url_for('index'))
-            
+
             file = request.files['file']
             if file.filename == '':
                 return redirect(url_for('index'))
-            
+
+            # Get client info
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent')
+
+            # Create upload log
+            upload_log = UploadLog(
+                user_id=user_id,
+                filename=file.filename,
+                file_size=len(file.read()),
+                file_type=file.content_type,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status='processing'
+            )
+            file.seek(0)  # Reset file pointer
+
+            db.session.add(upload_log)
+            db.session.commit()
+
             # Validate file
             is_valid, error = self.data_handler.validate_file(file.filename)
             if not is_valid:
+                upload_log.status = 'failed'
+                upload_log.error_message = error
+                db.session.commit()
                 return render_template('index.html', table_html="", has_data=False, error=error)
-            
+
             try:
                 # Save the uploaded file
                 filepath, error = self.data_handler.save_uploaded_file(file, self.app.config['UPLOAD_FOLDER'])
                 if error:
+                    upload_log.status = 'failed'
+                    upload_log.error_message = error
+                    db.session.commit()
                     return render_template('index.html', table_html="", has_data=False, error=error)
-                
-                # Import data to database
-                import_result = self.data_import_service.import_file_to_database(filepath)
-                
+
+                upload_log.file_path = filepath
+
+                # Process file dengan robust extractor
+                import_result = self.robust_extractor.process_file_complete(filepath, user_id)
+
+                # Update upload log
+                upload_log.rows_processed = import_result.get('summary', {}).get('total_rows', 0)
+                upload_log.rows_success = import_result.get('summary', {}).get('inserted_rows', 0)
+                upload_log.rows_failed = import_result.get('summary', {}).get('failed_rows', 0)
+                upload_log.processing_time_seconds = 0  # TODO: Add timing
+
+                if import_result['success']:
+                    upload_log.status = 'success'
+                else:
+                    upload_log.status = 'failed'
+                    upload_log.error_message = import_result['message']
+
+                db.session.commit()
+
+                # Log upload activity
+                user = User.query.get(user_id)
+                if user:
+                    user.log_activity(
+                        activity_type='upload',
+                        description=f'Uploaded file: {file.filename}',
+                        table_affected='multiple_tables',
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+
                 # Clean up the uploaded file
                 self.data_handler.cleanup_file(filepath)
-                
+
                 if not import_result['success']:
-                    return render_template('index.html', table_html="", has_data=False, error=import_result['error'])
-                
+                    return render_template('index.html', table_html="", has_data=False, error=import_result['message'])
+
                 # Get database stats
                 from core.database_query_service import DatabaseQueryService
                 db_query_service = DatabaseQueryService()
                 db_stats = db_query_service.get_database_stats()
-                
+
                 # Show success message with import stats
-                success_message = f"Data berhasil diimport ke database! {import_result['message']}"
-                
-                return render_template('index.html', 
-                                     table_html="", 
-                                     has_data=True, 
+                success_message = f"Data berhasil diproses! {import_result['message']}"
+
+                return render_template('index.html',
+                                     table_html="",
+                                     has_data=True,
                                      success_message=success_message,
-                                     import_stats=import_result['stats'],
+                                     import_stats=import_result['summary'],
                                      db_stats=db_stats)
-                
+
             except Exception as e:
+                upload_log.status = 'failed'
+                upload_log.error_message = str(e)
+                db.session.commit()
                 return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
         
         @self.app.route('/processing-info')
         def processing_info():
             """Get database statistics"""
             from core.database_query_service import DatabaseQueryService
-            db_query_service = DatabaseQueryService()
-            db_stats = db_query_service.get_database_stats()
-            return jsonify(db_stats)
+            
+            try:
+                db_query_service = DatabaseQueryService()
+                stats = db_query_service.get_database_stats()
+                
+                # Get upload logs count
+                upload_count = UploadLog.query.filter_by(status='success').count()
+                
+                return jsonify({
+                    'success': True,
+                    'has_data': stats.get('total_rows', 0) > 0,
+                    'total_rows': stats.get('total_rows', 0),
+                    'upload_count': upload_count,
+                    'stats': stats
+                })
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'error': str(e)
+                }), 500
         
         @self.app.route('/clear-all-data', methods=['POST'])
         def clear_all_data():

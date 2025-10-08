@@ -44,8 +44,29 @@ class DataHandler:
             Tuple of (processed_dataframe, error_message)
         """
         try:
-            # Read the uploaded file with tab separator
-            new_df = pd.read_csv(filepath, sep='\t')
+            # Read the uploaded file based on extension
+            if filepath.lower().endswith('.xlsx') or filepath.lower().endswith('.xls'):
+                # Enhanced Excel reading with better error handling
+                try:
+                    new_df = pd.read_excel(filepath, header=0, na_values=['', ' ', '-', 'N/A', 'NULL'])
+                except Exception as e:
+                    # Try alternative reading methods
+                    try:
+                        new_df = pd.read_excel(filepath, header=0, engine='openpyxl')
+                    except Exception as e2:
+                        try:
+                            new_df = pd.read_excel(filepath, header=0, engine='xlrd')
+                        except Exception as e3:
+                            raise Exception(f"Failed to read Excel file: {str(e)}. Alternative methods also failed: {str(e2)}, {str(e3)}")
+            else:
+                new_df = pd.read_csv(filepath, sep='\t')
+            
+            # Log file reading results for debugging
+            print(f"📊 DataHandler - File read successfully:")
+            print(f"  - File: {filepath}")
+            print(f"  - Rows: {len(new_df)}")
+            print(f"  - Columns: {len(new_df.columns)}")
+            print(f"  - Column names: {list(new_df.columns)}")
             
             # If this is the first upload, initialize accumulated data
             if self.accumulated_data is None:
@@ -121,8 +142,9 @@ class DataHandler:
         Returns:
             Tuple of (is_valid, error_message)
         """
-        if not filename.endswith('.txt'):
-            return False, "Please upload a .txt file"
+        allowed_extensions = ['.txt', '.xlsx', '.xls']
+        if not any(filename.lower().endswith(ext) for ext in allowed_extensions):
+            return False, "Please upload a .txt, .xlsx, or .xls file"
         return True, None
     
     def save_uploaded_file(self, file, upload_folder: str) -> Tuple[Optional[str], Optional[str]]:

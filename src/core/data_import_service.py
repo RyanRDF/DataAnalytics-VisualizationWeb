@@ -52,8 +52,30 @@ class DataImportService:
                 'errors': []
             }
             
-            # Read file
-            df = pd.read_csv(filepath, sep='\t')
+            # Read file based on extension
+            if filepath.lower().endswith('.xlsx') or filepath.lower().endswith('.xls'):
+                # Enhanced Excel reading with better error handling
+                try:
+                    df = pd.read_excel(filepath, header=0, na_values=['', ' ', '-', 'N/A', 'NULL'])
+                except Exception as e:
+                    # Try alternative reading methods
+                    try:
+                        df = pd.read_excel(filepath, header=0, engine='openpyxl')
+                    except Exception as e2:
+                        try:
+                            df = pd.read_excel(filepath, header=0, engine='xlrd')
+                        except Exception as e3:
+                            raise Exception(f"Failed to read Excel file: {str(e)}. Alternative methods also failed: {str(e2)}, {str(e3)}")
+            else:
+                df = pd.read_csv(filepath, sep='\t')
+            
+            # Log file reading results for debugging
+            print(f"📊 File read successfully:")
+            print(f"  - File: {filepath}")
+            print(f"  - Rows: {len(df)}")
+            print(f"  - Columns: {len(df.columns)}")
+            print(f"  - Column names: {list(df.columns)}")
+            
             self.import_stats['total_rows'] = len(df)
             
             # Validate data
@@ -101,22 +123,37 @@ class DataImportService:
             'LOS', 'KODE_INACBG', 'SEP'
         ]
         
+        # Enhanced validation with detailed logging
+        print(f"🔍 Validating data:")
+        print(f"  - Total rows: {len(df)}")
+        print(f"  - Total columns: {len(df.columns)}")
+        print(f"  - Found columns: {list(df.columns)}")
+        
         # Check required columns
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
+            print(f"  ❌ Missing columns: {missing_columns}")
             return {
                 'is_valid': False,
-                'error': f"Missing required columns: {', '.join(missing_columns)}"
+                'error': f"Missing required columns: {', '.join(missing_columns)}. Found columns: {', '.join(df.columns)}"
             }
         
+        print(f"  ✅ All required columns found")
+        
         # Check for empty required fields
-        for col in ['MRN', 'NAMA_PASIEN', 'ADMISSION_DATE']:
-            if df[col].isnull().any():
+        critical_columns = ['MRN', 'NAMA_PASIEN', 'ADMISSION_DATE']
+        for col in critical_columns:
+            null_count = df[col].isnull().sum()
+            if null_count > 0:
+                print(f"  ❌ Column {col} has {null_count} null values")
                 return {
                     'is_valid': False,
-                    'error': f"Column {col} contains null values"
+                    'error': f"Column {col} contains {null_count} null values out of {len(df)} rows"
                 }
+            else:
+                print(f"  ✅ Column {col} has no null values")
         
+        print(f"  ✅ Data validation passed")
         return {'is_valid': True, 'error': None}
     
     def _import_batch(self, batch_df: pd.DataFrame):

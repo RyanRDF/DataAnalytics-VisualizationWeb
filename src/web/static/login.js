@@ -133,17 +133,20 @@ function handleLogin(event) {
                 if (rememberMe) {
                     localStorage.setItem('rememberMe', 'true');
                     localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userName', data.user.name);
+                    localStorage.setItem('userName', data.user.full_name);
                 }
                 
-                // Show success notification only once
-                showNotification(data.message, 'success');
+                // Show success notification
+                showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
+                
+                // Clear login form
+                event.target.reset();
                 
                 // Redirect to main page seamlessly
                 setTimeout(() => {
                     // Use replace to avoid back button issues
                     window.location.replace('/main');
-                }, 1000);
+                }, 1500);
             } else {
                 showNotification(data.message, 'error');
                 // Re-enable submit button on error
@@ -178,12 +181,13 @@ function handleRegister(event) {
     }
     
     const formData = new FormData(event.target);
-    const name = formData.get('name');
+    const username = formData.get('username');
+    const fullName = formData.get('full_name');
     const email = formData.get('email');
     const password = formData.get('password');
     const confirmPassword = formData.get('confirm_password');
     // Validate form
-    if (!validateRegisterForm(name, email, password, confirmPassword)) {
+    if (!validateRegisterForm(username, fullName, email, password, confirmPassword)) {
         return;
     }
     
@@ -205,7 +209,8 @@ function handleRegister(event) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            name: name,
+            username: username,
+            full_name: fullName,
             email: email,
             password: password,
             confirm_password: confirmPassword
@@ -222,14 +227,18 @@ function handleRegister(event) {
             hideLoading();
             
             if (data.success) {
-                showNotification(data.message, 'success');
+                // Show success notification with better message
+                showNotification('Registrasi berhasil! Data telah tersimpan ke database. Silakan login dengan akun baru Anda.', 'success');
                 
-                // Switch to login tab
+                // Clear registration form
+                event.target.reset();
+                
+                // Switch to login tab after showing notification
                 setTimeout(() => {
                     switchTab('login');
                     // Pre-fill email
                     document.getElementById('login-email').value = email;
-                }, 1500);
+                }, 2000);
             } else {
                 showNotification(data.message, 'error');
                 // Re-enable submit button on error
@@ -281,17 +290,26 @@ function validateLoginForm(email, password) {
     return isValid;
 }
 
-function validateRegisterForm(name, email, password, confirmPassword) {
+function validateRegisterForm(username, fullName, email, password, confirmPassword) {
     let isValid = true;
     
     // Clear previous errors
     clearFormErrors('register');
     
-    // Validate name
-    if (!name) {
+    // Validate username
+    if (!username) {
+        showFieldError('register-username', 'Username harus diisi');
+        isValid = false;
+    } else if (username.length < 3) {
+        showFieldError('register-username', 'Username minimal 3 karakter');
+        isValid = false;
+    }
+    
+    // Validate full name
+    if (!fullName) {
         showFieldError('register-name', 'Nama lengkap harus diisi');
         isValid = false;
-    } else if (name.length < 2) {
+    } else if (fullName.length < 2) {
         showFieldError('register-name', 'Nama minimal 2 karakter');
         isValid = false;
     }
@@ -466,23 +484,44 @@ function showNotification(message, type = 'info') {
     const container = document.getElementById('notificationContainer');
     if (!container) return;
     
+    // Remove existing notifications
+    const existingNotifications = container.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    
+    // Add icon based on type
+    let icon = '';
+    if (type === 'success') {
+        icon = '✓';
+    } else if (type === 'error') {
+        icon = '✗';
+    } else if (type === 'warning') {
+        icon = '⚠';
+    } else {
+        icon = 'ℹ';
+    }
+    
     notification.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span>${message}</span>
+            <div style="display: flex; align-items: center;">
+                <span style="margin-right: 0.5rem; font-weight: bold;">${icon}</span>
+                <span>${message}</span>
+            </div>
             <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; margin-left: 1rem; color: #6c757d;">&times;</button>
         </div>
     `;
     
     container.appendChild(notification);
     
-    // Auto remove after 5 seconds
+    // Auto remove after longer time for success messages
+    const autoRemoveTime = type === 'success' ? 8000 : 5000;
     setTimeout(() => {
         if (notification.parentNode) {
             notification.remove();
         }
-    }, 5000);
+    }, autoRemoveTime);
 }
 
 function showLoading() {
@@ -496,12 +535,13 @@ function showLoadingWithAnimation() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         // Update loading content to use existing animation
+        const loadingText = currentTab === 'login' ? 'Memproses login...' : 'Memproses registrasi...';
         overlay.innerHTML = `
             <div class="loading-content">
                 <video autoplay loop muted class="loading-video">
                     <source src="/static/Loading animation blue.webm" type="video/webm">
                 </video>
-                <p>Memproses login...</p>
+                <p>${loadingText}</p>
             </div>
         `;
         overlay.classList.add('show');

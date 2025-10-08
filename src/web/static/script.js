@@ -1,3 +1,106 @@
+// ===== BOOTSTRAP INTEGRATION =====
+
+// Initialize Bootstrap functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize sidebar toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.toggle('sb-sidenav-toggled');
+            
+            // Add visual feedback to the button
+            const icon = sidebarToggle.querySelector('i');
+            if (icon) {
+                if (document.body.classList.contains('sb-sidenav-toggled')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        });
+    }
+    
+    // Set Dashboard as active by default (without background color)
+    const dashboardLink = document.querySelector('.sb-sidenav .nav-link[onclick*="showContent(\'home\')"]');
+    if (dashboardLink) {
+        dashboardLink.classList.add('active');
+    }
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('layoutSidenav_nav');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        if (window.innerWidth <= 991.98 && 
+            document.body.classList.contains('sb-sidenav-toggled') &&
+            !sidebar.contains(e.target) && 
+            !sidebarToggle.contains(e.target)) {
+            document.body.classList.remove('sb-sidenav-toggled');
+            
+            // Reset button icon
+            const icon = sidebarToggle.querySelector('i');
+            if (icon) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        }
+    });
+});
+
+// Sidebar dropdown toggle function
+function toggleSidebarDropdown(targetId, triggerElement) {
+    const target = document.getElementById(targetId);
+    
+    if (target && triggerElement) {
+        const isExpanded = triggerElement.getAttribute('aria-expanded') === 'true';
+        
+        // Close all other dropdowns first
+        const allDropdowns = document.querySelectorAll('.sb-sidenav .collapse');
+        const allTriggers = document.querySelectorAll('.sb-sidenav .nav-link[aria-controls]');
+        
+        allDropdowns.forEach(dropdown => {
+            if (dropdown.id !== targetId) {
+                dropdown.classList.remove('show');
+            }
+        });
+        
+        allTriggers.forEach(trigger => {
+            if (trigger !== triggerElement) {
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.classList.add('collapsed');
+            }
+        });
+        
+        // Toggle current dropdown with smooth animation
+        if (isExpanded) {
+            target.classList.remove('show');
+            triggerElement.setAttribute('aria-expanded', 'false');
+            triggerElement.classList.add('collapsed');
+        } else {
+            target.classList.add('show');
+            triggerElement.setAttribute('aria-expanded', 'true');
+            triggerElement.classList.remove('collapsed');
+        }
+    }
+}
+
+// Update active menu state
+function updateActiveMenu(activeElement) {
+    // Remove active class from all nav links
+    const allNavLinks = document.querySelectorAll('.sb-sidenav .nav-link');
+    allNavLinks.forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Add active class to clicked element
+    if (activeElement) {
+        activeElement.classList.add('active');
+    }
+}
+
 // Theme Management System
 class ThemeManager {
     constructor() {
@@ -368,16 +471,17 @@ function handleFileUpload(event) {
         const fileName = file.name;
         const fileExtension = fileName.split('.').pop().toLowerCase();
         
-        // Check if the file extension is .txt
-        if (fileExtension === 'txt') {
-            fileInfo.textContent = `Selected file: ${fileName}`;
-            fileInfo.style.color = '#28a745'; // Green color for valid file
-            uploadBtn.disabled = false;
-        } else {
-            fileInfo.textContent = 'Please select a .txt file only.';
-            fileInfo.style.color = '#dc3545'; // Red color for invalid file
+        // Check if the file extension is supported
+        const allowedExtensions = ['txt', 'xlsx', 'xls'];
+        if (!allowedExtensions.includes(fileExtension)) {
+            fileInfo.innerHTML = `<span style="color: red;">❌ File tidak didukung. Gunakan .txt, .xlsx, atau .xls</span>`;
             uploadBtn.disabled = true;
+            return;
         }
+        // File is supported
+        fileInfo.textContent = `Selected file: ${fileName}`;
+        fileInfo.style.color = '#28a745'; // Green color for valid file
+        uploadBtn.disabled = false;
     } else {
         fileInfo.textContent = 'No file selected.';
         fileInfo.style.color = '#555';
@@ -406,11 +510,25 @@ function handleFormSubmit(event) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // Check if there's table data in the response
+        // Check if there's success message or table data in the response
+        const successMessage = doc.querySelector('.alert-success');
         const tableContainer = doc.querySelector('.table-container');
-        if (tableContainer && tableContainer.innerHTML.trim() !== '') {
-            // Extract table HTML and update all view states
-            const tableHtml = tableContainer.innerHTML;
+        const errorMessage = doc.querySelector('.alert-danger');
+        
+        if (successMessage) {
+            // Success message found - upload was successful
+            console.log('Upload successful - success message found');
+        } else if (tableContainer && tableContainer.innerHTML.trim() !== '' && !tableContainer.innerHTML.includes('Data Belum Tersedia')) {
+            // Table data found - upload was successful
+            console.log('Upload successful - table data found');
+        } else {
+            // No success indicators found
+            console.log('Upload failed - no success indicators found');
+        }
+        
+        if (successMessage || (tableContainer && tableContainer.innerHTML.trim() !== '' && !tableContainer.innerHTML.includes('Data Belum Tersedia'))) {
+            // Extract table HTML if available
+            const tableHtml = tableContainer ? tableContainer.innerHTML : '';
             
             // Update all view states with the uploaded data
             updateViewState('keuangan', { 
@@ -452,9 +570,27 @@ function handleFormSubmit(event) {
             // Update data management info
             updateDataManagementInfo();
             
-            // Show success message
-            notificationSystem.success('File uploaded and accumulated successfully!', 'Success');
+            // Extract import stats from response if available
+            const importStatsElement = doc.querySelector('[data-import-stats]');
+            if (importStatsElement) {
+                try {
+                    const importStats = JSON.parse(importStatsElement.getAttribute('data-import-stats'));
+                    updateDataStatusAfterUpload({summary: importStats});
+                } catch (e) {
+                    console.log('Could not parse import stats');
+                }
+            }
             
+            // Show success message
+            if (successMessage) {
+                notificationSystem.success('File uploaded and processed successfully!', 'Success');
+            } else {
+                notificationSystem.success('File uploaded and accumulated successfully!', 'Success');
+            }
+            
+        } else if (errorMessage) {
+            // Show error message
+            notificationSystem.error(errorMessage.textContent.trim(), 'Error');
         } else {
             notificationSystem.warning('No data found in file.', 'No Data');
         }
@@ -1179,91 +1315,79 @@ function updateProcessingSummary(summary) {
 
 // Function to update data management information
 function updateDataManagementInfo() {
-    fetch('/accumulation-info')
+    fetch('/processing-info')
         .then(response => response.json())
         .then(data => {
-            const dataInfo = document.getElementById('dataInfo');
-            const clearBtn = document.getElementById('clearAllDataBtn');
+            const dataStatusText = document.getElementById('dataStatusText');
+            const dataStats = document.getElementById('dataStats');
+            const uploadStats = document.getElementById('uploadStats');
             
             if (data.has_data) {
-                dataInfo.innerHTML = `
-                    <div class="data-status">
-                        <div class="status-indicator active"></div>
-                        <span>${data.upload_count} files uploaded</span>
-                    </div>
-                    <div class="data-status">
-                        <div class="status-indicator active"></div>
-                        <span>${data.accumulated_rows} total rows</span>
-                    </div>
-                `;
-                clearBtn.disabled = false;
+                dataStatusText.textContent = 'Data available';
+                
+                // Show detailed stats
+                let statsHtml = '';
+                if (data.total_rows > 0) {
+                    statsHtml += `<div>Total rows: ${data.total_rows}</div>`;
+                }
+                if (data.upload_count > 0) {
+                    statsHtml += `<div>Files uploaded: ${data.upload_count}</div>`;
+                }
+                
+                uploadStats.innerHTML = statsHtml;
+                dataStats.style.display = 'block';
             } else {
-                dataInfo.innerHTML = `
-                    <div class="data-status">
-                        <div class="status-indicator"></div>
-                        <span>No data uploaded</span>
-                    </div>
-                `;
-                clearBtn.disabled = true;
+                dataStatusText.textContent = 'No data uploaded';
+                dataStats.style.display = 'none';
             }
         })
         .catch(error => {
-            console.error('Error fetching accumulation info:', error);
+            console.error('Error fetching data info:', error);
         });
 }
 
-// Function to clear all accumulated data
-function clearAllData() {
-    if (!confirm('Are you sure you want to clear all accumulated data? This action cannot be undone.')) {
-        return;
+// Function to update data status after upload
+function updateDataStatusAfterUpload(uploadResult) {
+    const dataStatusText = document.getElementById('dataStatusText');
+    const dataStats = document.getElementById('dataStats');
+    const uploadStats = document.getElementById('uploadStats');
+    
+    if (uploadResult && uploadResult.summary) {
+        const stats = uploadResult.summary;
+        
+        // Determine status text based on results
+        if (stats.inserted_rows > 0) {
+            dataStatusText.textContent = 'Data uploaded';
+        } else if (stats.duplicate_rows > 0) {
+            dataStatusText.textContent = 'Data already exists';
+        } else {
+            dataStatusText.textContent = 'No data uploaded';
+        }
+        
+        // Show detailed stats
+        let statsHtml = '';
+        if (stats.total_rows > 0) {
+            statsHtml += `<div>Total rows: ${stats.total_rows}</div>`;
+        }
+        if (stats.inserted_rows > 0) {
+            statsHtml += `<div>Uploaded: ${stats.inserted_rows}</div>`;
+        }
+        if (stats.duplicate_rows > 0) {
+            statsHtml += `<div>Duplicates: ${stats.duplicate_rows}</div>`;
+        }
+        if (stats.failed_rows > 0) {
+            statsHtml += `<div>Failed: ${stats.failed_rows}</div>`;
+        }
+        if (stats.integrity_score !== undefined) {
+            statsHtml += `<div>Integrity: ${stats.integrity_score}%</div>`;
+        }
+        
+        uploadStats.innerHTML = statsHtml;
+        dataStats.style.display = 'block';
+    } else {
+        dataStatusText.textContent = 'No data uploaded';
+        dataStats.style.display = 'none';
     }
-    
-    const clearBtn = document.getElementById('clearAllDataBtn');
-    const originalText = clearBtn.querySelector('span').textContent;
-    
-    // Show loading state
-    clearBtn.querySelector('span').textContent = 'Clearing...';
-    clearBtn.disabled = true;
-    
-    fetch('/clear-all-data', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Clear all view states
-        Object.keys(viewStates).forEach(viewType => {
-            updateViewState(viewType, {
-                tableHtml: '',
-                hasData: false,
-                filters: {
-                    startDate: '',
-                    endDate: '',
-                    sortColumn: '',
-                    sortOrder: 'ASC',
-                    filterColumn: '',
-                    filterValue: ''
-                }
-            });
-        });
-        
-        // Update data management info
-        updateDataManagementInfo();
-        
-        // Show success message
-        notificationSystem.success('All data cleared successfully!', 'Success');
-        
-        // Return to home view
-        showContent('home');
-    })
-    .catch(error => {
-        console.error('Error clearing data:', error);
-        notificationSystem.error('Failed to clear data. Please try again.', 'Error');
-    })
-    .finally(() => {
-        // Restore button state
-        clearBtn.querySelector('span').textContent = originalText;
-        clearBtn.disabled = false;
-    });
 }
 
 // Initialize the page with Home content as default
@@ -1737,4 +1861,34 @@ function closeSidebar() {
     sidebarOverlay.classList.remove('active');
     sidebar.style.transform = 'translateX(-100%)';
     toggleIcon.textContent = '☰';
+}
+
+// Logout function
+function logout() {
+    if (confirm('Apakah Anda yakin ingin logout?')) {
+        fetch('/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success notification
+                notificationSystem.success('Logout berhasil!', 'Success');
+                
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1000);
+            } else {
+                notificationSystem.error('Logout gagal: ' + data.message, 'Error');
+            }
+        })
+        .catch(error => {
+            console.error('Logout error:', error);
+            notificationSystem.error('Terjadi kesalahan saat logout', 'Error');
+        });
+    }
 }

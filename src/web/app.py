@@ -29,9 +29,9 @@ def create_app():
     with app.app_context():
         try:
             db.create_all()
-            print("✅ Database tables created successfully!")
+            print("Database tables created successfully!")
         except Exception as e:
-            print(f"❌ Database connection error: {e}")
+            print(f"Database connection error: {e}")
     
     # Initialize data handler
     data_handler = DataHandler()

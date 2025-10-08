@@ -18,11 +18,11 @@
     <!-- Left Section - Logo IHC -->
     <div class="left-section">
       <div class="logo-container">
-        <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="logo-image">
+        <img src="{{ url_for('static', filename='logo_professional.svg') }}" alt="Data Analytics Logo" class="logo-image">
       </div>
       <div class="welcome-text">
         <h3>Selamat Datang</h3>
-        <p>Akses dashboard analisis data E-Claim dengan mudah dan aman</p>
+        <p>Akses dashboard analisis data profesional dengan mudah dan aman</p>
       </div>
     </div>
 
@@ -66,8 +66,12 @@
           <h2>Daftar Akun Baru</h2>
           <form class="register-form" onsubmit="handleRegister(event)">
             <div class="input-group">
+              <label for="register-username">Username</label>
+              <input type="text" id="register-username" name="username" required>
+            </div>
+            <div class="input-group">
               <label for="register-name">Nama Lengkap</label>
-              <input type="text" id="register-name" name="name" required>
+              <input type="text" id="register-name" name="full_name" required>
             </div>
             <div class="input-group">
               <label for="register-email">Email</label>

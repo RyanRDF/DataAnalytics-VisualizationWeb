@@ -1,27 +1,27 @@
-/* Login Page Styles - Using Main Page Color Palette */
+/* Login Page Styles - Using Professional Bootstrap Color Palette */
 :root {
   /* Colors */
-  --primary-color: #2563eb;
-  --primary-light: #3b82f6;
-  --primary-dark: #1d4ed8;
-  --secondary-color: #64748b;
-  --accent-color: #06b6d4;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --error-color: #ef4444;
+  --primary-color: #0d6efd;
+  --primary-light: #6610f2;
+  --primary-dark: #0a58ca;
+  --secondary-color: #6c757d;
+  --accent-color: #0dcaf0;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --error-color: #dc3545;
   
   /* Neutral Colors */
   --white: #ffffff;
-  --gray-50: #f8fafc;
-  --gray-100: #f1f5f9;
-  --gray-200: #e2e8f0;
-  --gray-300: #cbd5e1;
-  --gray-400: #94a3b8;
-  --gray-500: #64748b;
-  --gray-600: #475569;
-  --gray-700: #334155;
-  --gray-800: #1e293b;
-  --gray-900: #0f172a;
+  --gray-50: #f8f9fa;
+  --gray-100: #e9ecef;
+  --gray-200: #dee2e6;
+  --gray-300: #ced4da;
+  --gray-400: #adb5bd;
+  --gray-500: #6c757d;
+  --gray-600: #495057;
+  --gray-700: #343a40;
+  --gray-800: #212529;
+  --gray-900: #000000;
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -115,7 +115,7 @@ body {
   width: 200px;
   height: 200px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  /* Remove filter for SVG logo to preserve colors */
   max-width: 80%;
   max-height: 80%;
 }
