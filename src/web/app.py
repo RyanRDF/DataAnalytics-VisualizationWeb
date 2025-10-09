@@ -6,7 +6,8 @@ import os
 
 from core.data_handler import DataHandler
 from core.database import init_db, db
-from web.routes import WebRoutes
+from .routes import WebRoutes
+from .filters import jakarta_time, jakarta_time_short, jakarta_date
 
 
 def create_app():
@@ -32,6 +33,11 @@ def create_app():
             print("Database tables created successfully!")
         except Exception as e:
             print(f"Database connection error: {e}")
+    
+    # Register custom filters
+    app.jinja_env.filters['jakarta_time'] = jakarta_time
+    app.jinja_env.filters['jakarta_time_short'] = jakarta_time_short
+    app.jinja_env.filters['jakarta_date'] = jakarta_date
     
     # Initialize data handler
     data_handler = DataHandler()

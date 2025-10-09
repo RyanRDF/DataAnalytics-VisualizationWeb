@@ -15,9 +15,9 @@ class FinancialHandler(BaseHandler):
     def _get_required_columns(self) -> List[str]:
         """Get list of required columns for financial analysis"""
         return [
-            'kunjungan_id', 'mrn', 'nama_pasien', 'no_kartu_bpjs', 'dpjp',
+            'sep', 'mrn', 'nama_pasien', 'nokartu', 'dpjp',
             'admission_date', 'discharge_date', 'los', 'kelas_rawat',
-            'kode_inacbg', 'sep', 'total_tarif', 'tarif_rs'
+            'inacbg', 'total_tarif', 'tarif_rs'
         ]
     
     def _get_view_name(self) -> str:

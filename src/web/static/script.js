@@ -1322,22 +1322,35 @@ function updateDataManagementInfo() {
             const dataStats = document.getElementById('dataStats');
             const uploadStats = document.getElementById('uploadStats');
             
+            const statusIndicator = document.querySelector('.status-indicator');
             if (data.has_data) {
                 dataStatusText.textContent = 'Data available';
+                if (statusIndicator) {
+                    statusIndicator.style.background = '#28a745'; // Success color
+                }
                 
-                // Show detailed stats
+                // Show detailed stats with rows_success and rows_failed from upload_logs
                 let statsHtml = '';
+                if (data.rows_success > 0) {
+                    statsHtml += `<div style="color: #28a745;"><strong>Rows Uploaded:</strong> ${data.rows_success}</div>`;
+                }
+                if (data.rows_failed > 0) {
+                    statsHtml += `<div style="color: #dc3545;"><strong>Rows Duplicated:</strong> ${data.rows_failed}</div>`;
+                }
                 if (data.total_rows > 0) {
-                    statsHtml += `<div>Total rows: ${data.total_rows}</div>`;
+                    statsHtml += `<div><strong>Total rows:</strong> ${data.total_rows}</div>`;
                 }
                 if (data.upload_count > 0) {
-                    statsHtml += `<div>Files uploaded: ${data.upload_count}</div>`;
+                    statsHtml += `<div><strong>Files uploaded:</strong> ${data.upload_count}</div>`;
                 }
                 
                 uploadStats.innerHTML = statsHtml;
                 dataStats.style.display = 'block';
             } else {
                 dataStatusText.textContent = 'No data uploaded';
+                if (statusIndicator) {
+                    statusIndicator.style.background = '#6c757d'; // Default color
+                }
                 dataStats.style.display = 'none';
             }
         })
@@ -1352,34 +1365,45 @@ function updateDataStatusAfterUpload(uploadResult) {
     const dataStats = document.getElementById('dataStats');
     const uploadStats = document.getElementById('uploadStats');
     
-    if (uploadResult && uploadResult.summary) {
-        const stats = uploadResult.summary;
+    if (uploadResult) {
+        const rowsSuccess = uploadResult.rows_success || 0;
+        const rowsFailed = uploadResult.rows_failed || 0;
+        const totalRows = uploadResult.total_rows || (rowsSuccess + rowsFailed);
         
         // Determine status text based on results
-        if (stats.inserted_rows > 0) {
-            dataStatusText.textContent = 'Data uploaded';
-        } else if (stats.duplicate_rows > 0) {
-            dataStatusText.textContent = 'Data already exists';
+        const statusIndicator = document.querySelector('.status-indicator');
+        if (rowsSuccess > 0 && rowsFailed > 0) {
+            dataStatusText.textContent = 'Data processed (partial)';
+            if (statusIndicator) {
+                statusIndicator.style.background = '#ffc107'; // Warning color
+            }
+        } else if (rowsSuccess > 0) {
+            dataStatusText.textContent = 'Data uploaded successfully';
+            if (statusIndicator) {
+                statusIndicator.style.background = '#28a745'; // Success color
+            }
+        } else if (rowsFailed > 0) {
+            dataStatusText.textContent = 'Upload failed (duplicates)';
+            if (statusIndicator) {
+                statusIndicator.style.background = '#dc3545'; // Error color
+            }
         } else {
             dataStatusText.textContent = 'No data uploaded';
+            if (statusIndicator) {
+                statusIndicator.style.background = '#6c757d'; // Default color
+            }
         }
         
-        // Show detailed stats
+        // Show detailed stats with clear row failed/success information
         let statsHtml = '';
-        if (stats.total_rows > 0) {
-            statsHtml += `<div>Total rows: ${stats.total_rows}</div>`;
+        if (totalRows > 0) {
+            statsHtml += `<div><strong>Total rows:</strong> ${totalRows}</div>`;
         }
-        if (stats.inserted_rows > 0) {
-            statsHtml += `<div>Uploaded: ${stats.inserted_rows}</div>`;
+        if (rowsSuccess > 0) {
+            statsHtml += `<div style="color: #28a745;"><strong>Rows Success:</strong> ${rowsSuccess}</div>`;
         }
-        if (stats.duplicate_rows > 0) {
-            statsHtml += `<div>Duplicates: ${stats.duplicate_rows}</div>`;
-        }
-        if (stats.failed_rows > 0) {
-            statsHtml += `<div>Failed: ${stats.failed_rows}</div>`;
-        }
-        if (stats.integrity_score !== undefined) {
-            statsHtml += `<div>Integrity: ${stats.integrity_score}%</div>`;
+        if (rowsFailed > 0) {
+            statsHtml += `<div style="color: #dc3545;"><strong>Rows Failed:</strong> ${rowsFailed}</div>`;
         }
         
         uploadStats.innerHTML = statsHtml;

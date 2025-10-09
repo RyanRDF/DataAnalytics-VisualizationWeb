@@ -241,7 +241,7 @@
           </h6></li>
           {% if user_session %}
           <li><h6 class="dropdown-header text-muted small">
-            <i class="fas fa-clock me-2"></i>Login: {{ user_session.login_time.strftime('%H:%M') }}
+            <i class="fas fa-clock me-2"></i>Login: {{ user_session.login_time | jakarta_time_short }}
           </h6></li>
           {% endif %}
           <li><hr class="dropdown-divider" /></li>
@@ -333,7 +333,7 @@
           {% if user_session %}
           <div class="small text-muted mb-2">
             <i class="fas fa-clock me-1"></i>
-            Login: {{ user_session.login_time.strftime('%H:%M') }}
+            Login: {{ user_session.login_time | jakarta_time_short }}
           </div>
           {% endif %}
           <hr class="my-2">

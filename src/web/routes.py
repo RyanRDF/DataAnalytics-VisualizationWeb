@@ -4,12 +4,13 @@ Flask routes for the web application
 from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
 from datetime import datetime
+from utils.timezone_utils import jakarta_now
 from functools import wraps
 
 from core.data_handler import DataHandler
 from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog
-from core.data_import_service import DataImportService
 from core.robust_data_extractor import RobustDataExtractor
+from core.upload_service import UploadService
 
 
 class WebRoutes:
@@ -18,8 +19,8 @@ class WebRoutes:
     def __init__(self, app, data_handler: DataHandler):
         self.app = app
         self.data_handler = data_handler
-        self.data_import_service = DataImportService()
         self.robust_extractor = RobustDataExtractor()
+        self.upload_service = UploadService()
         self._register_routes()
     
     def login_required(self, f):
@@ -37,7 +38,7 @@ class WebRoutes:
                 user_id=user_id,
                 session_token=session_token,
                 is_active=True
-            ).filter(UserSession.expires_at > datetime.utcnow()).first()
+            ).filter(UserSession.expires_at > jakarta_now()).first()
             
             if not user_session:
                 session.clear()
@@ -64,7 +65,7 @@ class WebRoutes:
                 user_id=user_id,
                 session_token=session_token,
                 is_active=True
-            ).filter(UserSession.expires_at > datetime.utcnow()).first()
+            ).filter(UserSession.expires_at > jakarta_now()).first()
             
             if not user_session:
                 session.clear()
@@ -130,7 +131,7 @@ class WebRoutes:
             
             if user and user.check_password(password):
                 # Update last login
-                user.last_login = datetime.utcnow()
+                user.last_login = jakarta_now()
                 
                 # Create session
                 session_token = user.create_session(ip_address=ip_address, user_agent=user_agent)
@@ -303,7 +304,7 @@ class WebRoutes:
                 if user_session:
                     # Deactivate session
                     user_session.is_active = False
-                    user_session.logout_time = datetime.utcnow()
+                    user_session.logout_time = jakarta_now()
                     
                     # Log logout activity
                     user = User.query.get(user_id)
@@ -351,56 +352,21 @@ class WebRoutes:
             ip_address = request.remote_addr
             user_agent = request.headers.get('User-Agent')
 
-            # Create upload log
-            upload_log = UploadLog(
-                user_id=user_id,
-                filename=file.filename,
-                file_size=len(file.read()),
-                file_type=file.content_type,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                status='processing'
-            )
-            file.seek(0)  # Reset file pointer
-
-            db.session.add(upload_log)
-            db.session.commit()
-
             # Validate file
             is_valid, error = self.data_handler.validate_file(file.filename)
             if not is_valid:
-                upload_log.status = 'failed'
-                upload_log.error_message = error
-                db.session.commit()
                 return render_template('index.html', table_html="", has_data=False, error=error)
 
             try:
                 # Save the uploaded file
                 filepath, error = self.data_handler.save_uploaded_file(file, self.app.config['UPLOAD_FOLDER'])
                 if error:
-                    upload_log.status = 'failed'
-                    upload_log.error_message = error
-                    db.session.commit()
                     return render_template('index.html', table_html="", has_data=False, error=error)
 
-                upload_log.file_path = filepath
+                # Process file dengan upload service yang baru
+                upload_result = self.upload_service.process_upload(filepath, user_id)
 
-                # Process file dengan robust extractor
-                import_result = self.robust_extractor.process_file_complete(filepath, user_id)
-
-                # Update upload log
-                upload_log.rows_processed = import_result.get('summary', {}).get('total_rows', 0)
-                upload_log.rows_success = import_result.get('summary', {}).get('inserted_rows', 0)
-                upload_log.rows_failed = import_result.get('summary', {}).get('failed_rows', 0)
-                upload_log.processing_time_seconds = 0  # TODO: Add timing
-
-                if import_result['success']:
-                    upload_log.status = 'success'
-                else:
-                    upload_log.status = 'failed'
-                    upload_log.error_message = import_result['message']
-
-                db.session.commit()
+                # Upload service sudah menangani logging, jadi kita tidak perlu update upload_log lagi
 
                 # Log upload activity
                 user = User.query.get(user_id)
@@ -408,7 +374,7 @@ class WebRoutes:
                     user.log_activity(
                         activity_type='upload',
                         description=f'Uploaded file: {file.filename}',
-                        table_affected='multiple_tables',
+                        table_affected='data_analytics',
                         ip_address=ip_address,
                         user_agent=user_agent
                     )
@@ -416,28 +382,25 @@ class WebRoutes:
                 # Clean up the uploaded file
                 self.data_handler.cleanup_file(filepath)
 
-                if not import_result['success']:
-                    return render_template('index.html', table_html="", has_data=False, error=import_result['message'])
+                if not upload_result['success']:
+                    return render_template('index.html', table_html="", has_data=False, error=upload_result.get('error', 'Upload gagal'))
 
                 # Get database stats
                 from core.database_query_service import DatabaseQueryService
                 db_query_service = DatabaseQueryService()
                 db_stats = db_query_service.get_database_stats()
 
-                # Show success message with import stats
-                success_message = f"Data berhasil diproses! {import_result['message']}"
+                # Show success message with upload stats
+                success_message = upload_result.get('message', 'Data berhasil diproses!')
 
                 return render_template('index.html',
                                      table_html="",
                                      has_data=True,
                                      success_message=success_message,
-                                     import_stats=import_result['summary'],
+                                     upload_result=upload_result,
                                      db_stats=db_stats)
 
             except Exception as e:
-                upload_log.status = 'failed'
-                upload_log.error_message = str(e)
-                db.session.commit()
                 return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
         
         @self.app.route('/processing-info')
@@ -452,11 +415,17 @@ class WebRoutes:
                 # Get upload logs count
                 upload_count = UploadLog.query.filter_by(status='success').count()
                 
+                # Get total rows_success and rows_failed from upload_logs
+                total_rows_success = db.session.query(db.func.sum(UploadLog.rows_success)).scalar() or 0
+                total_rows_failed = db.session.query(db.func.sum(UploadLog.rows_failed)).scalar() or 0
+                
                 return jsonify({
                     'success': True,
                     'has_data': stats.get('total_rows', 0) > 0,
                     'total_rows': stats.get('total_rows', 0),
                     'upload_count': upload_count,
+                    'rows_success': int(total_rows_success),
+                    'rows_failed': int(total_rows_failed),
                     'stats': stats
                 })
             except Exception as e:

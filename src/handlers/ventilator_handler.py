@@ -18,7 +18,7 @@ class VentilatorHandler(BaseHandler):
         return [
             'SEP', 'MRN', 'NAMA_PASIEN', 'INACBG', 'DESKRIPSI_INACBG',
             'LOS', 'ADMISSION_DATE', 'DISCHARGE_DATE', 'TOTAL_TARIF', 'TARIF_RS',
-            'VENTILATOR_HOURS', 'VENTILATOR_COST'
+            'VENT_HOUR', 'ICU_INDIKATOR', 'ICU_LOS'
         ]
     
     def _get_view_name(self) -> str:

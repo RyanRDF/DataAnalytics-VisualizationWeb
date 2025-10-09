@@ -13,8 +13,7 @@ import logging
 import hashlib
 import json
 
-from core.database import db, DataAnalytics, Pasien, Kunjungan, KunjunganDiagnosa, KunjunganProsedur, \
-                         Dokter, Diagnosa, Prosedur, User, UploadLog
+from core.database import db, DataAnalytics, User, UploadLog
 
 logger = logging.getLogger(__name__)
 
@@ -335,11 +334,13 @@ class RobustDataExtractor:
                             'sep': sep_value,
                             'reason': 'SEP sudah ada di database'
                         })
+                        logger.info(f"Duplicate found: SEP {sep_value} at row {idx}")
                     else:
                         duplicate_result['new_records'].append({
                             'row_index': idx,
                             'sep': sep_value
                         })
+                        logger.info(f"New record: SEP {sep_value} at row {idx}")
                 
                 duplicate_result['total_new'] = len(duplicate_result['new_records'])
                 duplicate_result['total_duplicates'] = len(duplicate_result['duplicate_records'])
@@ -400,8 +401,6 @@ class RobustDataExtractor:
                 insert_result['inserted_rows'] += inserted_count
                 insert_result['failed_rows'] += failed_count
             
-            # Insert ke tabel ERD lainnya
-            self.insert_erd_tables(df, duplicate_info, insert_result)
             
             return insert_result
             
@@ -532,199 +531,6 @@ class RobustDataExtractor:
             logger.error(f"Error preparing data: {e}")
             return {}
     
-    def insert_erd_tables(self, df: pd.DataFrame, duplicate_info: Dict, insert_result: Dict):
-        """Insert data ke tabel ERD"""
-        try:
-            # Insert ke tabel Pasien
-            if 'MRN' in df.columns:
-                self.insert_pasien_data(df, duplicate_info, insert_result)
-            
-            # Insert ke tabel Dokter
-            if 'DPJP' in df.columns:
-                self.insert_dokter_data(df, duplicate_info, insert_result)
-            
-            # Insert ke tabel Diagnosa
-            if 'DIAGLIST' in df.columns:
-                self.insert_diagnosa_data(df, duplicate_info, insert_result)
-            
-            # Insert ke tabel Prosedur
-            if 'PROCLIST' in df.columns:
-                self.insert_prosedur_data(df, duplicate_info, insert_result)
-                
-        except Exception as e:
-            logger.error(f"Error inserting ERD tables: {e}")
-            insert_result['errors'].append(f"Error inserting ERD tables: {str(e)}")
-    
-    def insert_pasien_data(self, df: pd.DataFrame, duplicate_info: Dict, insert_result: Dict):
-        """Insert data ke tabel Pasien"""
-        try:
-            inserted_count = 0
-            failed_count = 0
-            
-            # Ambil data pasien unik
-            pasien_data = df[['MRN', 'NAMA_PASIEN', 'BIRTH_DATE', 'SEX', 'NOKARTU']].drop_duplicates(subset=['MRN'])
-            
-            for idx, row in pasien_data.iterrows():
-                try:
-                    # Check duplikasi
-                    existing = Pasien.query.filter_by(mrn=row['MRN']).first()
-                    if existing:
-                        continue
-                    
-                    pasien = Pasien(
-                        mrn=row['MRN'],
-                        nama_pasien=row['NAMA_PASIEN'],
-                        birth_date=self.parse_date(row['BIRTH_DATE']),
-                        sex=row['SEX'],
-                        no_kartu_bpjs=row['NOKARTU']
-                    )
-                    db.session.add(pasien)
-                    db.session.commit()
-                    inserted_count += 1
-                    
-                except Exception as e:
-                    db.session.rollback()
-                    failed_count += 1
-                    logger.error(f"Error inserting pasien {row['MRN']}: {e}")
-            
-            insert_result['table_results']['pasien'] = {
-                'inserted': inserted_count,
-                'failed': failed_count
-            }
-            
-        except Exception as e:
-            logger.error(f"Error inserting pasien data: {e}")
-    
-    def insert_dokter_data(self, df: pd.DataFrame, duplicate_info: Dict, insert_result: Dict):
-        """Insert data ke tabel Dokter"""
-        try:
-            inserted_count = 0
-            failed_count = 0
-            
-            # Ambil data dokter unik
-            dokter_data = df[['DPJP']].drop_duplicates(subset=['DPJP'])
-            
-            for idx, row in dokter_data.iterrows():
-                try:
-                    if not row['DPJP'] or str(row['DPJP']).strip() == '':
-                        continue
-                    
-                    # Check duplikasi berdasarkan nama
-                    existing = Dokter.query.filter_by(nama_dokter=row['DPJP']).first()
-                    if existing:
-                        continue
-                    
-                    dokter = Dokter(nama_dokter=row['DPJP'])
-                    db.session.add(dokter)
-                    db.session.commit()
-                    inserted_count += 1
-                    
-                except Exception as e:
-                    db.session.rollback()
-                    failed_count += 1
-                    logger.error(f"Error inserting dokter {row['DPJP']}: {e}")
-            
-            insert_result['table_results']['dokter'] = {
-                'inserted': inserted_count,
-                'failed': failed_count
-            }
-            
-        except Exception as e:
-            logger.error(f"Error inserting dokter data: {e}")
-    
-    def insert_diagnosa_data(self, df: pd.DataFrame, duplicate_info: Dict, insert_result: Dict):
-        """Insert data ke tabel Diagnosa"""
-        try:
-            inserted_count = 0
-            failed_count = 0
-            
-            # Ambil data diagnosa unik
-            diagnosa_data = df[['DIAGLIST']].drop_duplicates(subset=['DIAGLIST'])
-            
-            for idx, row in diagnosa_data.iterrows():
-                try:
-                    if not row['DIAGLIST'] or str(row['DIAGLIST']).strip() == '':
-                        continue
-                    
-                    # Parse kode diagnosa
-                    diaglist = str(row['DIAGLIST'])
-                    if ' ' in diaglist:
-                        kode = diaglist.split()[1] if len(diaglist.split()) > 1 else diaglist
-                    else:
-                        kode = diaglist
-                    
-                    # Check duplikasi
-                    existing = Diagnosa.query.filter_by(kode_diagnosa=kode).first()
-                    if existing:
-                        continue
-                    
-                    diagnosa = Diagnosa(
-                        kode_diagnosa=kode,
-                        deskripsi=diaglist
-                    )
-                    db.session.add(diagnosa)
-                    db.session.commit()
-                    inserted_count += 1
-                    
-                except Exception as e:
-                    db.session.rollback()
-                    failed_count += 1
-                    logger.error(f"Error inserting diagnosa {row['DIAGLIST']}: {e}")
-            
-            insert_result['table_results']['diagnosa'] = {
-                'inserted': inserted_count,
-                'failed': failed_count
-            }
-            
-        except Exception as e:
-            logger.error(f"Error inserting diagnosa data: {e}")
-    
-    def insert_prosedur_data(self, df: pd.DataFrame, duplicate_info: Dict, insert_result: Dict):
-        """Insert data ke tabel Prosedur"""
-        try:
-            inserted_count = 0
-            failed_count = 0
-            
-            # Ambil data prosedur unik
-            prosedur_data = df[['PROCLIST']].drop_duplicates(subset=['PROCLIST'])
-            
-            for idx, row in prosedur_data.iterrows():
-                try:
-                    if not row['PROCLIST'] or str(row['PROCLIST']).strip() == '':
-                        continue
-                    
-                    # Parse kode prosedur
-                    proclist = str(row['PROCLIST'])
-                    if ' ' in proclist:
-                        kode = proclist.split()[1] if len(proclist.split()) > 1 else proclist
-                    else:
-                        kode = proclist
-                    
-                    # Check duplikasi
-                    existing = Prosedur.query.filter_by(kode_prosedur=kode).first()
-                    if existing:
-                        continue
-                    
-                    prosedur = Prosedur(
-                        kode_prosedur=kode,
-                        deskripsi=proclist
-                    )
-                    db.session.add(prosedur)
-                    db.session.commit()
-                    inserted_count += 1
-                    
-                except Exception as e:
-                    db.session.rollback()
-                    failed_count += 1
-                    logger.error(f"Error inserting prosedur {row['PROCLIST']}: {e}")
-            
-            insert_result['table_results']['prosedur'] = {
-                'inserted': inserted_count,
-                'failed': failed_count
-            }
-            
-        except Exception as e:
-            logger.error(f"Error inserting prosedur data: {e}")
     
     def parse_date(self, date_value) -> Optional[datetime]:
         """Parse date value ke datetime"""
@@ -801,12 +607,28 @@ class RobustDataExtractor:
                 'duplicate_rows': duplicate_check['total_duplicates'],
                 'inserted_rows': insert_result['inserted_rows'],
                 'failed_rows': insert_result['failed_rows'],
+                'duplicate_failed_rows': duplicate_check['total_duplicates'],  # Baris yang gagal karena duplikat
+                'insert_failed_rows': insert_result['failed_rows'],  # Baris yang gagal karena error insert
+                'total_failed_rows': duplicate_check['total_duplicates'] + insert_result['failed_rows'],  # Total baris yang gagal
+                'success_rows': insert_result['inserted_rows'],  # Baris yang berhasil diinsert
                 'integrity_score': validation['integrity_score']
             }
             
+            # Log summary for debugging
+            logger.info(f"Upload summary: Total={result['summary']['total_rows']}, "
+                       f"Success={result['summary']['success_rows']}, "
+                       f"Failed={result['summary']['total_failed_rows']} "
+                       f"(Duplicates={result['summary']['duplicate_failed_rows']}, "
+                       f"Insert errors={result['summary']['insert_failed_rows']})")
+            
             if insert_result['success']:
                 result['success'] = True
-                result['message'] = f"Data berhasil diproses: {insert_result['inserted_rows']} baris baru, {duplicate_check['total_duplicates']} duplikat"
+                if duplicate_check['total_duplicates'] > 0 and insert_result['inserted_rows'] > 0:
+                    result['message'] = f"Data diproses: {insert_result['inserted_rows']} baris berhasil, {duplicate_check['total_duplicates']} baris duplikat (gagal)"
+                elif duplicate_check['total_duplicates'] > 0:
+                    result['message'] = f"Semua {duplicate_check['total_duplicates']} baris adalah duplikat (gagal)"
+                else:
+                    result['message'] = f"Data berhasil diproses: {insert_result['inserted_rows']} baris baru"
             else:
                 result['message'] = f"Error memproses data: {', '.join(insert_result['errors'])}"
             

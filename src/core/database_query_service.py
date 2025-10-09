@@ -1,23 +1,24 @@
 """
 Database Query Service for querying data from database
+Simplified version focusing only on DataAnalytics table
 """
 import pandas as pd
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from sqlalchemy import func, and_, or_
 
-from .database import db, Pasien, Dokter, Diagnosa, Prosedur, Kunjungan, RincianBiaya, KunjunganDiagnosa, KunjunganProsedur
+from core.database import db, DataAnalytics
 
 
 class DatabaseQueryService:
-    """Service for querying data from database"""
+    """Service for querying data from database - simplified for DataAnalytics only"""
     
     def __init__(self):
         pass
     
     def get_financial_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        Get financial data from database
+        Get financial data from DataAnalytics table
         
         Args:
             filters: Dictionary of filters to apply
@@ -26,111 +27,89 @@ class DatabaseQueryService:
             DataFrame with financial data
         """
         try:
-            # Base query
-            query = db.session.query(
-                Kunjungan.kunjungan_id,
-                Kunjungan.mrn,
-                Pasien.nama_pasien,
-                Pasien.no_kartu_bpjs,
-                Dokter.nama_dokter.label('dpjp'),
-                Kunjungan.admission_date,
-                Kunjungan.discharge_date,
-                Kunjungan.los,
-                Kunjungan.kelas_rawat,
-                Kunjungan.kode_inacbg,
-                Kunjungan.sep,
-                Kunjungan.total_tarif,
-                Kunjungan.tarif_rs,
-                RincianBiaya.prosedur_non_bedah,
-                RincianBiaya.prosedur_bedah,
-                RincianBiaya.konsultasi,
-                RincianBiaya.tenaga_ahli,
-                RincianBiaya.keperawatan,
-                RincianBiaya.penunjang,
-                RincianBiaya.radiologi,
-                RincianBiaya.laboratorium,
-                RincianBiaya.pelayanan_darah,
-                RincianBiaya.kamar_akomodasi,
-                RincianBiaya.obat
-            ).join(
-                Pasien, Kunjungan.mrn == Pasien.mrn
-            ).outerjoin(
-                Dokter, Kunjungan.dokter_id == Dokter.dokter_id
-            ).outerjoin(
-                RincianBiaya, Kunjungan.kunjungan_id == RincianBiaya.kunjungan_id
-            )
+            # Base query using DataAnalytics table
+            query = db.session.query(DataAnalytics)
             
             # Apply filters
             if filters:
                 query = self._apply_filters(query, filters)
             
             # Execute query
-            result = query.all()
+            results = query.all()
             
             # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
-            
-            # Calculate additional financial metrics
-            if not df.empty:
-                df['selisih_tarif'] = df['total_tarif'] - df['tarif_rs']
-                df['persentase_selisih'] = (df['selisih_tarif'] / df['tarif_rs'] * 100).round(2)
-                df['tarif_per_hari'] = (df['total_tarif'] / df['los']).round(2)
+            df = pd.DataFrame([{
+                'sep': row.sep,
+                'mrn': row.mrn,
+                'nama_pasien': row.nama_pasien,
+                'dpjp': row.dpjp,
+                'admission_date': row.admission_date,
+                'discharge_date': row.discharge_date,
+                'los': row.los,
+                'kelas_rawat': row.kelas_rawat,
+                'inacbg': row.inacbg,
+                'total_tarif': row.total_tarif,
+                'tarif_rs': row.tarif_rs,
+                'prosedur_non_bedah': row.prosedur_non_bedah,
+                'prosedur_bedah': row.prosedur_bedah,
+                'konsultasi': row.konsultasi,
+                'tenaga_ahli': row.tenaga_ahli,
+                'keperawatan': row.keperawatan,
+                'penunjang': row.penunjang,
+                'radiologi': row.radiologi,
+                'laboratorium': row.laboratorium,
+                'pelayanan_darah': row.pelayanan_darah,
+                'kamar_akomodasi': row.kamar_akomodasi,
+                'obat': row.obat
+            } for row in results])
             
             return df
             
         except Exception as e:
-            print(f"Error querying financial data: {e}")
+            print(f"Error getting financial data: {e}")
             return pd.DataFrame()
     
-    def get_patient_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
+    def get_inacbg_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        Get patient data from database
+        Get INACBG analysis data
         
         Args:
             filters: Dictionary of filters to apply
             
         Returns:
-            DataFrame with patient data
+            DataFrame with INACBG data
         """
         try:
             # Base query
             query = db.session.query(
-                Pasien.mrn,
-                Pasien.nama_pasien,
-                Pasien.birth_date,
-                Pasien.sex,
-                Pasien.no_kartu_bpjs,
-                Pasien.umur_tahun,
-                Pasien.umur_hari,
-                func.count(Kunjungan.kunjungan_id).label('jumlah_kunjungan'),
-                func.avg(Kunjungan.los).label('rata_los'),
-                func.sum(Kunjungan.total_tarif).label('total_biaya')
-            ).outerjoin(
-                Kunjungan, Pasien.mrn == Kunjungan.mrn
-            ).group_by(
-                Pasien.mrn, Pasien.nama_pasien, Pasien.birth_date, 
-                Pasien.sex, Pasien.no_kartu_bpjs, Pasien.umur_tahun, Pasien.umur_hari
-            )
+                DataAnalytics.inacbg,
+                func.count(DataAnalytics.sep).label('jumlah_kunjungan'),
+                func.avg(DataAnalytics.los).label('rata_los'),
+                func.min(DataAnalytics.los).label('min_los'),
+                func.max(DataAnalytics.los).label('max_los'),
+                func.avg(DataAnalytics.total_tarif).label('rata_tarif'),
+                func.sum(DataAnalytics.total_tarif).label('total_tarif')
+            ).group_by(DataAnalytics.inacbg)
             
             # Apply filters
             if filters:
                 query = self._apply_filters(query, filters)
             
             # Execute query
-            result = query.all()
+            results = query.all()
             
             # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
+            df = pd.DataFrame([dict(row) for row in results])
             
             return df
             
         except Exception as e:
-            print(f"Error querying patient data: {e}")
+            print(f"Error getting INACBG data: {e}")
             return pd.DataFrame()
     
     def get_los_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        Get Length of Stay data from database
+        Get Length of Stay analysis data
         
         Args:
             filters: Dictionary of filters to apply
@@ -141,69 +120,33 @@ class DatabaseQueryService:
         try:
             # Base query
             query = db.session.query(
-                Kunjungan.kode_inacbg,
-                func.count(Kunjungan.kunjungan_id).label('jumlah_kunjungan'),
-                func.avg(Kunjungan.los).label('rata_los'),
-                func.min(Kunjungan.los).label('min_los'),
-                func.max(Kunjungan.los).label('max_los'),
-                func.median(Kunjungan.los).label('median_los')
-            ).group_by(Kunjungan.kode_inacbg)
+                DataAnalytics.inacbg,
+                func.count(DataAnalytics.sep).label('jumlah_kunjungan'),
+                func.avg(DataAnalytics.los).label('rata_los'),
+                func.min(DataAnalytics.los).label('min_los'),
+                func.max(DataAnalytics.los).label('max_los'),
+                func.median(DataAnalytics.los).label('median_los')
+            ).group_by(DataAnalytics.inacbg)
             
             # Apply filters
             if filters:
                 query = self._apply_filters(query, filters)
             
             # Execute query
-            result = query.all()
+            results = query.all()
             
             # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
+            df = pd.DataFrame([dict(row) for row in results])
             
             return df
             
         except Exception as e:
-            print(f"Error querying LOS data: {e}")
-            return pd.DataFrame()
-    
-    def get_inacbg_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
-        """
-        Get INA-CBG data from database
-        
-        Args:
-            filters: Dictionary of filters to apply
-            
-        Returns:
-            DataFrame with INA-CBG data
-        """
-        try:
-            # Base query
-            query = db.session.query(
-                Kunjungan.kode_inacbg,
-                func.count(Kunjungan.kunjungan_id).label('jumlah_kunjungan'),
-                func.avg(Kunjungan.total_tarif).label('rata_tarif'),
-                func.sum(Kunjungan.total_tarif).label('total_tarif'),
-                func.avg(Kunjungan.los).label('rata_los')
-            ).group_by(Kunjungan.kode_inacbg)
-            
-            # Apply filters
-            if filters:
-                query = self._apply_filters(query, filters)
-            
-            # Execute query
-            result = query.all()
-            
-            # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
-            
-            return df
-            
-        except Exception as e:
-            print(f"Error querying INA-CBG data: {e}")
+            print(f"Error getting LOS data: {e}")
             return pd.DataFrame()
     
     def get_ventilator_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        Get ventilator data from database
+        Get ventilator usage data
         
         Args:
             filters: Dictionary of filters to apply
@@ -212,57 +155,54 @@ class DatabaseQueryService:
             DataFrame with ventilator data
         """
         try:
-            # Base query - assuming ventilator data is in a separate table or field
-            # For now, return empty DataFrame as placeholder
+            # Base query
             query = db.session.query(
-                Kunjungan.kunjungan_id,
-                Kunjungan.mrn,
-                Pasien.nama_pasien,
-                Kunjungan.admission_date,
-                Kunjungan.discharge_date,
-                Kunjungan.los
-            ).join(
-                Pasien, Kunjungan.mrn == Pasien.mrn
-            )
+                DataAnalytics.sep,
+                DataAnalytics.mrn,
+                DataAnalytics.nama_pasien,
+                DataAnalytics.admission_date,
+                DataAnalytics.discharge_date,
+                DataAnalytics.los,
+                DataAnalytics.vent_hour,
+                DataAnalytics.icu_indikator,
+                DataAnalytics.icu_los
+            ).filter(DataAnalytics.vent_hour > 0)
             
             # Apply filters
             if filters:
                 query = self._apply_filters(query, filters)
             
             # Execute query
-            result = query.all()
+            results = query.all()
             
             # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
+            df = pd.DataFrame([dict(row) for row in results])
             
             return df
             
         except Exception as e:
-            print(f"Error querying ventilator data: {e}")
+            print(f"Error getting ventilator data: {e}")
             return pd.DataFrame()
     
-    def get_selisih_tarif_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
+    def get_patient_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        Get selisih tarif data from database
+        Get patient data
         
         Args:
             filters: Dictionary of filters to apply
             
         Returns:
-            DataFrame with selisih tarif data
+            DataFrame with patient data
         """
         try:
             # Base query
             query = db.session.query(
-                Kunjungan.kunjungan_id,
-                Kunjungan.mrn,
-                Pasien.nama_pasien,
-                Kunjungan.kode_inacbg,
-                Kunjungan.total_tarif,
-                Kunjungan.tarif_rs,
-                (Kunjungan.total_tarif - Kunjungan.tarif_rs).label('selisih_tarif')
-            ).join(
-                Pasien, Kunjungan.mrn == Pasien.mrn
+                DataAnalytics.sep,
+                DataAnalytics.mrn,
+                DataAnalytics.nama_pasien,
+                DataAnalytics.admission_date,
+                DataAnalytics.discharge_date,
+                DataAnalytics.los
             )
             
             # Apply filters
@@ -270,19 +210,53 @@ class DatabaseQueryService:
                 query = self._apply_filters(query, filters)
             
             # Execute query
-            result = query.all()
+            results = query.all()
             
             # Convert to DataFrame
-            df = pd.DataFrame([dict(row) for row in result])
-            
-            # Calculate additional metrics
-            if not df.empty:
-                df['persentase_selisih'] = (df['selisih_tarif'] / df['tarif_rs'] * 100).round(2)
+            df = pd.DataFrame([dict(row) for row in results])
             
             return df
             
         except Exception as e:
-            print(f"Error querying selisih tarif data: {e}")
+            print(f"Error getting patient data: {e}")
+            return pd.DataFrame()
+    
+    def get_tarif_selisih_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
+        """
+        Get tariff difference analysis data
+        
+        Args:
+            filters: Dictionary of filters to apply
+            
+        Returns:
+            DataFrame with tariff difference data
+        """
+        try:
+            # Base query
+            query = db.session.query(
+                DataAnalytics.sep,
+                DataAnalytics.mrn,
+                DataAnalytics.nama_pasien,
+                DataAnalytics.inacbg,
+                DataAnalytics.total_tarif,
+                DataAnalytics.tarif_rs,
+                (DataAnalytics.total_tarif - DataAnalytics.tarif_rs).label('selisih_tarif')
+            )
+            
+            # Apply filters
+            if filters:
+                query = self._apply_filters(query, filters)
+            
+            # Execute query
+            results = query.all()
+            
+            # Convert to DataFrame
+            df = pd.DataFrame([dict(row) for row in results])
+            
+            return df
+            
+        except Exception as e:
+            print(f"Error getting tariff difference data: {e}")
             return pd.DataFrame()
     
     def _apply_filters(self, query, filters: Dict[str, Any]):
@@ -291,27 +265,23 @@ class DatabaseQueryService:
             # Date range filter
             if 'start_date' in filters and filters['start_date']:
                 start_date = datetime.strptime(filters['start_date'], '%Y-%m-%d').date()
-                query = query.filter(Kunjungan.admission_date >= start_date)
+                query = query.filter(DataAnalytics.admission_date >= start_date)
             
             if 'end_date' in filters and filters['end_date']:
                 end_date = datetime.strptime(filters['end_date'], '%Y-%m-%d').date()
-                query = query.filter(Kunjungan.admission_date <= end_date)
+                query = query.filter(DataAnalytics.admission_date <= end_date)
             
             # MRN filter
             if 'mrn' in filters and filters['mrn']:
-                query = query.filter(Kunjungan.mrn == filters['mrn'])
+                query = query.filter(DataAnalytics.mrn == filters['mrn'])
             
-            # Kode INACBG filter
+            # INACBG filter
             if 'kode_inacbg' in filters and filters['kode_inacbg']:
-                query = query.filter(Kunjungan.kode_inacbg == filters['kode_inacbg'])
+                query = query.filter(DataAnalytics.inacbg == filters['kode_inacbg'])
             
             # Kelas rawat filter
             if 'kelas_rawat' in filters and filters['kelas_rawat']:
-                query = query.filter(Kunjungan.kelas_rawat == filters['kelas_rawat'])
-            
-            # Dokter filter
-            if 'dokter_id' in filters and filters['dokter_id']:
-                query = query.filter(Kunjungan.dokter_id == filters['dokter_id'])
+                query = query.filter(DataAnalytics.kelas_rawat == filters['kelas_rawat'])
             
             return query
             
@@ -322,16 +292,14 @@ class DatabaseQueryService:
     def get_database_stats(self) -> Dict[str, Any]:
         """Get database statistics"""
         try:
+            from core.database import DataAnalytics
+            
             stats = {
-                'total_pasien': Pasien.query.count(),
-                'total_dokter': Dokter.query.count(),
-                'total_diagnosa': Diagnosa.query.count(),
-                'total_prosedur': Prosedur.query.count(),
-                'total_kunjungan': Kunjungan.query.count(),
-                'total_rincian_biaya': RincianBiaya.query.count(),
-                'total_kunjungan_diagnosa': KunjunganDiagnosa.query.count(),
-                'total_kunjungan_prosedur': KunjunganProsedur.query.count()
+                'total_data_analytics': DataAnalytics.query.count()
             }
+            
+            # Calculate total rows (mainly from data_analytics as it's the main table)
+            stats['total_rows'] = stats['total_data_analytics']
             
             return stats
             
@@ -342,14 +310,19 @@ class DatabaseQueryService:
     def search_pasien(self, search_term: str) -> List[Dict[str, Any]]:
         """Search for patients by name or MRN"""
         try:
-            results = db.session.query(Pasien).filter(
+            results = db.session.query(DataAnalytics).filter(
                 or_(
-                    Pasien.nama_pasien.ilike(f'%{search_term}%'),
-                    Pasien.mrn.ilike(f'%{search_term}%')
+                    DataAnalytics.nama_pasien.ilike(f'%{search_term}%'),
+                    DataAnalytics.mrn.ilike(f'%{search_term}%')
                 )
             ).limit(10).all()
             
-            return [pasien.to_dict() for pasien in results]
+            return [{
+                'mrn': row.mrn,
+                'nama_pasien': row.nama_pasien,
+                'sep': row.sep,
+                'admission_date': row.admission_date
+            } for row in results]
             
         except Exception as e:
             print(f"Error searching patients: {e}")
@@ -358,12 +331,22 @@ class DatabaseQueryService:
     def get_kunjungan_by_pasien(self, mrn: str) -> List[Dict[str, Any]]:
         """Get all kunjungan for a specific patient"""
         try:
-            results = db.session.query(Kunjungan).filter(
-                Kunjungan.mrn == mrn
-            ).order_by(Kunjungan.admission_date.desc()).all()
+            results = db.session.query(DataAnalytics).filter(
+                DataAnalytics.mrn == mrn
+            ).order_by(DataAnalytics.admission_date.desc()).all()
             
-            return [kunjungan.to_dict() for kunjungan in results]
+            return [{
+                'sep': row.sep,
+                'mrn': row.mrn,
+                'nama_pasien': row.nama_pasien,
+                'admission_date': row.admission_date,
+                'discharge_date': row.discharge_date,
+                'los': row.los,
+                'inacbg': row.inacbg,
+                'total_tarif': row.total_tarif
+            } for row in results]
             
         except Exception as e:
             print(f"Error getting kunjungan by patient: {e}")
             return []
+
