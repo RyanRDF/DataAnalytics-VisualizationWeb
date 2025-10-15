@@ -29,45 +29,53 @@ class INACBGHandler(BaseHandler):
     
     def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process INACBG data with grouping and aggregation"""
+        if df.empty:
+            return df
+        
+        # Data sudah di-group dari database, kita hanya perlu memproses dan memformat
         # Convert numeric columns
-        df['LOS'] = safe_numeric_conversion(df['LOS'])
-        df['TOTAL_TARIF'] = safe_numeric_conversion(df['TOTAL_TARIF'])
-        df['TARIF_RS'] = safe_numeric_conversion(df['TARIF_RS'])
-        
-        # Group by INACBG and calculate statistics
-        grouped = df.groupby(['INACBG', 'DESKRIPSI_INACBG']).agg({
-            'NAMA_PASIEN': 'count',
-            'LOS': ['mean', 'min', 'max'],
-            'TOTAL_TARIF': ['mean', 'sum'],
-            'TARIF_RS': ['mean', 'sum']
-        }).round(2)
-        
-        # Flatten column names
-        grouped.columns = ['_'.join(col).strip() for col in grouped.columns.values]
-        grouped = grouped.reset_index()
+        numeric_columns = ['rata_los', 'min_los', 'max_los', 'rata_tarif', 'total_tarif', 'rata_tarif_rs', 'total_tarif_rs']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = safe_numeric_conversion(df[col])
         
         # Rename columns for better readability
         column_mapping = {
-            'NAMA_PASIEN_count': 'JUMLAH_PASIEN',
-            'LOS_mean': 'RATA_RATA_LOS',
-            'LOS_min': 'MIN_LOS',
-            'LOS_max': 'MAX_LOS',
-            'TOTAL_TARIF_mean': 'RATA_RATA_TOTAL_TARIF',
-            'TOTAL_TARIF_sum': 'TOTAL_TARIF_SUM',
-            'TARIF_RS_mean': 'RATA_RATA_TARIF_RS',
-            'TARIF_RS_sum': 'TARIF_RS_SUM'
+            'jumlah_kunjungan': 'jumlah_pasien',
+            'rata_los': 'rata_rata_los',
+            'rata_tarif': 'rata_rata_total_tarif',
+            'rata_tarif_rs': 'rata_rata_tarif_rs'
         }
         
-        grouped = grouped.rename(columns=column_mapping)
+        df = df.rename(columns=column_mapping)
         
         # Calculate additional metrics
-        grouped['SELISIH_TARIF'] = grouped['RATA_RATA_TOTAL_TARIF'] - grouped['RATA_RATA_TARIF_RS']
-        grouped['PERSENTASE_SELISIH'] = (grouped['SELISIH_TARIF'] / grouped['RATA_RATA_TARIF_RS'] * 100).round(2)
+        if 'rata_rata_total_tarif' in df.columns and 'rata_rata_tarif_rs' in df.columns:
+            df['selisih_tarif'] = df['rata_rata_total_tarif'] - df['rata_rata_tarif_rs']
+            df['persentase_selisih'] = (df['selisih_tarif'] / df['rata_rata_tarif_rs'] * 100).round(2)
         
         # Format currency columns
-        currency_columns = ['RATA_RATA_TOTAL_TARIF', 'TOTAL_TARIF_SUM', 'RATA_RATA_TARIF_RS', 'TARIF_RS_SUM', 'SELISIH_TARIF']
+        currency_columns = ['rata_rata_total_tarif', 'total_tarif', 'rata_rata_tarif_rs', 'total_tarif_rs', 'selisih_tarif']
         for col in currency_columns:
-            if col in grouped.columns:
-                grouped[f'{col}_FORMATTED'] = grouped[col].apply(format_rupiah)
+            if col in df.columns:
+                df[f'{col}_formatted'] = df[col].apply(format_rupiah)
         
-        return grouped
+        # Remove duplicate numeric columns, keep only formatted versions
+        for col in currency_columns:
+            if col in df.columns:
+                df = df.drop(columns=[col])
+        
+        # Reorder columns for better display
+        column_order = [
+            'INACBG', 'DESKRIPSI_INACBG', 'jumlah_pasien',
+            'rata_rata_los', 'min_los', 'max_los',
+            'rata_rata_total_tarif_formatted', 'total_tarif_formatted',
+            'rata_rata_tarif_rs_formatted', 'total_tarif_rs_formatted',
+            'selisih_tarif_formatted', 'persentase_selisih'
+        ]
+        
+        # Only include columns that exist in the dataframe
+        existing_columns = [col for col in column_order if col in df.columns]
+        df = df[existing_columns]
+        
+        return df

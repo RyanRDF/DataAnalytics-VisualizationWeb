@@ -393,15 +393,49 @@ class WebRoutes:
                 # Show success message with upload stats
                 success_message = upload_result.get('message', 'Data berhasil diproses!')
 
+                # Prepare clean upload result for template (remove non-serializable objects)
+                clean_upload_result = {
+                    'success': upload_result.get('success', False),
+                    'rows_success': upload_result.get('rows_success', 0),
+                    'rows_failed': upload_result.get('rows_failed', 0),
+                    'total_rows': upload_result.get('total_rows', 0),
+                    'message': upload_result.get('message', '')
+                }
+                
                 return render_template('index.html',
                                      table_html="",
                                      has_data=True,
                                      success_message=success_message,
-                                     upload_result=upload_result,
+                                     upload_result=clean_upload_result,
                                      db_stats=db_stats)
 
             except Exception as e:
                 return render_template('index.html', table_html="", has_data=False, error=f"Error processing file: {str(e)}")
+        
+        @self.app.route('/api/data/<view_type>')
+        def get_data_api(view_type):
+            """API endpoint untuk mengambil data dalam bentuk JSON"""
+            try:
+                if not self.data_handler.has_data():
+                    return jsonify({"error": "No data available"}), 400
+                
+                handler = self._get_handler(view_type)
+                if not handler:
+                    return jsonify({"error": f"Handler {view_type} not found"}), 400
+                
+                # Get table HTML
+                table_html, error = handler.get_table()
+                if error:
+                    return jsonify({"error": error}), 400
+                
+                return jsonify({
+                    "success": True,
+                    "table_html": table_html,
+                    "view_type": view_type
+                })
+                
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
         
         @self.app.route('/processing-info')
         def processing_info():
@@ -415,17 +449,23 @@ class WebRoutes:
                 # Get upload logs count
                 upload_count = UploadLog.query.filter_by(status='success').count()
                 
-                # Get total rows_success and rows_failed from upload_logs
-                total_rows_success = db.session.query(db.func.sum(UploadLog.rows_success)).scalar() or 0
-                total_rows_failed = db.session.query(db.func.sum(UploadLog.rows_failed)).scalar() or 0
+                # Get LAST upload data (not cumulative)
+                last_upload = UploadLog.query.filter_by(status='success').order_by(UploadLog.upload_time.desc()).first()
+                
+                if last_upload:
+                    last_rows_success = last_upload.rows_success or 0
+                    last_rows_failed = last_upload.rows_failed or 0
+                else:
+                    last_rows_success = 0
+                    last_rows_failed = 0
                 
                 return jsonify({
                     'success': True,
                     'has_data': stats.get('total_rows', 0) > 0,
                     'total_rows': stats.get('total_rows', 0),
                     'upload_count': upload_count,
-                    'rows_success': int(total_rows_success),
-                    'rows_failed': int(total_rows_failed),
+                    'rows_success': int(last_rows_success),  # Last upload only
+                    'rows_failed': int(last_rows_failed),    # Last upload only
                     'stats': stats
                 })
             except Exception as e:
@@ -596,8 +636,11 @@ class WebRoutes:
     def _get_handler(self, handler_name: str):
         """Get handler by name"""
         handler_map = {
+            'keuangan': self.data_handler.financial_handler,
             'financial': self.data_handler.financial_handler,
+            'pasien': self.data_handler.patient_handler,
             'patient': self.data_handler.patient_handler,
+            'selisih-tarif': self.data_handler.selisih_tarif_handler,
             'selisih_tarif': self.data_handler.selisih_tarif_handler,
             'los': self.data_handler.los_handler,
             'inacbg': self.data_handler.inacbg_handler,
@@ -647,7 +690,7 @@ class WebRoutes:
         return jsonify({"table_html": table_html})
     
     def _handle_filter_route(self, handler_name: str):
-        """Handle filter route"""
+        """Handle filter route with flexible filtering"""
         if not self.data_handler.has_data():
             return jsonify({"error": "No data available"}), 400
         
@@ -655,12 +698,28 @@ class WebRoutes:
         if not handler:
             return jsonify({"error": f"Handler {handler_name} not found"}), 400
         
+        # Get all filter parameters
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         sort_column = request.args.get('sort_column')
         sort_order = request.args.get('sort_order', 'ASC')
+        filter_column = request.args.get('filter_column')
+        filter_value = request.args.get('filter_value')
         
-        table_html, error = handler.get_table(sort_column, sort_order, start_date, end_date)
+        # Check if at least one filter is provided
+        has_filters = any([start_date, end_date, filter_column, filter_value])
+        
+        if not has_filters:
+            # No filters provided - show all data
+            table_html, error = handler.get_table()
+        elif filter_column and filter_value:
+            # Specific filter provided
+            table_html, error = handler.get_table_with_specific_filter(
+                filter_column, filter_value, sort_column, sort_order, start_date, end_date
+            )
+        else:
+            # Only date/sort filters
+            table_html, error = handler.get_table(sort_column, sort_order, start_date, end_date)
         
         if error:
             return jsonify({"error": error}), 400
@@ -677,7 +736,7 @@ class WebRoutes:
         return jsonify({"columns": columns})
     
     def _handle_specific_filter_route(self, handler_name: str):
-        """Handle specific filter route"""
+        """Handle specific filter route with flexible filtering"""
         if not self.data_handler.has_data():
             return jsonify({"error": "No data available"}), 400
         
@@ -685,6 +744,7 @@ class WebRoutes:
         if not handler:
             return jsonify({"error": f"Handler {handler_name} not found"}), 400
         
+        # Get all filter parameters
         filter_column = request.args.get('filter_column')
         filter_value = request.args.get('filter_value')
         sort_column = request.args.get('sort_column')
@@ -692,12 +752,14 @@ class WebRoutes:
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         
-        if not filter_column or not filter_value:
-            return jsonify({"error": "Filter column and value are required"}), 400
-        
-        table_html, error = handler.get_table_with_specific_filter(
-            filter_column, filter_value, sort_column, sort_order, start_date, end_date
-        )
+        # Check if specific filter is provided
+        if filter_column and filter_value:
+            table_html, error = handler.get_table_with_specific_filter(
+                filter_column, filter_value, sort_column, sort_order, start_date, end_date
+            )
+        else:
+            # Fallback to regular filter if no specific filter provided
+            table_html, error = handler.get_table(sort_column, sort_order, start_date, end_date)
         
         if error:
             return jsonify({"error": error}), 400

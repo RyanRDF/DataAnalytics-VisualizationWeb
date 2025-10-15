@@ -528,7 +528,6 @@
     <div id="keuangan" class="content-section" style="display:none;">
       <h2>Analisis Keuangan</h2>
       <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -610,7 +609,6 @@
       <h2>Analisis Pasien</h2>
       <p>Menampilkan analisis data pasien dengan informasi medis lengkap</p>
       
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -692,7 +690,6 @@
       <h2>Analisis Selisih Tarif</h2>
       <p>Menampilkan analisis selisih tarif antara tarif yang dikenakan dan tarif standar</p>
       
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -774,7 +771,6 @@
       <h2>Analisis LOS (Length of Stay)</h2>
       <p>Menampilkan analisis lama rawat inap pasien dengan berbagai parameter</p>
       
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -856,7 +852,6 @@
       <h2>Analisis INACBG</h2>
       <p>Menampilkan analisis data yang dikelompokkan berdasarkan INACBG dengan statistik agregat</p>
       
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -938,7 +933,6 @@
       <h2>Analisis Ventilator</h2>
       <p>Menampilkan analisis data penggunaan ventilator dengan informasi detail</p>
       
-      <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
       
       <!-- Search Controls Layout - Top Row (6 controls) -->
       <div class="search-controls-container">
@@ -1030,6 +1024,10 @@
       
       {% if import_stats %}
       <div data-import-stats="{{ import_stats | tojson }}" style="display: none;"></div>
+      {% endif %}
+      
+      {% if upload_result %}
+      <div data-upload-result="{{ upload_result | tojson }}" style="display: none;"></div>
       {% endif %}
       
       {% if error %}

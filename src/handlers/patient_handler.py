@@ -14,14 +14,12 @@ class PatientHandler(BaseHandler):
     def _get_required_columns(self) -> List[str]:
         """Get list of required columns for patient analysis"""
         return [
-            'KODE_RS', 'KELAS_RS', 'KELAS_RAWAT', 'KODE_TARIF',
-            'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'NAMA_PASIEN',
-            'NOKARTU', 'BIRTH_DATE', 'BIRTH_WEIGHT', 'SEX',
+            'SEP', 'MRN', 'NAMA_PASIEN', 'NOKARTU', 'DPJP',
+            'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'KELAS_RAWAT',
+            'INACBG', 'BIRTH_DATE', 'BIRTH_WEIGHT', 'SEX',
             'DISCHARGE_STATUS', 'DIAGLIST', 'PROCLIST', 'ADL1', 'ADL2',
-            'IN_SP', 'IN_SR', 'IN_SI', 'IN_SD', 'INACBG', 'SUBACUTE',
-            'CHRONIC', 'SP', 'SR', 'SI', 'SD', 'DESKRIPSI_INACBG',
-            'MRN', 'UMUR_TAHUN', 'UMUR_HARI', 'DPJP', 'SEP', 'PAYOR_ID',
-            'CODER_ID', 'VERSI_INACBG', 'VERSI_GROUPER'
+            'UMUR_TAHUN', 'UMUR_HARI', 'PAYOR_ID', 'CODER_ID',
+            'VERSI_INACBG', 'VERSI_GROUPER'
         ]
     
     def _get_view_name(self) -> str:

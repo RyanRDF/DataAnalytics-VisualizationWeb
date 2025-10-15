@@ -31,34 +31,56 @@ class VentilatorHandler(BaseHandler):
     
     def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process ventilator data with required calculations"""
+        if df.empty:
+            return df
+            
         # Convert numeric columns
         df['LOS'] = safe_numeric_conversion(df['LOS'])
         df['TOTAL_TARIF'] = safe_numeric_conversion(df['TOTAL_TARIF'])
         df['TARIF_RS'] = safe_numeric_conversion(df['TARIF_RS'])
-        df['VENTILATOR_HOURS'] = safe_numeric_conversion(df['VENTILATOR_HOURS'])
-        df['VENTILATOR_COST'] = safe_numeric_conversion(df['VENTILATOR_COST'])
+        df['VENT_HOUR'] = safe_numeric_conversion(df['VENT_HOUR'])
+        df['ICU_LOS'] = safe_numeric_conversion(df['ICU_LOS'])
         
         # Calculate ventilator metrics
-        df['VENTILATOR_DAYS'] = (df['VENTILATOR_HOURS'] / 24).round(2)
-        df['VENTILATOR_COST_PER_HOUR'] = (df['VENTILATOR_COST'] / df['VENTILATOR_HOURS']).round(2)
-        df['VENTILATOR_COST_PER_DAY'] = (df['VENTILATOR_COST'] / df['VENTILATOR_DAYS']).round(2)
-        df['VENTILATOR_PERCENTAGE_OF_TOTAL'] = (df['VENTILATOR_COST'] / df['TOTAL_TARIF'] * 100).round(2)
+        df['VENTILATOR_DAYS'] = (df['VENT_HOUR'] / 24).round(2)
+        
+        # Handle division by zero for ventilator cost calculations
+        df['VENTILATOR_COST_PER_HOUR'] = df.apply(
+            lambda row: (row['TOTAL_TARIF'] / row['VENT_HOUR']) if row['VENT_HOUR'] > 0 else 0, axis=1
+        ).round(2)
+        
+        df['VENTILATOR_COST_PER_DAY'] = df.apply(
+            lambda row: (row['TOTAL_TARIF'] / row['VENTILATOR_DAYS']) if row['VENTILATOR_DAYS'] > 0 else 0, axis=1
+        ).round(2)
+        
+        df['VENTILATOR_PERCENTAGE_OF_TOTAL'] = df.apply(
+            lambda row: (row['VENT_HOUR'] / row['LOS'] * 100) if row['LOS'] > 0 else 0, axis=1
+        ).round(2)
+        
+        # Add ventilator status indicator
+        df['VENTILATOR_STATUS'] = df['VENT_HOUR'].apply(
+            lambda x: 'Menggunakan Ventilator' if x > 0 else 'Tidak Menggunakan Ventilator'
+        )
         
         # Format currency columns
-        currency_columns = ['TOTAL_TARIF', 'TARIF_RS', 'VENTILATOR_COST', 'VENTILATOR_COST_PER_HOUR', 'VENTILATOR_COST_PER_DAY']
+        currency_columns = ['TOTAL_TARIF', 'TARIF_RS', 'VENTILATOR_COST_PER_HOUR', 'VENTILATOR_COST_PER_DAY']
         for col in currency_columns:
             if col in df.columns:
                 df[f'{col}_FORMATTED'] = df[col].apply(format_rupiah)
+        
+        # Remove duplicate numeric columns, keep only formatted versions
+        columns_to_remove = ['TOTAL_TARIF', 'TARIF_RS', 'VENTILATOR_COST_PER_HOUR', 'VENTILATOR_COST_PER_DAY']
+        for col in columns_to_remove:
+            if col in df.columns:
+                df = df.drop(columns=[col])
         
         # Reorder columns for better display
         column_order = [
             'SEP', 'MRN', 'NAMA_PASIEN', 'INACBG', 'DESKRIPSI_INACBG',
             'LOS', 'ADMISSION_DATE', 'DISCHARGE_DATE',
-            'VENTILATOR_HOURS', 'VENTILATOR_DAYS',
-            'TOTAL_TARIF', 'TOTAL_TARIF_FORMATTED', 'TARIF_RS', 'TARIF_RS_FORMATTED',
-            'VENTILATOR_COST', 'VENTILATOR_COST_FORMATTED',
-            'VENTILATOR_COST_PER_HOUR', 'VENTILATOR_COST_PER_HOUR_FORMATTED',
-            'VENTILATOR_COST_PER_DAY', 'VENTILATOR_COST_PER_DAY_FORMATTED',
+            'VENT_HOUR', 'VENTILATOR_DAYS', 'VENTILATOR_STATUS', 'ICU_INDIKATOR', 'ICU_LOS',
+            'TOTAL_TARIF_FORMATTED', 'TARIF_RS_FORMATTED',
+            'VENTILATOR_COST_PER_HOUR_FORMATTED', 'VENTILATOR_COST_PER_DAY_FORMATTED',
             'VENTILATOR_PERCENTAGE_OF_TOTAL'
         ]
         

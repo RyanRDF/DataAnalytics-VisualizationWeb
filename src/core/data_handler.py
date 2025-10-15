@@ -130,7 +130,14 @@ class DataHandler:
     
     def has_data(self) -> bool:
         """Check if data is loaded"""
-        return self.current_df is not None
+        # Check if data exists in database
+        try:
+            from core.database import DataAnalytics
+            count = DataAnalytics.query.count()
+            return count > 0
+        except Exception:
+            # Fallback to checking current_df
+            return self.current_df is not None
     
     def validate_file(self, filename: str) -> Tuple[bool, Optional[str]]:
         """

@@ -15,9 +15,12 @@ class FinancialHandler(BaseHandler):
     def _get_required_columns(self) -> List[str]:
         """Get list of required columns for financial analysis"""
         return [
-            'sep', 'mrn', 'nama_pasien', 'nokartu', 'dpjp',
-            'admission_date', 'discharge_date', 'los', 'kelas_rawat',
-            'inacbg', 'total_tarif', 'tarif_rs'
+            'SEP', 'MRN', 'NAMA_PASIEN', 'NOKARTU', 'DPJP',
+            'ADMISSION_DATE', 'DISCHARGE_DATE', 'LOS', 'KELAS_RAWAT',
+            'INACBG', 'TOTAL_TARIF', 'TARIF_RS', 'PROSEDUR_NON_BEDAH',
+            'PROSEDUR_BEDAH', 'KONSULTASI', 'TENAGA_AHLI', 'KEPERAWATAN',
+            'PENUNJANG', 'RADIOLOGI', 'LABORATORIUM', 'PELAYANAN_DARAH',
+            'KAMAR_AKOMODASI', 'OBAT'
         ]
     
     def _get_view_name(self) -> str:
@@ -34,23 +37,29 @@ class FinancialHandler(BaseHandler):
             return df
         
         # Convert numeric columns
-        numeric_columns = ['los', 'total_tarif', 'tarif_rs']
+        numeric_columns = ['LOS', 'TOTAL_TARIF', 'TARIF_RS']
         for col in numeric_columns:
             if col in df.columns:
                 df[col] = safe_numeric_conversion(df[col])
         
         # Calculate additional financial metrics
-        if 'total_tarif' in df.columns and 'tarif_rs' in df.columns:
-            df['selisih_tarif'] = df['total_tarif'] - df['tarif_rs']
-            df['persentase_selisih'] = (df['selisih_tarif'] / df['tarif_rs'] * 100).round(2)
+        if 'TOTAL_TARIF' in df.columns and 'TARIF_RS' in df.columns:
+            df['SELISIH_TARIF'] = df['TOTAL_TARIF'] - df['TARIF_RS']
+            df['PERSENTASE_SELISIH'] = (df['SELISIH_TARIF'] / df['TARIF_RS'] * 100).round(2)
         
-        if 'total_tarif' in df.columns and 'los' in df.columns:
-            df['tarif_per_hari'] = (df['total_tarif'] / df['los']).round(2)
+        if 'TOTAL_TARIF' in df.columns and 'LOS' in df.columns:
+            df['TARIF_PER_HARI'] = (df['TOTAL_TARIF'] / df['LOS']).round(2)
         
         # Format currency columns
-        currency_columns = ['total_tarif', 'tarif_rs', 'selisih_tarif', 'tarif_per_hari']
+        currency_columns = ['TOTAL_TARIF', 'TARIF_RS', 'SELISIH_TARIF', 'TARIF_PER_HARI']
         for col in currency_columns:
             if col in df.columns:
-                df[f'{col}_formatted'] = df[col].apply(format_rupiah)
+                df[f'{col}_FORMATTED'] = df[col].apply(format_rupiah)
+        
+        # Remove duplicate numeric columns, keep only formatted versions
+        columns_to_remove = ['TOTAL_TARIF', 'TARIF_RS', 'SELISIH_TARIF', 'TARIF_PER_HARI']
+        for col in columns_to_remove:
+            if col in df.columns:
+                df = df.drop(columns=[col])
         
         return df

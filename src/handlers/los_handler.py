@@ -46,14 +46,19 @@ class LOSHandler(BaseHandler):
         df['TARIF_RS_PER_HARI_FORMATTED'] = df['TARIF_RS_PER_HARI'].apply(format_rupiah)
         df['SELISIH_PER_HARI_FORMATTED'] = df['SELISIH_PER_HARI'].apply(format_rupiah)
         
+        # Remove duplicate numeric columns, keep only formatted versions
+        columns_to_remove = ['TOTAL_TARIF', 'TARIF_RS', 'TARIF_PER_HARI', 'TARIF_RS_PER_HARI', 'SELISIH_PER_HARI']
+        for col in columns_to_remove:
+            if col in df.columns:
+                df = df.drop(columns=[col])
+        
         # Reorder columns for better display
         column_order = [
             'SEP', 'MRN', 'NAMA_PASIEN', 'INACBG', 'DESKRIPSI_INACBG',
             'LOS', 'ADMISSION_DATE', 'DISCHARGE_DATE',
-            'TOTAL_TARIF', 'TOTAL_TARIF_FORMATTED', 'TARIF_RS', 'TARIF_RS_FORMATTED',
-            'TARIF_PER_HARI', 'TARIF_PER_HARI_FORMATTED',
-            'TARIF_RS_PER_HARI', 'TARIF_RS_PER_HARI_FORMATTED',
-            'SELISIH_PER_HARI', 'SELISIH_PER_HARI_FORMATTED'
+            'TOTAL_TARIF_FORMATTED', 'TARIF_RS_FORMATTED',
+            'TARIF_PER_HARI_FORMATTED', 'TARIF_RS_PER_HARI_FORMATTED',
+            'SELISIH_PER_HARI_FORMATTED'
         ]
         
         # Only include columns that exist in the dataframe

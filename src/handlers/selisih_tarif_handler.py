@@ -48,12 +48,18 @@ class SelisihTarifHandler(BaseHandler):
         df['TARIF_RS_FORMATTED'] = df['TARIF_RS'].apply(format_rupiah)
         df['SELISIH_TARIF_FORMATTED'] = df['SELISIH_TARIF'].apply(format_rupiah)
         
+        # Remove duplicate numeric columns, keep only formatted versions
+        columns_to_remove = ['TOTAL_TARIF', 'TARIF_RS', 'SELISIH_TARIF']
+        for col in columns_to_remove:
+            if col in df.columns:
+                df = df.drop(columns=[col])
+        
         # Reorder columns for better display
         column_order = [
             'SEP', 'MRN', 'LOS', 'INACBG', 'DESKRIPSI_INACBG',
             'PDX', 'SDX', 'DIAGLIST', 'PROCLIST',
-            'TOTAL_TARIF', 'TOTAL_TARIF_FORMATTED', 'TARIF_RS', 'TARIF_RS_FORMATTED',
-            'SELISIH_TARIF', 'SELISIH_TARIF_FORMATTED', 'PERSENTASE_SELISIH',
+            'TOTAL_TARIF_FORMATTED', 'TARIF_RS_FORMATTED',
+            'SELISIH_TARIF_FORMATTED', 'PERSENTASE_SELISIH',
             'ADMISSION_DATE', 'DISCHARGE_DATE'
         ]
         

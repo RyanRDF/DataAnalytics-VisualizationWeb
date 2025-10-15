@@ -43,7 +43,8 @@ class BaseHandler(ABC):
         pass
     
     def process_data(self, sort_column: Optional[str] = None, sort_order: str = 'ASC', 
-                    start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+                    start_date: Optional[str] = None, end_date: Optional[str] = None,
+                    filter_column: Optional[str] = None, filter_value: Optional[str] = None) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
         """
         Process data with common filtering and sorting logic
         
@@ -52,6 +53,8 @@ class BaseHandler(ABC):
             sort_order: Sort order ('ASC' or 'DESC')
             start_date: Start date for filtering
             end_date: End date for filtering
+            filter_column: Column name to filter by
+            filter_value: Value to filter for
             
         Returns:
             Tuple of (processed_dataframe, error_message)
@@ -63,6 +66,10 @@ class BaseHandler(ABC):
                 filters['start_date'] = start_date
             if end_date:
                 filters['end_date'] = end_date
+            if filter_column:
+                filters['filter_column'] = filter_column
+            if filter_value:
+                filters['filter_value'] = filter_value
             
             # Get data from database
             df = self._query_database(filters)
@@ -111,7 +118,8 @@ class BaseHandler(ABC):
         return df, None
     
     def get_table(self, sort_column: Optional[str] = None, sort_order: str = 'ASC',
-                  start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[str, Optional[str]]:
+                  start_date: Optional[str] = None, end_date: Optional[str] = None,
+                  filter_column: Optional[str] = None, filter_value: Optional[str] = None) -> Tuple[str, Optional[str]]:
         """
         Get HTML table representation of processed data
         
@@ -120,11 +128,13 @@ class BaseHandler(ABC):
             sort_order: Sort order ('ASC' or 'DESC')
             start_date: Start date for filtering
             end_date: End date for filtering
+            filter_column: Column name to filter by
+            filter_value: Value to filter for
             
         Returns:
             Tuple of (html_table, error_message)
         """
-        df, error = self.process_data(sort_column, sort_order, start_date, end_date)
+        df, error = self.process_data(sort_column, sort_order, start_date, end_date, filter_column, filter_value)
         if error:
             return "", error
         
@@ -169,12 +179,14 @@ class BaseHandler(ABC):
             List of column names
         """
         try:
-            # Get sample data from database to determine available columns
+            # Get sample data from database and process it to get final columns
             sample_df = self._query_database({})
             if sample_df.empty:
                 return self.required_columns
             
-            return list(sample_df.columns)
+            # Process the data to get the final column structure (after removing duplicates)
+            processed_df = self._process_data(sample_df)
+            return list(processed_df.columns)
         except Exception as e:
             print(f"Error getting columns: {e}")
             return self.required_columns
