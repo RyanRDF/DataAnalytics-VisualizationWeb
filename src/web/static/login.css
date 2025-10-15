@@ -1,11 +1,11 @@
 /* Login Page Styles - Using Professional Bootstrap Color Palette */
 :root {
-  /* Colors */
-  --primary-color: #0d6efd;
-  --primary-light: #6610f2;
-  --primary-dark: #0a58ca;
+  /* Colors - Grey Theme to Match Dashboard */
+  --primary-color: #495057;
+  --primary-light: #6c757d;
+  --primary-dark: #343a40;
   --secondary-color: #6c757d;
-  --accent-color: #0dcaf0;
+  --accent-color: #adb5bd;
   --success-color: #198754;
   --warning-color: #ffc107;
   --error-color: #dc3545;
@@ -120,6 +120,73 @@ body {
   max-height: 80%;
 }
 
+/* IHC Logo Custom Layout */
+.ihc-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  color: var(--white);
+}
+
+.ihc-symbol {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.symbol-shape {
+  position: absolute;
+  background: var(--white);
+  opacity: 0.9;
+  border-radius: 8px;
+}
+
+.shape-1 {
+  width: 40px;
+  height: 28px;
+  top: 12px;
+  left: 8px;
+  transform: rotate(-25deg);
+  border-radius: 12px;
+  clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%);
+}
+
+.shape-2 {
+  width: 32px;
+  height: 22px;
+  top: 22px;
+  left: 22px;
+  transform: rotate(20deg);
+  border-radius: 10px;
+  clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%);
+}
+
+.ihc-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.ihc-acronym {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1;
+  color: var(--white);
+}
+
+.ihc-full-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 200px;
+}
+
 .welcome-text {
   text-align: center;
   position: relative;
@@ -230,7 +297,7 @@ body {
   outline: none;
   border-color: var(--primary-color);
   background: var(--white);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(73, 80, 87, 0.1);
 }
 
 .form-options {
@@ -461,6 +528,40 @@ body {
     width: 150px;
     height: 150px;
   }
+  
+  .ihc-logo {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    text-align: center;
+  }
+  
+  .ihc-symbol {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .shape-1 {
+    width: 32px;
+    height: 22px;
+    top: 10px;
+    left: 6px;
+  }
+  
+  .shape-2 {
+    width: 26px;
+    height: 18px;
+    top: 18px;
+    left: 18px;
+  }
+  
+  .ihc-acronym {
+    font-size: 2rem;
+  }
+  
+  .ihc-full-name {
+    font-size: 0.8rem;
+    max-width: 180px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -484,5 +585,33 @@ body {
   .logo-image {
     width: 120px;
     height: 120px;
+  }
+  
+  .ihc-symbol {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .shape-1 {
+    width: 26px;
+    height: 18px;
+    top: 6px;
+    left: 4px;
+  }
+  
+  .shape-2 {
+    width: 20px;
+    height: 14px;
+    top: 12px;
+    left: 14px;
+  }
+  
+  .ihc-acronym {
+    font-size: 1.5rem;
+  }
+  
+  .ihc-full-name {
+    font-size: 0.7rem;
+    max-width: 150px;
   }
 }

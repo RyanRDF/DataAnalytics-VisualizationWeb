@@ -648,7 +648,6 @@ function loadDataView(viewType) {
     content.innerHTML = `
         <h2>Analisis ${title}</h2>
         <p>Menampilkan analisis data ${description}</p>
-        <p class="data-notice"><strong>⚠️ Data hanya akan muncul setelah Anda memilih rentang waktu!</strong></p>
         
         <!-- Search Controls Layout - Top Row (6 controls) -->
         <div class="search-controls-container">
@@ -663,14 +662,14 @@ function loadDataView(viewType) {
                     <input type="date" id="${prefix}EndDate" class="search-input" value="${state.filters.endDate}">
                 </div>
                 
-                <!-- Red Controls (2) -->
-                <div class="search-control red-control">
+                <!-- Grey Controls (2) -->
+                <div class="search-control grey-control">
                     <label for="${prefix}SortColumn">Sort By</label>
                     <select id="${prefix}SortColumn" class="search-select">
                         <option value="">Pilih Kolom</option>
                     </select>
                 </div>
-                <div class="search-control red-control">
+                <div class="search-control grey-control">
                     <label for="${prefix}SortOrder">Order</label>
                     <select id="${prefix}SortOrder" class="search-select">
                         <option value="ASC" ${state.filters.sortOrder === 'ASC' ? 'selected' : ''}>ASC</option>
@@ -678,14 +677,14 @@ function loadDataView(viewType) {
                     </select>
                 </div>
                 
-                <!-- Green Controls (2) -->
-                <div class="search-control green-control">
+                <!-- Grey Controls (2) -->
+                <div class="search-control grey-control">
                     <label for="${prefix}FilterColumn">Pilih Kolom</label>
                     <select id="${prefix}FilterColumn" class="search-select">
                         <option value="">Pilih Kolom</option>
                     </select>
                 </div>
-                <div class="search-control green-control">
+                <div class="search-control grey-control">
                     <label for="${prefix}FilterValue">Nilai yang Dicari</label>
                     <input type="text" id="${prefix}FilterValue" class="search-input" placeholder="Masukkan nilai" value="${state.filters.filterValue}">
                 </div>

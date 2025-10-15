@@ -1427,20 +1427,15 @@ body {
 }
 
 
-/* Color-coded controls - MATCH SIDEBAR THEME */
+/* Color-coded controls - GREYISH THEME */
 .black-control {
   border-color: #495057;
   background: linear-gradient(135deg, rgba(73, 80, 87, 0.05) 0%, rgba(73, 80, 87, 0.1) 100%);
 }
 
-.red-control {
-  border-color: var(--accent-color);
-  background: linear-gradient(135deg, rgba(13, 202, 240, 0.05) 0%, rgba(13, 202, 240, 0.1) 100%);
-}
-
-.green-control {
-  border-color: var(--success-color);
-  background: linear-gradient(135deg, rgba(25, 135, 84, 0.05) 0%, rgba(25, 135, 84, 0.1) 100%);
+.grey-control {
+  border-color: #6c757d;
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.05) 0%, rgba(108, 117, 125, 0.1) 100%);
 }
 
 .light-blue-control {

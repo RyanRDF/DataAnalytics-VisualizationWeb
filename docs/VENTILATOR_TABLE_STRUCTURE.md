@@ -132,3 +132,4 @@ VENTILATOR_COST_PER_DAY_FORMATTED: Rp. 0
 - **Persentase**: Persentase ventilator dihitung dari total LOS pasien
 - **Status**: Kolom `VENTILATOR_STATUS` membantu membedakan pasien dengan mudah
 
+
