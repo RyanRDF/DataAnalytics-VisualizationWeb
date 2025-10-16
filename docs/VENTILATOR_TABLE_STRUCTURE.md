@@ -133,3 +133,4 @@ VENTILATOR_COST_PER_DAY_FORMATTED: Rp. 0
 - **Status**: Kolom `VENTILATOR_STATUS` membantu membedakan pasien dengan mudah
 
 
+
