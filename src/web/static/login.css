@@ -120,12 +120,18 @@ body {
   max-height: 80%;
 }
 
-/* IHC Logo Custom Layout */
+/* IHC Logo Custom Layout - Logo only, larger size */
 .ihc-logo {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: var(--spacing-lg);
-  color: var(--white);
+}
+
+.navbar-logo {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* Make logo white like main page */
 }
 
 .ihc-symbol {

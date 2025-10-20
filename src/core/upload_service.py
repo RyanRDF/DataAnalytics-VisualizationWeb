@@ -9,6 +9,7 @@ from datetime import datetime
 
 from core.file_analyzer import FileAnalyzer
 from core.data_extractor import DataExtractor
+from core.robust_data_extractor import RobustDataExtractor
 from core.dataframe_manager import DataFrameManager
 from core.duplicate_checker import DuplicateChecker
 from core.database import db, DataAnalytics, UploadLog
@@ -22,6 +23,7 @@ class UploadService:
     def __init__(self):
         self.file_analyzer = FileAnalyzer()
         self.data_extractor = DataExtractor()
+        self.robust_extractor = RobustDataExtractor()
         self.dataframe_manager = DataFrameManager()
         self.duplicate_checker = DuplicateChecker()
     
@@ -58,6 +60,11 @@ class UploadService:
                     'rows_success': 0,
                     'rows_failed': 0
                 }
+            
+            # Step 2.5: Konversi format tanggal (admission_date, discharge_date, birth_date)
+            logger.info("Starting date conversion for uploaded data...")
+            df = self.robust_extractor.convert_date_columns(df)
+            logger.info("Date conversion completed")
             
             # Step 3: Set DataFrame ke manager
             df_info = self.dataframe_manager.set_dataframe(df)
@@ -177,6 +184,9 @@ class UploadService:
                     # Map column names from uppercase to lowercase for database
                     mapped_data = self._map_column_names(row_data)
                     
+                    # Add uploader_id to mark who first uploaded this row
+                    mapped_data['uploader_id'] = user_id
+                    
                     # Create DataAnalytics object
                     data_analytics = DataAnalytics(**mapped_data)
                     db.session.add(data_analytics)
@@ -242,7 +252,7 @@ class UploadService:
             logger.info(f"Upload logged: {rows_success} success, {rows_failed} failed")
             return {
                 'success': True,
-                'log_id': upload_log.id
+                'log_id': upload_log.upload_id
             }
             
         except Exception as e:

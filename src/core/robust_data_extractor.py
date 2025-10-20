@@ -12,6 +12,7 @@ from datetime import datetime
 import logging
 import hashlib
 import json
+import re
 
 from core.database import db, DataAnalytics, User, UploadLog
 
@@ -569,11 +570,8 @@ class RobustDataExtractor:
         try:
             logger.info("Starting date column conversion...")
             
-            # Daftar kolom tanggal yang perlu dikonversi
-            date_columns = [
-                'ADMISSION_DATE', 'DISCHARGE_DATE', 'BIRTH_DATE',
-                'ADMISSION', 'DISCHARGE', 'BIRTH'
-            ]
+            # Daftar kolom tanggal yang perlu dikonversi (prioritas utama)
+            priority_date_columns = ['ADMISSION_DATE', 'DISCHARGE_DATE', 'BIRTH_DATE']
             
             conversion_stats = {
                 'total_columns_processed': 0,
@@ -582,30 +580,41 @@ class RobustDataExtractor:
                 'columns_found': []
             }
             
-            for col in date_columns:
+            # Proses kolom tanggal prioritas
+            for col in priority_date_columns:
                 if col in df.columns:
                     conversion_stats['columns_found'].append(col)
                     conversion_stats['total_columns_processed'] += 1
                     
-                    logger.info(f"Converting column: {col}")
+                    logger.info(f"Processing column: {col}")
                     
                     # Simpan data asli untuk logging
                     original_sample = df[col].dropna().head(3).tolist()
                     logger.info(f"Original data sample for {col}: {original_sample}")
                     
-                    # Konversi kolom tanggal
-                    converted_series = self._convert_date_column(df[col], col)
-                    
-                    if converted_series is not None:
-                        df[col] = converted_series
-                        conversion_stats['successful_conversions'] += 1
+                    # Check apakah kolom sudah dalam format date atau masih angka
+                    if self._is_numeric_date_column(df[col], col):
+                        logger.info(f"Column {col} contains numeric values, converting to date format")
+                        # Konversi dari angka ke format date
+                        converted_series = self._convert_numeric_to_date(df[col], col)
                         
-                        # Log hasil konversi
-                        converted_sample = df[col].dropna().head(3).tolist()
-                        logger.info(f"Converted data sample for {col}: {converted_sample}")
+                        if converted_series is not None:
+                            df[col] = converted_series
+                            conversion_stats['successful_conversions'] += 1
+                            
+                            # Format tanggal ke string YYYY-MM-DD HH:MM:SS untuk konsistensi database
+                            df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+                            logger.info(f"Formatted {col} to YYYY-MM-DD HH:MM:SS format")
+                            
+                            # Log hasil konversi
+                            converted_sample = df[col].dropna().head(3).tolist()
+                            logger.info(f"Converted data sample for {col}: {converted_sample}")
+                        else:
+                            conversion_stats['failed_conversions'] += 1
+                            logger.warning(f"Failed to convert column: {col}")
                     else:
-                        conversion_stats['failed_conversions'] += 1
-                        logger.warning(f"Failed to convert column: {col}")
+                        logger.info(f"Column {col} is already in correct format, skipping conversion")
+                        conversion_stats['successful_conversions'] += 1
             
             logger.info(f"Date conversion completed: {conversion_stats}")
             return df
@@ -613,6 +622,89 @@ class RobustDataExtractor:
         except Exception as e:
             logger.error(f"Error in date column conversion: {str(e)}")
             return df
+    
+    def _is_numeric_date_column(self, series: pd.Series, column_name: str) -> bool:
+        """
+        Cek apakah kolom berisi nilai numerik (Excel serial date) yang perlu dikonversi
+        
+        Args:
+            series: Series yang akan dicek
+            column_name: Nama kolom untuk logging
+            
+        Returns:
+            True jika kolom berisi nilai numerik yang perlu dikonversi
+        """
+        try:
+            non_null_series = series.dropna()
+            if len(non_null_series) == 0:
+                return False  # Kolom kosong, tidak perlu konversi
+            
+            # Ambil sample untuk dicek
+            sample_values = non_null_series.head(5).tolist()
+            logger.info(f"Checking if {column_name} is numeric, sample values: {sample_values}")
+            
+            numeric_count = 0
+            for value in sample_values:
+                if isinstance(value, (int, float)) and not pd.isna(value):
+                    # Cek apakah nilai dalam rentang yang masuk akal untuk Excel serial date
+                    if 1 <= value <= 100000:
+                        numeric_count += 1
+                        logger.info(f"Value {value} is numeric and in Excel serial date range")
+                elif isinstance(value, str):
+                    # Cek apakah string berisi angka (bukan format date)
+                    try:
+                        float_val = float(value)
+                        if 1 <= float_val <= 100000:
+                            numeric_count += 1
+                            logger.info(f"String value {value} is numeric and in Excel serial date range")
+                    except ValueError:
+                        # Bukan angka, kemungkinan sudah format date
+                        logger.info(f"String value {value} is not numeric (likely already date format)")
+                else:
+                    logger.info(f"Value {value} is not numeric (type: {type(value)})")
+            
+            # Jika 80% atau lebih adalah nilai numerik, perlu konversi
+            is_numeric = numeric_count >= len(sample_values) * 0.8
+            logger.info(f"Column {column_name} is numeric: {is_numeric} ({numeric_count}/{len(sample_values)} samples)")
+            
+            # Jika tidak ada nilai numerik sama sekali, pasti tidak perlu konversi
+            if numeric_count == 0:
+                logger.info(f"Column {column_name} has no numeric values, skipping conversion")
+                return False
+                
+            return is_numeric
+            
+        except Exception as e:
+            logger.error(f"Error checking if {column_name} is numeric: {str(e)}")
+            return False
+    
+    def _convert_numeric_to_date(self, series: pd.Series, column_name: str) -> Optional[pd.Series]:
+        """
+        Konversi kolom numerik (Excel serial date) ke format datetime
+        
+        Args:
+            series: Series yang akan dikonversi
+            column_name: Nama kolom untuk logging
+            
+        Returns:
+            Series yang sudah dikonversi atau None jika gagal
+        """
+        try:
+            logger.info(f"Converting numeric values to date for {column_name}")
+            
+            # Konversi dari Excel serial date
+            converted = pd.to_datetime(series, origin='1899-12-30', unit='D', errors='coerce')
+            logger.info(f"Converted {column_name} from Excel numeric format")
+            
+            # Log sample hasil konversi
+            sample_converted = converted.dropna().head(3).tolist()
+            logger.info(f"Sample converted values for {column_name}: {sample_converted}")
+            
+            return converted
+            
+        except Exception as e:
+            logger.error(f"Error converting {column_name} from numeric to date: {str(e)}")
+            return None
     
     def _convert_date_column(self, series: pd.Series, column_name: str) -> Optional[pd.Series]:
         """
@@ -631,6 +723,13 @@ class RobustDataExtractor:
                 logger.info(f"Column {column_name} is already datetime format")
                 return series
             
+            # Cek apakah format sudah benar (YYYY-MM-DD atau YYYY-MM-DD HH:MM:SS)
+            is_correct_format = self._is_already_correct_format(series, column_name)
+            logger.info(f"Format check for {column_name}: is_correct_format = {is_correct_format}")
+            if is_correct_format:
+                logger.info(f"Column {column_name} is already in correct format, skipping conversion")
+                return series
+            
             # Cek tipe data dalam kolom
             non_null_series = series.dropna()
             if len(non_null_series) == 0:
@@ -647,10 +746,14 @@ class RobustDataExtractor:
             
             if format_detected == 'excel_numeric':
                 # Konversi dari Excel serial date
+                logger.info(f"Starting Excel serial date conversion for {column_name}")
                 try:
                     # Method 1: Menggunakan pd.to_datetime dengan origin
-                    converted = pd.to_datetime(series, origin='1899-12-30', unit='d', errors='coerce')
+                    converted = pd.to_datetime(series, origin='1899-12-30', unit='D', errors='coerce')
                     logger.info(f"Converted {column_name} from Excel numeric format using pd.to_datetime")
+                    # Log sample hasil konversi
+                    sample_converted = converted.dropna().head(3).tolist()
+                    logger.info(f"Sample converted values for {column_name}: {sample_converted}")
                     return converted
                 except Exception as e1:
                     logger.warning(f"Method 1 failed for {column_name}: {e1}")
@@ -712,9 +815,11 @@ class RobustDataExtractor:
             numeric_count = 0
             for value in sample_values:
                 if isinstance(value, (int, float)) and not pd.isna(value):
-                    # Excel serial date biasanya > 25569 (setelah 1970)
-                    if value > 25569:
+                    # Excel serial date bisa berupa nilai besar (> 25569 setelah 1970) atau nilai kecil (< 25569 sebelum 1970)
+                    # Cek apakah nilai dalam rentang yang masuk akal untuk Excel serial date
+                    if 1 <= value <= 100000:  # Rentang yang masuk akal untuk Excel serial date
                         numeric_count += 1
+                        logger.info(f"Detected numeric value {value} as potential Excel serial date")
             
             if numeric_count >= len(sample_values) * 0.8:  # 80% numerik
                 return 'excel_numeric'
@@ -751,6 +856,61 @@ class RobustDataExtractor:
         except Exception as e:
             logger.error(f"Error detecting date format: {str(e)}")
             return 'unknown'
+    
+    def _is_already_correct_format(self, series: pd.Series, column_name: str) -> bool:
+        """
+        Cek apakah kolom sudah dalam format yang benar (YYYY-MM-DD atau YYYY-MM-DD HH:MM:SS)
+        
+        Args:
+            series: Series yang akan dicek
+            column_name: Nama kolom untuk logging
+            
+        Returns:
+            True jika format sudah benar, False jika perlu konversi
+        """
+        try:
+            non_null_series = series.dropna()
+            if len(non_null_series) == 0:
+                return True  # Kolom kosong, tidak perlu konversi
+            
+            # Ambil sample untuk dicek
+            sample_values = non_null_series.head(5).tolist()
+            logger.info(f"Checking format for {column_name}, sample values: {sample_values}")
+            
+            correct_format_count = 0
+            
+            for value in sample_values:
+                logger.info(f"Checking value {value} (type: {type(value)})")
+                if isinstance(value, str):
+                    # Cek format YYYY-MM-DD
+                    if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+                        correct_format_count += 1
+                        logger.info(f"Value {value} matches YYYY-MM-DD format")
+                    # Cek format YYYY-MM-DD HH:MM:SS
+                    elif re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', value):
+                        correct_format_count += 1
+                        logger.info(f"Value {value} matches YYYY-MM-DD HH:MM:SS format")
+                    # Cek format YYYY-MM-DD HH:MM:SS.000000
+                    elif re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$', value):
+                        correct_format_count += 1
+                        logger.info(f"Value {value} matches YYYY-MM-DD HH:MM:SS.000000 format")
+                    else:
+                        logger.info(f"Value {value} does not match any correct format")
+                elif isinstance(value, (int, float)):
+                    # Jika nilai numerik, kemungkinan Excel serial date, perlu konversi
+                    logger.info(f"Value {value} is numeric, needs conversion")
+                    return False
+            
+            # Jika 80% atau lebih sudah dalam format yang benar, skip konversi
+            if correct_format_count >= len(sample_values) * 0.8:
+                logger.info(f"Column {column_name} is already in correct format ({correct_format_count}/{len(sample_values)} samples)")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking format for {column_name}: {str(e)}")
+            return False
     
     def process_file_complete(self, file_path: str, user_id: int) -> Dict[str, Any]:
         """Proses file lengkap dengan validasi integritas"""

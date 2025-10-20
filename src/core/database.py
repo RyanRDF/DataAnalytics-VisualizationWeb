@@ -208,6 +208,7 @@ class DataAnalytics(db.Model):
     __tablename__ = 'data_analytics'
     
     sep = db.Column(db.String(50), primary_key=True)  # Primary key
+    uploader_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)  # User yang pertama kali mengupload row ini
     kode_rs = db.Column(db.Text)
     kelas_rs = db.Column(db.Text)
     kelas_rawat = db.Column(db.Text)
@@ -285,6 +286,9 @@ class DataAnalytics(db.Model):
     sewa_alat = db.Column(db.BigInteger)
     obat_kronis = db.Column(db.BigInteger)
     obat_kemo = db.Column(db.BigInteger)
+    
+    # Relationship
+    uploader = db.relationship('User', foreign_keys=[uploader_id])
 
 
 class UserActivityLog(db.Model):
