@@ -342,3 +342,39 @@ class UserRoleAssignment(db.Model):
     
     # Unique constraint
     __table_args__ = (db.UniqueConstraint('user_id', 'role_id', name='unique_user_role'),)
+
+class RegistrationCode(db.Model):
+    __tablename__ = 'registration_codes'
+    
+    code_id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    role = db.Column(db.String(20), nullable=False)  # 'user', 'viewer', 'admin'
+    is_used = db.Column(db.Boolean, default=False)
+    used_by = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    used_at = db.Column(db.DateTime)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=jakarta_now)
+    expires_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    creator = db.relationship('User', foreign_keys=[created_by])
+    user_who_used = db.relationship('User', foreign_keys=[used_by])
+    
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'code_id': self.code_id,
+            'code': self.code,
+            'role': self.role,
+            'is_used': self.is_used,
+            'used_by': self.used_by,
+            'used_at': self.used_at.isoformat() if self.used_at else None,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'is_active': self.is_active
+        }
+    
+    def __repr__(self):
+        return f'<RegistrationCode {self.code}: {self.role}>'

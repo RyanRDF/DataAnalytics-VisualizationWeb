@@ -186,8 +186,10 @@ function handleRegister(event) {
     const email = formData.get('email');
     const password = formData.get('password');
     const confirmPassword = formData.get('confirm_password');
+    const registrationCode = formData.get('registration_code');
+    
     // Validate form
-    if (!validateRegisterForm(username, fullName, email, password, confirmPassword)) {
+    if (!validateRegisterForm(username, fullName, email, password, confirmPassword, registrationCode)) {
         return;
     }
     
@@ -213,7 +215,8 @@ function handleRegister(event) {
             full_name: fullName,
             email: email,
             password: password,
-            confirm_password: confirmPassword
+            confirm_password: confirmPassword,
+            registration_code: registrationCode
         })
     })
     .then(response => response.json())
@@ -290,7 +293,7 @@ function validateLoginForm(email, password) {
     return isValid;
 }
 
-function validateRegisterForm(username, fullName, email, password, confirmPassword) {
+function validateRegisterForm(username, fullName, email, password, confirmPassword, registrationCode) {
     let isValid = true;
     
     // Clear previous errors
@@ -341,6 +344,15 @@ function validateRegisterForm(username, fullName, email, password, confirmPasswo
         isValid = false;
     } else if (password !== confirmPassword) {
         showFieldError('register-confirm-password', 'Password tidak sama');
+        isValid = false;
+    }
+    
+    // Validate registration code
+    if (!registrationCode) {
+        showFieldError('register-code', 'Kode registrasi harus diisi');
+        isValid = false;
+    } else if (registrationCode.length < 6) {
+        showFieldError('register-code', 'Kode registrasi tidak valid');
         isValid = false;
     }
     

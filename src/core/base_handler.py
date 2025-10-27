@@ -46,7 +46,8 @@ class BaseHandler(ABC):
                     start_date: Optional[str] = None, end_date: Optional[str] = None,
                     filter_column: Optional[str] = None, filter_value: Optional[str] = None) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
         """
-        Process data with common filtering and sorting logic
+        Process data with flexible filtering and sorting logic
+        Supports any combination of filters
         
         Args:
             sort_column: Column name to sort by
@@ -60,18 +61,14 @@ class BaseHandler(ABC):
             Tuple of (processed_dataframe, error_message)
         """
         try:
-            # Prepare filters
+            # Prepare filters for database query
             filters = {}
             if start_date:
                 filters['start_date'] = start_date
             if end_date:
                 filters['end_date'] = end_date
-            if filter_column:
-                filters['filter_column'] = filter_column
-            if filter_value:
-                filters['filter_value'] = filter_value
             
-            # Get data from database
+            # Get data from database (with date filters if any)
             df = self._query_database(filters)
             
             if df.empty:
@@ -80,7 +77,11 @@ class BaseHandler(ABC):
             # Apply specific processing logic
             df = self._process_data(df)
             
-            # Apply sorting
+            # Apply column-specific filter if provided
+            if filter_column and filter_value and filter_column in df.columns:
+                df = apply_specific_filter(df, filter_column, filter_value)
+            
+            # Apply sorting if provided
             if sort_column and sort_column in df.columns:
                 ascending = sort_order.upper() == 'ASC'
                 df = df.sort_values(by=sort_column, ascending=ascending)
@@ -107,13 +108,10 @@ class BaseHandler(ABC):
         Returns:
             Tuple of (processed_dataframe, error_message)
         """
-        # First process data normally
-        df, error = self.process_data(sort_column, sort_order, start_date, end_date)
+        # Process data with all filters including specific filter
+        df, error = self.process_data(sort_column, sort_order, start_date, end_date, filter_column, filter_value)
         if error:
             return None, error
-        
-        # Apply specific filter
-        df = apply_specific_filter(df, filter_column, filter_value)
         
         return df, None
     
@@ -121,7 +119,8 @@ class BaseHandler(ABC):
                   start_date: Optional[str] = None, end_date: Optional[str] = None,
                   filter_column: Optional[str] = None, filter_value: Optional[str] = None) -> Tuple[str, Optional[str]]:
         """
-        Get HTML table representation of processed data
+        Get HTML table representation of processed data with flexible filtering
+        Supports any combination of filters
         
         Args:
             sort_column: Column name to sort by
@@ -149,6 +148,7 @@ class BaseHandler(ABC):
                                      start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[str, Optional[str]]:
         """
         Get HTML table with specific column filter
+        This method now uses the unified get_table method for consistency
         
         Args:
             filter_column: Column name to filter by
@@ -161,15 +161,8 @@ class BaseHandler(ABC):
         Returns:
             Tuple of (html_table, error_message)
         """
-        df, error = self.process_data_with_specific_filter(filter_column, filter_value, sort_column, sort_order, start_date, end_date)
-        if error:
-            return "", error
-        
-        try:
-            table_html = df.to_html(classes='data-table', index=False, escape=False)
-            return table_html, None
-        except Exception as e:
-            return "", f"Error generating {self.view_name} table: {str(e)}"
+        # Use the unified get_table method which now supports all filter combinations
+        return self.get_table(sort_column, sort_order, start_date, end_date, filter_column, filter_value)
     
     def get_columns(self) -> List[str]:
         """

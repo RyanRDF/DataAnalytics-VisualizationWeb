@@ -3,12 +3,12 @@ Flask routes for the web application
 """
 from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from utils.timezone_utils import jakarta_now
 from functools import wraps
 
 from core.data_handler import DataHandler
-from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog
+from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog, RegistrationCode
 from core.robust_data_extractor import RobustDataExtractor
 from core.upload_service import UploadService
 
@@ -196,6 +196,7 @@ class WebRoutes:
             email = data.get('email')
             password = data.get('password')
             confirm_password = data.get('confirm_password')
+            registration_code = data.get('registration_code')
             
             # Get client info
             ip_address = request.remote_addr
@@ -232,6 +233,26 @@ class WebRoutes:
                     'message': 'Password tidak sama'
                 }), 400
             
+            # Validate registration code
+            if not registration_code:
+                return jsonify({
+                    'success': False,
+                    'message': 'Kode registrasi harus diisi!'
+                }), 400
+            
+            # Check registration code
+            reg_code = RegistrationCode.query.filter_by(
+                code=registration_code,
+                is_used=False,
+                is_active=True
+            ).filter(RegistrationCode.expires_at > jakarta_now()).first()
+            
+            if not reg_code:
+                return jsonify({
+                    'success': False,
+                    'message': 'Kode registrasi tidak valid atau sudah kadaluarsa!'
+                }), 400
+            
             # Check if user already exists
             existing_user = User.query.filter(
                 (User.email == email) | (User.username == username)
@@ -254,17 +275,24 @@ class WebRoutes:
                     username=username,
                     full_name=full_name,
                     email=email,
-                    role='user'  # Default role
+                    role=reg_code.role  # Use role from registration code
                 )
                 user.set_password(password)
                 
                 db.session.add(user)
+                db.session.flush()  # Get user ID
+                
+                # Mark registration code as used
+                reg_code.is_used = True
+                reg_code.used_by = user.user_id
+                reg_code.used_at = jakarta_now()
+                
                 db.session.commit()
                 
                 # Log registration activity
                 user.log_activity(
                     activity_type='register',
-                    description='User registered successfully',
+                    description=f'User registered successfully with role {reg_code.role}',
                     ip_address=ip_address,
                     user_agent=user_agent
                 )
@@ -333,6 +361,12 @@ class WebRoutes:
             # Get user info from session (already validated by login_required decorator)
             user_id = session.get('user_id')
             session_token = session.get('session_token')
+            
+            # Check if user has permission to upload (not viewer)
+            current_user = User.query.get(user_id)
+            if current_user and current_user.role == 'viewer':
+                return render_template('index.html', table_html="", has_data=False, 
+                                     error="Akses ditolak. Role viewer tidak dapat mengupload data.")
             
             # Get current user session for logging
             user_session = UserSession.query.filter_by(
@@ -503,6 +537,9 @@ class WebRoutes:
         
         # Register analysis routes
         self._register_analysis_routes()
+        
+        # Register admin routes
+        self._register_admin_routes()
     
     def _register_analysis_routes(self):
         """Register analysis-specific routes"""
@@ -690,7 +727,7 @@ class WebRoutes:
         return jsonify({"table_html": table_html})
     
     def _handle_filter_route(self, handler_name: str):
-        """Handle filter route with flexible filtering"""
+        """Handle filter route with flexible filtering - supports any combination of filters"""
         if not self.data_handler.has_data():
             return jsonify({"error": "No data available"}), 400
         
@@ -706,20 +743,15 @@ class WebRoutes:
         filter_column = request.args.get('filter_column')
         filter_value = request.args.get('filter_value')
         
-        # Check if at least one filter is provided
-        has_filters = any([start_date, end_date, filter_column, filter_value])
-        
-        if not has_filters:
-            # No filters provided - show all data
-            table_html, error = handler.get_table()
-        elif filter_column and filter_value:
-            # Specific filter provided
-            table_html, error = handler.get_table_with_specific_filter(
-                filter_column, filter_value, sort_column, sort_order, start_date, end_date
-            )
-        else:
-            # Only date/sort filters
-            table_html, error = handler.get_table(sort_column, sort_order, start_date, end_date)
+        # Use unified get_table method that supports all filter combinations
+        table_html, error = handler.get_table(
+            sort_column=sort_column,
+            sort_order=sort_order,
+            start_date=start_date,
+            end_date=end_date,
+            filter_column=filter_column,
+            filter_value=filter_value
+        )
         
         if error:
             return jsonify({"error": error}), 400
@@ -765,3 +797,435 @@ class WebRoutes:
             return jsonify({"error": error}), 400
         
         return jsonify({"table_html": table_html})
+    
+    def _register_admin_routes(self):
+        """Register admin-specific routes"""
+        
+        @self.app.route('/admin/users', methods=['GET'])
+        @self.api_login_required
+        def admin_get_users():
+            """Get all users for admin management"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                users = User.query.all()
+                users_data = []
+                
+                for user in users:
+                    user_data = user.to_dict()
+                    # Add additional info
+                    user_data['created_by_name'] = user.creator.username if user.creator else 'System'
+                    users_data.append(user_data)
+                
+                return jsonify({
+                    'success': True,
+                    'users': users_data
+                })
+                
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+        @self.api_login_required
+        def admin_reset_user_password(user_id):
+            """Reset user password"""
+            # Check if current user is admin
+            current_user_id = session.get('user_id')
+            current_user = User.query.get(current_user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                target_user = User.query.get(user_id)
+                if not target_user:
+                    return jsonify({
+                        'success': False,
+                        'message': 'User tidak ditemukan'
+                    }), 404
+                
+                # Generate new password
+                import random
+                import string
+                new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+                
+                # Set new password
+                target_user.set_password(new_password)
+                target_user.updated_at = jakarta_now()
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Reset password for user {target_user.username}',
+                    table_affected='users',
+                    record_id=str(user_id),
+                    new_values={'password_reset': True}
+                )
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Password berhasil direset untuk user {target_user.username}',
+                    'new_password': new_password
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+        @self.api_login_required
+        def admin_delete_user(user_id):
+            """Delete user (soft delete)"""
+            # Check if current user is admin
+            current_user_id = session.get('user_id')
+            current_user = User.query.get(current_user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                target_user = User.query.get(user_id)
+                if not target_user:
+                    return jsonify({
+                        'success': False,
+                        'message': 'User tidak ditemukan'
+                    }), 404
+                
+                if target_user.user_id == current_user_id:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Tidak dapat menghapus akun sendiri'
+                    }), 400
+                
+                # Soft delete - deactivate user
+                target_user.is_active = False
+                target_user.updated_at = jakarta_now()
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Deleted user {target_user.username}',
+                    table_affected='users',
+                    record_id=str(user_id),
+                    old_values={'is_active': True},
+                    new_values={'is_active': False}
+                )
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'User {target_user.username} berhasil dihapus'
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/registration-codes', methods=['GET'])
+        @self.api_login_required
+        def admin_get_registration_codes():
+            """Get all registration codes"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                codes = RegistrationCode.query.order_by(RegistrationCode.created_at.desc()).all()
+                codes_data = []
+                
+                for code in codes:
+                    code_data = code.to_dict()
+                    # Add additional info
+                    code_data['created_by_name'] = code.creator.username if code.creator else 'System'
+                    code_data['used_by_name'] = code.user_who_used.username if code.user_who_used else None
+                    codes_data.append(code_data)
+                
+                return jsonify({
+                    'success': True,
+                    'codes': codes_data
+                })
+                
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/registration-codes/generate', methods=['POST'])
+        @self.api_login_required
+        def admin_generate_registration_codes():
+            """Generate new registration codes"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            data = request.get_json()
+            role = data.get('role')
+            expiry_days = data.get('expiry_days', 30)
+            count = data.get('count', 1)
+            
+            if not role or role not in ['user', 'viewer', 'admin']:
+                return jsonify({
+                    'success': False,
+                    'message': 'Role tidak valid'
+                }), 400
+            
+            try:
+                import random
+                import string
+                generated_codes = []
+                
+                for _ in range(count):
+                    # Generate unique code
+                    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                    
+                    # Check if code already exists
+                    while RegistrationCode.query.filter_by(code=code).first():
+                        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                    
+                    # Create registration code
+                    expires_at = jakarta_now() + timedelta(days=expiry_days)
+                    reg_code = RegistrationCode(
+                        code=code,
+                        role=role,
+                        created_by=user_id,
+                        expires_at=expires_at
+                    )
+                    
+                    db.session.add(reg_code)
+                    generated_codes.append({
+                        'code': code,
+                        'role': role,
+                        'expires_at': expires_at.isoformat()
+                    })
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Generated {count} registration codes for role {role}',
+                    table_affected='registration_codes',
+                    new_values={'codes_generated': count, 'role': role}
+                )
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Berhasil generate {count} kode untuk role {role}',
+                    'codes': generated_codes
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/registration-codes/<int:code_id>/delete', methods=['POST'])
+        @self.api_login_required
+        def admin_delete_registration_code(code_id):
+            """Delete registration code"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                reg_code = RegistrationCode.query.get(code_id)
+                if not reg_code:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Kode registrasi tidak ditemukan'
+                    }), 404
+                
+                if reg_code.is_used:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Tidak dapat menghapus kode yang sudah digunakan'
+                    }), 400
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Deleted registration code {reg_code.code}',
+                    table_affected='registration_codes',
+                    record_id=str(code_id)
+                )
+                
+                db.session.delete(reg_code)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Kode {reg_code.code} berhasil dihapus'
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/registration-codes/clear-unused', methods=['POST'])
+        @self.api_login_required
+        def admin_clear_unused_codes():
+            """Clear all unused registration codes"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                # Get all unused codes
+                unused_codes = RegistrationCode.query.filter_by(
+                    is_used=False,
+                    is_active=True
+                ).all()
+                
+                if not unused_codes:
+                    return jsonify({
+                        'success': True,
+                        'message': 'Tidak ada kode yang belum digunakan',
+                        'deleted_count': 0
+                    })
+                
+                # Count codes to be deleted
+                deleted_count = len(unused_codes)
+                code_list = [code.code for code in unused_codes]
+                
+                # Delete all unused codes
+                for code in unused_codes:
+                    db.session.delete(code)
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Cleared {deleted_count} unused registration codes: {", ".join(code_list)}',
+                    table_affected='registration_codes',
+                    new_values={'deleted_codes': code_list, 'count': deleted_count}
+                )
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Berhasil menghapus {deleted_count} kode yang belum digunakan',
+                    'deleted_count': deleted_count,
+                    'deleted_codes': code_list
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500
+        
+        @self.app.route('/admin/registration-codes/clear-expired', methods=['POST'])
+        @self.api_login_required
+        def admin_clear_expired_codes():
+            """Clear all expired registration codes"""
+            # Check if current user is admin
+            user_id = session.get('user_id')
+            current_user = User.query.get(user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            try:
+                # Get all expired codes
+                expired_codes = RegistrationCode.query.filter(
+                    RegistrationCode.expires_at < jakarta_now()
+                ).all()
+                
+                if not expired_codes:
+                    return jsonify({
+                        'success': True,
+                        'message': 'Tidak ada kode yang sudah kadaluarsa',
+                        'deleted_count': 0
+                    })
+                
+                # Count codes to be deleted
+                deleted_count = len(expired_codes)
+                code_list = [code.code for code in expired_codes]
+                
+                # Delete all expired codes
+                for code in expired_codes:
+                    db.session.delete(code)
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Cleared {deleted_count} expired registration codes: {", ".join(code_list)}',
+                    table_affected='registration_codes',
+                    new_values={'deleted_codes': code_list, 'count': deleted_count}
+                )
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Berhasil menghapus {deleted_count} kode yang sudah kadaluarsa',
+                    'deleted_count': deleted_count,
+                    'deleted_codes': code_list
+                })
+                
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'success': False,
+                    'message': f'Error: {str(e)}'
+                }), 500

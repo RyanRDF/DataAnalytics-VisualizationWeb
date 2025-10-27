@@ -328,7 +328,7 @@ let viewStates = {
 // Function to show content based on button clicked
 function showContent(content) {
     // Get all content sections
-    const contentSections = ['home', 'keuangan', 'pasien', 'selisih-tarif', 'los', 'inacbg', 'ventilator', 'file-upload'];
+    const contentSections = ['home', 'keuangan', 'pasien', 'selisih-tarif', 'los', 'inacbg', 'ventilator', 'file-upload', 'admin'];
     
     // Add fade out animation to all visible sections
     contentSections.forEach(sectionId => {
@@ -374,6 +374,8 @@ function showContent(content) {
         loadDataView('inacbg');
     } else if (content === 'ventilator') {
         loadDataView('ventilator');
+    } else if (content === 'admin') {
+        initializeAdmin();
     }
 }
 
@@ -852,6 +854,40 @@ function updateFiltersState(viewType, filterUpdates) {
     viewStates[viewType].filters = { ...viewStates[viewType].filters, ...filterUpdates };
 }
 
+// Helper to read input/select values with ID-casing fallbacks
+function getInputValueWithFallback(prefix, baseName) {
+    const candidates = [];
+    candidates.push(`${prefix}${baseName}`);
+    candidates.push(`${prefix}${baseName[0].toLowerCase()}${baseName.slice(1)}`);
+    candidates.push(`${prefix.toLowerCase()}${baseName}`);
+    candidates.push(`${prefix.toLowerCase()}${baseName[0].toLowerCase()}${baseName.slice(1)}`);
+
+    for (let id of candidates) {
+        const el = document.getElementById(id);
+        if (el) return el.value;
+    }
+
+    return '';
+}
+
+function setInputValueWithFallback(prefix, baseName, value) {
+    const candidates = [];
+    candidates.push(`${prefix}${baseName}`);
+    candidates.push(`${prefix}${baseName[0].toLowerCase()}${baseName.slice(1)}`);
+    candidates.push(`${prefix.toLowerCase()}${baseName}`);
+    candidates.push(`${prefix.toLowerCase()}${baseName[0].toLowerCase()}${baseName.slice(1)}`);
+
+    for (let id of candidates) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Generic function to apply sorting
 function applySorting(viewType) {
     let prefix;
@@ -870,8 +906,8 @@ function applySorting(viewType) {
         prefix = 'ventilator';
     }
     
-    const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
-    const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
+    const sortColumn = getInputValueWithFallback(prefix, 'SortColumn');
+    const sortOrder = getInputValueWithFallback(prefix, 'SortOrder');
     
     if (!sortColumn) {
         notificationSystem.warning('Please select a column to sort', 'Required');
@@ -881,11 +917,14 @@ function applySorting(viewType) {
     // Update filters state
     updateFiltersState(viewType, { sortColumn, sortOrder });
     
-    // Show loading state
+    // Show loading state (guard in case ApplySort button not present)
     const applySortBtn = document.getElementById(`${prefix}ApplySort`);
-    const originalText = applySortBtn.textContent;
-    applySortBtn.textContent = 'Sorting...';
-    applySortBtn.disabled = true;
+    let originalText = '';
+    if (applySortBtn) {
+        originalText = applySortBtn.textContent;
+        applySortBtn.textContent = 'Sorting...';
+        applySortBtn.disabled = true;
+    }
     
     // Make API call to get sorted data
     fetch(`/${viewType}/sort?column=${encodeURIComponent(sortColumn)}&order=${encodeURIComponent(sortOrder)}`)
@@ -909,9 +948,11 @@ function applySorting(viewType) {
             notificationSystem.error('Sorting failed. Please try again.', 'Error');
         })
         .finally(() => {
-            // Restore button state
-            applySortBtn.textContent = originalText;
-            applySortBtn.disabled = false;
+            // Restore button state if it existed
+            if (applySortBtn) {
+                applySortBtn.textContent = originalText;
+                applySortBtn.disabled = false;
+            }
         });
 }
 
@@ -933,16 +974,16 @@ function applyAllFilters(viewType) {
         prefix = 'ventilator';
     }
     
-    const startDate = document.getElementById(`${prefix}StartDate`).value;
-    const endDate = document.getElementById(`${prefix}EndDate`).value;
-    const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
-    const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
-    const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
-    const filterValue = document.getElementById(`${prefix}FilterValue`).value;
+    const startDate = getInputValueWithFallback(prefix, 'StartDate');
+    const endDate = getInputValueWithFallback(prefix, 'EndDate');
+    const sortColumn = getInputValueWithFallback(prefix, 'SortColumn');
+    const sortOrder = getInputValueWithFallback(prefix, 'SortOrder');
+    const filterColumn = getInputValueWithFallback(prefix, 'FilterColumn');
+    const filterValue = getInputValueWithFallback(prefix, 'FilterValue');
     
-    // Check if at least one filter is applied
-    if (!startDate && !endDate && !filterColumn && !filterValue) {
-        notificationSystem.warning('Please select at least one filter criteria', 'Required');
+    // Check if at least one filter is applied (date range, specific filter, OR sorting)
+    if (!startDate && !endDate && !filterColumn && !filterValue && !sortColumn) {
+        notificationSystem.warning('Please select at least one filter criteria (date range, specific filter, or sort)', 'Required');
         return;
     }
     
@@ -1034,13 +1075,13 @@ function clearAllFilters(viewType) {
         prefix = 'ventilator';
     }
     
-    // Clear all inputs
-    document.getElementById(`${prefix}StartDate`).value = '';
-    document.getElementById(`${prefix}EndDate`).value = '';
-    document.getElementById(`${prefix}SortColumn`).value = '';
-    document.getElementById(`${prefix}SortOrder`).value = 'ASC';
-    document.getElementById(`${prefix}FilterColumn`).value = '';
-    document.getElementById(`${prefix}FilterValue`).value = '';
+    // Clear all inputs (use fallback setter)
+    setInputValueWithFallback(prefix, 'StartDate', '');
+    setInputValueWithFallback(prefix, 'EndDate', '');
+    setInputValueWithFallback(prefix, 'SortColumn', '');
+    setInputValueWithFallback(prefix, 'SortOrder', 'ASC');
+    setInputValueWithFallback(prefix, 'FilterColumn', '');
+    setInputValueWithFallback(prefix, 'FilterValue', '');
     
     // Update filters state
     updateFiltersState(viewType, { 
@@ -1105,13 +1146,13 @@ function clearFiltersOnly(viewType) {
         prefix = 'ventilator';
     }
     
-    // Clear all inputs
-    document.getElementById(`${prefix}StartDate`).value = '';
-    document.getElementById(`${prefix}EndDate`).value = '';
-    document.getElementById(`${prefix}SortColumn`).value = '';
-    document.getElementById(`${prefix}SortOrder`).value = 'ASC';
-    document.getElementById(`${prefix}FilterColumn`).value = '';
-    document.getElementById(`${prefix}FilterValue`).value = '';
+    // Clear all inputs (use fallback setter)
+    setInputValueWithFallback(prefix, 'StartDate', '');
+    setInputValueWithFallback(prefix, 'EndDate', '');
+    setInputValueWithFallback(prefix, 'SortColumn', '');
+    setInputValueWithFallback(prefix, 'SortOrder', 'ASC');
+    setInputValueWithFallback(prefix, 'FilterColumn', '');
+    setInputValueWithFallback(prefix, 'FilterValue', '');
     
     // Update filters state
     updateFiltersState(viewType, { 
@@ -1145,12 +1186,12 @@ function applySpecificFilter(viewType) {
         prefix = 'ventilator';
     }
     
-    const filterColumn = document.getElementById(`${prefix}FilterColumn`).value;
-    const filterValue = document.getElementById(`${prefix}FilterValue`).value;
-    const sortColumn = document.getElementById(`${prefix}SortColumn`).value;
-    const sortOrder = document.getElementById(`${prefix}SortOrder`).value;
-    const startDate = document.getElementById(`${prefix}StartDate`).value;
-    const endDate = document.getElementById(`${prefix}EndDate`).value;
+    const filterColumn = getInputValueWithFallback(prefix, 'FilterColumn');
+    const filterValue = getInputValueWithFallback(prefix, 'FilterValue');
+    const sortColumn = getInputValueWithFallback(prefix, 'SortColumn');
+    const sortOrder = getInputValueWithFallback(prefix, 'SortOrder');
+    const startDate = getInputValueWithFallback(prefix, 'StartDate');
+    const endDate = getInputValueWithFallback(prefix, 'EndDate');
     
     if (!filterColumn || !filterValue) {
         notificationSystem.warning('Please select column and enter search value', 'Required');

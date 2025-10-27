@@ -108,10 +108,20 @@ class UploadService:
                     'rows_failed': 0
                 }
             
-            # Step 7: Upload data valid ke database
+            # Step 7: Apply INACBG pricing adjustments
+            pricing_result = self._apply_inacbg_pricing_adjustments()
+            if not pricing_result.get('success'):
+                return {
+                    'success': False,
+                    'error': pricing_result.get('error', 'Gagal menerapkan penyesuaian harga'),
+                    'rows_success': 0,
+                    'rows_failed': 0
+                }
+            
+            # Step 8: Upload data valid ke database
             upload_result = self._upload_valid_data(user_id, file_path)
             
-            # Step 8: Log upload ke database
+            # Step 9: Log upload ke database
             log_result = self._log_upload(
                 user_id, 
                 file_path, 
@@ -121,7 +131,7 @@ class UploadService:
                 upload_result.get('error')
             )
             
-            # Step 9: Clear DataFrame
+            # Step 10: Clear DataFrame
             self.dataframe_manager.clear_dataframe()
             
             # Prepare final result
@@ -130,11 +140,12 @@ class UploadService:
                 'rows_success': separation_result['valid_rows'] if upload_result.get('success') else 0,
                 'rows_failed': separation_result['duplicate_rows'],
                 'total_rows': separation_result['total_rows'],
-                'message': self._generate_message(separation_result, upload_result),
+                'message': self._generate_message(separation_result, upload_result, pricing_result),
                 'file_info': file_info,
                 'extraction_info': extraction_info,
                 'validation_result': validation_result,
                 'duplicate_result': duplicate_result,
+                'pricing_result': pricing_result,
                 'upload_result': upload_result,
                 'log_result': log_result
             }
@@ -149,6 +160,100 @@ class UploadService:
                 'error': str(e),
                 'rows_success': 0,
                 'rows_failed': 0
+            }
+    
+    def _apply_inacbg_pricing_adjustments(self) -> Dict[str, Any]:
+        """
+        Menerapkan penyesuaian harga berdasarkan digit ke-4 INACBG
+        
+        Returns:
+            Dict dengan hasil penyesuaian harga
+        """
+        try:
+            valid_data = self.dataframe_manager.get_valid_data()
+            
+            if valid_data is None or valid_data.empty:
+                return {
+                    'success': True,
+                    'message': 'Tidak ada data untuk disesuaikan',
+                    'adjusted_rows': 0
+                }
+            
+            # Kolom yang akan disesuaikan
+            pricing_columns = [
+                'TOTAL_TARIF', 'TARIF_RS', 'SELISIH', 
+                'PENUNJANG', 'RADIOLOGI', 'LABORATORIUM'
+            ]
+            
+            adjusted_rows = 0
+            digit_0_count = 0
+            digit_i_ii_iii_count = 0
+            other_count = 0
+            
+            # Iterasi setiap baris data
+            for index, row in valid_data.iterrows():
+                inacbg_value = str(row.get('INACBG', ''))
+                
+                # Cek apakah INACBG memiliki minimal 4 digit
+                if len(inacbg_value) >= 4:
+                    digit_4 = inacbg_value[3]  # Digit ke-4 (index 3)
+                    
+                    # Terapkan penyesuaian berdasarkan digit ke-4
+                    if digit_4 == '0':
+                        # Digit ke-4 = 0, kalikan dengan 79%
+                        for col in pricing_columns:
+                            if col in valid_data.columns and pd.notna(row[col]):
+                                try:
+                                    original_value = float(row[col])
+                                    adjusted_value = original_value * 0.79
+                                    valid_data.at[index, col] = adjusted_value
+                                except (ValueError, TypeError):
+                                    continue
+                        digit_0_count += 1
+                        
+                    elif digit_4 in ['I', 'II', 'III']:
+                        # Digit ke-4 = I/II/III, kalikan dengan 73%
+                        for col in pricing_columns:
+                            if col in valid_data.columns and pd.notna(row[col]):
+                                try:
+                                    original_value = float(row[col])
+                                    adjusted_value = original_value * 0.73
+                                    valid_data.at[index, col] = adjusted_value
+                                except (ValueError, TypeError):
+                                    continue
+                        digit_i_ii_iii_count += 1
+                    else:
+                        # Digit ke-4 lainnya, tidak ada penyesuaian
+                        other_count += 1
+                else:
+                    # INACBG kurang dari 4 digit, tidak ada penyesuaian
+                    other_count += 1
+                
+                adjusted_rows += 1
+            
+            # Update DataFrame dengan data yang sudah disesuaikan
+            self.dataframe_manager.set_valid_data(valid_data)
+            
+            logger.info(f"INACBG pricing adjustments applied: {adjusted_rows} rows processed")
+            logger.info(f"Digit 4 = '0': {digit_0_count} rows (79% adjustment)")
+            logger.info(f"Digit 4 = 'I/II/III': {digit_i_ii_iii_count} rows (73% adjustment)")
+            logger.info(f"Other cases: {other_count} rows (no adjustment)")
+            
+            return {
+                'success': True,
+                'message': f'Penyesuaian harga berhasil diterapkan pada {adjusted_rows} baris data',
+                'adjusted_rows': adjusted_rows,
+                'digit_0_count': digit_0_count,
+                'digit_i_ii_iii_count': digit_i_ii_iii_count,
+                'other_count': other_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Error applying INACBG pricing adjustments: {e}")
+            return {
+                'success': False,
+                'error': f'Gagal menerapkan penyesuaian harga: {str(e)}',
+                'adjusted_rows': 0
             }
     
     def _upload_valid_data(self, user_id: int, file_path: str) -> Dict[str, Any]:
@@ -364,18 +469,39 @@ class UploadService:
         
         return mapped_data
 
-    def _generate_message(self, separation_result: Dict[str, Any], upload_result: Dict[str, Any]) -> str:
+    def _generate_message(self, separation_result: Dict[str, Any], upload_result: Dict[str, Any], pricing_result: Dict[str, Any] = None) -> str:
         """Generate pesan berdasarkan hasil upload"""
         valid_rows = separation_result.get('valid_rows', 0)
         duplicate_rows = separation_result.get('duplicate_rows', 0)
         
         if upload_result.get('success'):
-            if valid_rows > 0 and duplicate_rows > 0:
-                return f"Data diproses: {valid_rows} baris berhasil, {duplicate_rows} baris duplikat (gagal)"
-            elif valid_rows > 0:
-                return f"Data berhasil diproses: {valid_rows} baris baru"
-            elif duplicate_rows > 0:
-                return f"Semua {duplicate_rows} baris adalah duplikat (gagal)"
+            message_parts = []
+            
+            if valid_rows > 0:
+                message_parts.append(f"{valid_rows} baris berhasil")
+            
+            if duplicate_rows > 0:
+                message_parts.append(f"{duplicate_rows} baris duplikat")
+            
+            # Tambahkan informasi penyesuaian harga jika ada
+            if pricing_result and pricing_result.get('success'):
+                digit_0_count = pricing_result.get('digit_0_count', 0)
+                digit_i_ii_iii_count = pricing_result.get('digit_i_ii_iii_count', 0)
+                other_count = pricing_result.get('other_count', 0)
+                
+                pricing_info = []
+                if digit_0_count > 0:
+                    pricing_info.append(f"{digit_0_count} baris (digit 4='0', 79%)")
+                if digit_i_ii_iii_count > 0:
+                    pricing_info.append(f"{digit_i_ii_iii_count} baris (digit 4='I/II/III', 73%)")
+                if other_count > 0:
+                    pricing_info.append(f"{other_count} baris (tanpa penyesuaian)")
+                
+                if pricing_info:
+                    message_parts.append(f"Penyesuaian harga: {', '.join(pricing_info)}")
+            
+            if message_parts:
+                return f"Data diproses: {', '.join(message_parts)}"
             else:
                 return "Tidak ada data untuk diproses"
         else:

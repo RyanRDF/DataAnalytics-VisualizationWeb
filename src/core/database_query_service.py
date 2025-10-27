@@ -4,7 +4,7 @@ Simplified version focusing only on DataAnalytics table
 """
 import pandas as pd
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 
 from core.database import db, DataAnalytics
@@ -16,12 +16,13 @@ class DatabaseQueryService:
     def __init__(self):
         pass
     
-    def get_financial_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
+    def get_financial_data(self, filters: Dict[str, Any] = None, limit: int = 1000) -> pd.DataFrame:
         """
-        Get financial data from DataAnalytics table
+        Get financial data from DataAnalytics table with performance optimization
         
         Args:
             filters: Dictionary of filters to apply
+            limit: Maximum number of records to return (default: 1000)
             
         Returns:
             DataFrame with financial data
@@ -33,6 +34,9 @@ class DatabaseQueryService:
             # Apply filters
             if filters:
                 query = self._apply_filters(query, filters)
+            
+            # Apply limit for performance
+            query = query.limit(limit)
             
             # Execute query
             results = query.all()
@@ -68,6 +72,83 @@ class DatabaseQueryService:
         except Exception as e:
             print(f"Error getting financial data: {e}")
             return pd.DataFrame()
+    
+    def get_financial_data_paginated(self, filters: Dict[str, Any] = None, 
+                                    page: int = 1, per_page: int = 100) -> Dict[str, Any]:
+        """
+        Get financial data with pagination for better performance
+        
+        Args:
+            filters: Dictionary of filters to apply
+            page: Page number (1-based)
+            per_page: Number of records per page
+            
+        Returns:
+            Dictionary with data, pagination info, and metadata
+        """
+        try:
+            # Base query using DataAnalytics table
+            query = db.session.query(DataAnalytics)
+            
+            # Apply filters
+            if filters:
+                query = self._apply_filters(query, filters)
+            
+            # Get total count
+            total = query.count()
+            
+            # Apply pagination
+            offset = (page - 1) * per_page
+            results = query.offset(offset).limit(per_page).all()
+            
+            # Convert to DataFrame
+            df = pd.DataFrame([{
+                'SEP': row.sep,
+                'MRN': row.mrn,
+                'NAMA_PASIEN': row.nama_pasien,
+                'DPJP': row.dpjp,
+                'ADMISSION_DATE': row.admission_date,
+                'DISCHARGE_DATE': row.discharge_date,
+                'LOS': row.los,
+                'KELAS_RAWAT': row.kelas_rawat,
+                'INACBG': row.inacbg,
+                'TOTAL_TARIF': row.total_tarif,
+                'TARIF_RS': row.tarif_rs,
+                'PROSEDUR_NON_BEDAH': row.prosedur_non_bedah,
+                'PROSEDUR_BEDAH': row.prosedur_bedah,
+                'KONSULTASI': row.konsultasi,
+                'TENAGA_AHLI': row.tenaga_ahli,
+                'KEPERAWATAN': row.keperawatan,
+                'PENUNJANG': row.penunjang,
+                'RADIOLOGI': row.radiologi,
+                'LABORATORIUM': row.laboratorium,
+                'PELAYANAN_DARAH': row.pelayanan_darah,
+                'KAMAR_AKOMODASI': row.kamar_akomodasi,
+                'OBAT': row.obat
+            } for row in results])
+            
+            return {
+                'data': df,
+                'total': total,
+                'page': page,
+                'per_page': per_page,
+                'pages': (total + per_page - 1) // per_page,
+                'has_next': page < (total + per_page - 1) // per_page,
+                'has_prev': page > 1
+            }
+            
+        except Exception as e:
+            print(f"Error getting paginated financial data: {e}")
+            return {
+                'data': pd.DataFrame(),
+                'total': 0,
+                'page': 1,
+                'per_page': per_page,
+                'pages': 0,
+                'has_next': False,
+                'has_prev': False,
+                'error': str(e)
+            }
     
     def get_inacbg_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
@@ -370,14 +451,60 @@ class DatabaseQueryService:
     def _apply_filters(self, query, filters: Dict[str, Any]):
         """Apply filters to query with flexible filtering"""
         try:
-            # Date range filter
+            # Helper: parse a date string to format yang sesuai dengan database (YYYY-MM-DD HH:MM:SS)
+            def _parse_date_str(s: str):
+                if not s:
+                    return None
+                s = str(s).strip()
+                # Try common formats dan return string dalam format database
+                date_formats = [
+                    '%Y-%m-%d',           # YYYY-MM-DD
+                    '%d/%m/%Y',           # DD/MM/YYYY
+                    '%Y/%m/%d',           # YYYY/MM/DD
+                    '%d-%m-%Y',           # DD-MM-YYYY
+                    '%Y-%m-%d %H:%M:%S'   # YYYY-MM-DD HH:MM:SS
+                ]
+                
+                for fmt in date_formats:
+                    try:
+                        # Parse ke datetime object
+                        dt = datetime.strptime(s, fmt)
+                        # Return string dengan format yang sesuai database (YYYY-MM-DD HH:MM:SS)
+                        return dt.strftime('%Y-%m-%d %H:%M:%S')
+                    except Exception:
+                        continue
+                
+                # Try pandas as a last resort (handles ISO and other variants)
+                try:
+                    dt = pd.to_datetime(s, errors='coerce')
+                    if pd.isna(dt):
+                        return None
+                    # Return string dengan format yang sesuai database
+                    return dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    return None
+
+            # Date range filter - menggunakan string comparison karena admission_date adalah TEXT
             if 'start_date' in filters and filters['start_date']:
-                start_date = datetime.strptime(filters['start_date'], '%Y-%m-%d').date()
-                query = query.filter(DataAnalytics.admission_date >= start_date)
-            
+                # Parse start date ke format database (YYYY-MM-DD 00:00:00)
+                start_date_str = _parse_date_str(filters['start_date'])
+                if start_date_str:
+                    # Set jam ke 00:00:00 untuk awal hari
+                    if len(start_date_str) == 10:  # Hanya tanggal tanpa waktu
+                        start_date_str = start_date_str + ' 00:00:00'
+                    query = query.filter(DataAnalytics.admission_date >= start_date_str)
+
             if 'end_date' in filters and filters['end_date']:
-                end_date = datetime.strptime(filters['end_date'], '%Y-%m-%d').date()
-                query = query.filter(DataAnalytics.admission_date <= end_date)
+                # Parse end date ke format database dan set ke akhir hari (23:59:59)
+                end_date_str = _parse_date_str(filters['end_date'])
+                if end_date_str:
+                    # Set jam ke 23:59:59 untuk akhir hari
+                    if len(end_date_str) == 10:  # Hanya tanggal tanpa waktu
+                        end_date_str = end_date_str + ' 23:59:59'
+                    else:
+                        # Jika sudah ada waktu, ganti dengan 23:59:59
+                        end_date_str = end_date_str.split()[0] + ' 23:59:59'
+                    query = query.filter(DataAnalytics.admission_date <= end_date_str)
             
             # Specific column filter (flexible)
             if 'filter_column' in filters and 'filter_value' in filters:
