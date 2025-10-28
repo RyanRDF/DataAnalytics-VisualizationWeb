@@ -4,10 +4,13 @@ Base handler class for all data handlers
 import pandas as pd
 from typing import List, Optional, Tuple, Dict, Any
 from abc import ABC, abstractmethod
+import logging
 
 from utils.validators import validate_required_columns, validate_date_range, validate_sort_parameters
 from utils.data_processing import apply_date_filter, apply_sorting, apply_specific_filter
 from core.database_query_service import DatabaseQueryService
+
+logger = logging.getLogger(__name__)
 
 
 class BaseHandler(ABC):
@@ -181,5 +184,5 @@ class BaseHandler(ABC):
             processed_df = self._process_data(sample_df)
             return list(processed_df.columns)
         except Exception as e:
-            print(f"Error getting columns: {e}")
+            logger.error(f"Error getting columns: {e}", exc_info=True)
             return self.required_columns

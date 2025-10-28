@@ -87,6 +87,7 @@ body {
   padding: var(--spacing-2xl);
   color: var(--white);
   position: relative;
+  gap: var(--spacing-lg);
 }
 
 .left-section::before {
@@ -102,13 +103,12 @@ body {
 
 .logo-container {
   text-align: center;
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
   position: relative;
   z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
 }
 
 .logo-image {
@@ -128,7 +128,7 @@ body {
 }
 
 .navbar-logo {
-  height: 120px;
+  height: 100px;
   width: auto;
   object-fit: contain;
   filter: brightness(0) invert(1); /* Make logo white like main page */
@@ -202,7 +202,7 @@ body {
 .welcome-text h3 {
   font-size: 1.8rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .welcome-text p {

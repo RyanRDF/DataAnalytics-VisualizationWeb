@@ -17,10 +17,9 @@ Semua default value untuk datetime columns telah diubah dari `datetime.utcnow` k
 - `UserSession.login_time`
 - `UploadLog.upload_time`
 - `LoginLog.login_time`
-- `DataImportHistory.import_time`
 - `UserActivityLog.activity_time`
-- `UserRole.created_at`
-- `UserRoleAssignment.assigned_at`
+- `RegistrationCode.created_at`
+- `RegistrationCode.used_at`
 
 ### 3. Web Routes (`src/web/routes.py`)
 - Login time tracking menggunakan `jakarta_now()`

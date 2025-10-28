@@ -3,11 +3,14 @@ Database Query Service for querying data from database
 Simplified version focusing only on DataAnalytics table
 """
 import pandas as pd
+import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 
 from core.database import db, DataAnalytics
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseQueryService:
@@ -70,7 +73,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting financial data: {e}")
+            logger.error(f"Error getting financial data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def get_financial_data_paginated(self, filters: Dict[str, Any] = None, 
@@ -138,7 +141,7 @@ class DatabaseQueryService:
             }
             
         except Exception as e:
-            print(f"Error getting paginated financial data: {e}")
+            logger.error(f"Error getting paginated financial data: {e}", exc_info=True)
             return {
                 'data': pd.DataFrame(),
                 'total': 0,
@@ -199,7 +202,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting INACBG data: {e}")
+            logger.error(f"Error getting INACBG data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def get_los_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
@@ -251,7 +254,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting LOS data: {e}")
+            logger.error(f"Error getting LOS data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def get_ventilator_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
@@ -309,7 +312,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting ventilator data: {e}")
+            logger.error(f"Error getting ventilator data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def get_patient_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
@@ -389,7 +392,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting patient data: {e}")
+            logger.error(f"Error getting patient data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def get_selisih_tarif_data(self, filters: Dict[str, Any] = None) -> pd.DataFrame:
@@ -445,7 +448,7 @@ class DatabaseQueryService:
             return df
             
         except Exception as e:
-            print(f"Error getting tariff difference data: {e}")
+            logger.error(f"Error getting tariff difference data: {e}", exc_info=True)
             return pd.DataFrame()
     
     def _apply_filters(self, query, filters: Dict[str, Any]):
@@ -538,7 +541,7 @@ class DatabaseQueryService:
             return query
             
         except Exception as e:
-            print(f"Error applying filters: {e}")
+            logger.error(f"Error applying filters: {e}", exc_info=True)
             return query
     
     def get_database_stats(self) -> Dict[str, Any]:
@@ -556,7 +559,7 @@ class DatabaseQueryService:
             return stats
             
         except Exception as e:
-            print(f"Error getting database stats: {e}")
+            logger.error(f"Error getting database stats: {e}", exc_info=True)
             return {}
     
     def search_pasien(self, search_term: str) -> List[Dict[str, Any]]:
@@ -577,7 +580,7 @@ class DatabaseQueryService:
             } for row in results]
             
         except Exception as e:
-            print(f"Error searching patients: {e}")
+            logger.error(f"Error searching patients: {e}", exc_info=True)
             return []
     
     def get_kunjungan_by_pasien(self, mrn: str) -> List[Dict[str, Any]]:
@@ -599,6 +602,6 @@ class DatabaseQueryService:
             } for row in results]
             
         except Exception as e:
-            print(f"Error getting kunjungan by patient: {e}")
+            logger.error(f"Error getting kunjungan by patient: {e}", exc_info=True)
             return []
 

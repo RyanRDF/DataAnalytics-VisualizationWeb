@@ -62,11 +62,7 @@ class DataHandler:
                 new_df = pd.read_csv(filepath, sep='\t')
             
             # Log file reading results for debugging
-            print(f"📊 DataHandler - File read successfully:")
-            print(f"  - File: {filepath}")
-            print(f"  - Rows: {len(new_df)}")
-            print(f"  - Columns: {len(new_df.columns)}")
-            print(f"  - Column names: {list(new_df.columns)}")
+            logger.info(f"📊 DataHandler - File read successfully: {filepath} - Rows: {len(new_df)}, Columns: {len(new_df.columns)}")
             
             # If this is the first upload, initialize accumulated data
             if self.accumulated_data is None:

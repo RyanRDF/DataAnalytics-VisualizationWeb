@@ -311,38 +311,6 @@ class UserActivityLog(db.Model):
     user = db.relationship('User')
     session = db.relationship('UserSession')
 
-class UserRole(db.Model):
-    __tablename__ = 'user_roles'
-    
-    role_id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(50), unique=True, nullable=False)
-    role_description = db.Column(db.Text)
-    permissions = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, default=jakarta_now)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.user_id'))
-    
-    # Relationship
-    creator = db.relationship('User')
-    assignments = db.relationship('UserRoleAssignment', lazy=True, cascade='all, delete-orphan')
-
-class UserRoleAssignment(db.Model):
-    __tablename__ = 'user_role_assignments'
-    
-    assignment_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    role_id = db.Column(db.Integer, db.ForeignKey('user_roles.role_id'), nullable=False)
-    assigned_at = db.Column(db.DateTime, default=jakarta_now)
-    assigned_by = db.Column(db.Integer, db.ForeignKey('users.user_id'))
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Relationship
-    user = db.relationship('User', foreign_keys=[user_id])
-    assigner = db.relationship('User', foreign_keys=[assigned_by])
-    role = db.relationship('UserRole')
-    
-    # Unique constraint
-    __table_args__ = (db.UniqueConstraint('user_id', 'role_id', name='unique_user_role'),)
-
 class RegistrationCode(db.Model):
     __tablename__ = 'registration_codes'
     

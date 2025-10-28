@@ -188,3 +188,4 @@ psql -h localhost -U postgres -d DAV -f migrations/create_registration_codes_tab
 
 
 
+

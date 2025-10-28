@@ -3,11 +3,14 @@ Main Flask application
 """
 from flask import Flask
 import os
+import logging
 
 from core.data_handler import DataHandler
 from core.database import init_db, db
 from .routes import WebRoutes
 from .filters import jakarta_time, jakarta_time_short, jakarta_date
+
+logger = logging.getLogger(__name__)
 
 
 def create_app():
@@ -30,9 +33,9 @@ def create_app():
     with app.app_context():
         try:
             db.create_all()
-            print("Database tables created successfully!")
+            logger.info("Database tables created successfully!")
         except Exception as e:
-            print(f"Database connection error: {e}")
+            logger.error(f"Database connection error: {e}", exc_info=True)
     
     # Register custom filters
     app.jinja_env.filters['jakarta_time'] = jakarta_time
@@ -50,4 +53,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    # Only enable debug mode in development
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
