@@ -195,6 +195,10 @@ class DataFrameManager:
         """Get data yang valid untuk diupload"""
         return self.valid_data
     
+    def set_valid_data(self, df: pd.DataFrame) -> None:
+        """Set data yang valid"""
+        self.valid_data = df.copy() if df is not None else None
+    
     def get_duplicate_data(self) -> Optional[pd.DataFrame]:
         """Get data yang duplikat"""
         return self.duplicate_data
