@@ -82,8 +82,8 @@
        border: 1px solid #dee2e6 !important;
      }
      
-     /* UPLOAD INSTRUCTIONS STYLING */
-     .upload-instructions {
+     /* UPLOAD INSTRUCTIONS STYLING (scoped only to upload form) */
+     .upload-container .upload-instructions {
        width: 100% !important;
        max-width: none !important;
        margin-top: 20px !important;
@@ -94,19 +94,19 @@
        font-size: 14px !important;
      }
      
-     .upload-instructions h4 {
+     .upload-container .upload-instructions h4 {
        color: #495057 !important;
        margin-bottom: 10px !important;
        font-size: 16px !important;
      }
      
-     .upload-instructions ul {
+     .upload-container .upload-instructions ul {
        margin: 0 !important;
        padding-left: 20px !important;
        color: #6c757d !important;
      }
      
-     .upload-instructions li {
+     .upload-container .upload-instructions li {
        margin-bottom: 5px !important;
        line-height: 1.4 !important;
      }
@@ -201,6 +201,15 @@
        border-color: #495057 !important;
        background: linear-gradient(135deg, rgba(73, 80, 87, 0.08) 0%, rgba(73, 80, 87, 0.12) 100%) !important;
      }
+    /* Align navbar right controls */
+    .navbar .navbar-nav { align-items: center; }
+    #themeToggle.nav-link, #navbarDropdown.nav-link {
+      height: 56px; /* match topnav height */
+      padding-top: 0; padding-bottom: 0;
+      display: flex; align-items: center;
+    }
+    /* Tighten right spacing */
+    .navbar-nav.ms-auto { margin-right: .5rem !important; }
   </style>
 </head>
 <body class="sb-nav-fixed">
@@ -219,14 +228,14 @@
 
     
     <!-- Navbar -->
-    <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+    <ul class="navbar-nav ms-auto me-0 d-flex align-items-center">
         <li class="nav-item">
-        <button class="btn btn-link nav-link" id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+        <button class="btn btn-link nav-link d-flex align-items-center" id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
           <i class="fas fa-moon" id="themeIcon"></i>
         </button>
         </li>
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="nav-link dropdown-toggle d-flex align-items-center" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user fa-fw"></i>
           {% if current_user %}
             {{ current_user.username }}
@@ -1023,16 +1032,11 @@
       <h2>User Management</h2>
       <p>Kelola pengguna sistem dan kode registrasi</p>
       
-      <!-- Admin Tabs -->
+      <!-- Admin Tabs (only Users) -->
       <ul class="nav nav-tabs" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">
             <i class="fas fa-users me-2"></i>Daftar User
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab" aria-controls="codes" aria-selected="false">
-            <i class="fas fa-key me-2"></i>Kode Registrasi
           </button>
         </li>
       </ul>
@@ -1043,16 +1047,20 @@
           <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="mb-0"><i class="fas fa-users me-2"></i>Daftar User</h5>
-              <button class="btn btn-primary btn-sm" onclick="refreshUsersList()">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-              </button>
+              <div class="btn-group">
+                <button class="btn btn-success btn-sm" onclick="showCreateUserModal()">
+                  <i class="fas fa-user-plus me-1"></i>Create Akun
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="refreshUsersList()">
+                  <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+              </div>
             </div>
             <div class="card-body">
               <div class="table-responsive">
                 <table class="table table-striped table-hover" id="usersTable">
                   <thead class="table-dark">
                     <tr>
-                      <th>ID</th>
                       <th>Username</th>
                       <th>Email</th>
                       <th>Nama Lengkap</th>
@@ -1065,7 +1073,7 @@
                   </thead>
                   <tbody id="usersTableBody">
                     <tr>
-                      <td colspan="9" class="text-center">
+                      <td colspan="8" class="text-center">
                         <div class="spinner-border text-primary" role="status">
                           <span class="visually-hidden">Loading...</span>
                         </div>
@@ -1079,53 +1087,7 @@
           </div>
         </div>
         
-        <!-- Registration Codes Tab -->
-        <div class="tab-pane fade" id="codes" role="tabpanel" aria-labelledby="codes-tab">
-          <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="fas fa-key me-2"></i>Kode Registrasi</h5>
-              <div class="btn-group" role="group">
-                <button class="btn btn-success btn-sm" onclick="showGenerateCodeModal()">
-                  <i class="fas fa-plus me-1"></i>Generate Kode
-                </button>
-                <button class="btn btn-warning btn-sm" onclick="clearUnusedCodes()" title="Hapus semua kode yang belum digunakan">
-                  <i class="fas fa-broom me-1"></i>Clear Unused
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="clearExpiredCodes()" title="Hapus semua kode yang sudah kadaluarsa">
-                  <i class="fas fa-trash me-1"></i>Clear Expired
-                </button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-striped table-hover" id="codesTable">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>Kode</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Digunakan Oleh</th>
-                      <th>Dibuat Oleh</th>
-                      <th>Dibuat</th>
-                      <th>Kadaluarsa</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="codesTableBody">
-                    <tr>
-                      <td colspan="8" class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                          <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Memuat data kode...</p>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
 
@@ -1216,48 +1178,7 @@
   <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 
-  <!-- Generate Code Modal -->
-  <div class="modal fade" id="generateCodeModal" tabindex="-1" aria-labelledby="generateCodeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="generateCodeModalLabel">
-            <i class="fas fa-key me-2"></i>Generate Kode Registrasi
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="generateCodeForm">
-            <div class="mb-3">
-              <label for="codeRole" class="form-label">Role</label>
-              <select class="form-select" id="codeRole" required>
-                <option value="">Pilih Role</option>
-                <option value="user">User</option>
-                <option value="viewer">Viewer</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="codeExpiry" class="form-label">Kadaluarsa (hari)</label>
-              <input type="number" class="form-control" id="codeExpiry" value="30" min="1" max="365" required>
-              <div class="form-text">Kode akan kadaluarsa setelah jumlah hari yang ditentukan</div>
-            </div>
-            <div class="mb-3">
-              <label for="codeCount" class="form-label">Jumlah Kode</label>
-              <input type="number" class="form-control" id="codeCount" value="1" min="1" max="10" required>
-              <div class="form-text">Berapa banyak kode yang akan digenerate</div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-success" onclick="generateRegistrationCodes()">
-            <i class="fas fa-plus me-1"></i>Generate Kode
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- User Action Modal -->
   <div class="modal fade" id="userActionModal" tabindex="-1" aria-labelledby="userActionModalLabel" aria-hidden="true">
@@ -1273,6 +1194,51 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
           <button type="button" class="btn btn-primary" id="confirmUserAction">Konfirmasi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit User Modal -->
+  <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="userModalLabel"><i class="fas fa-user me-2"></i>Buat Akun</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm">
+            <input type="hidden" id="userId">
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="fullName" class="form-label">Nama Lengkap</label>
+              <input type="text" class="form-control" id="fullName" required>
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" required>
+            </div>
+            <div class="mb-3">
+              <label for="role" class="form-label">Role</label>
+              <select class="form-select" id="role" required>
+                <option value="user">User</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+            <div class="mb-3" id="passwordGroup">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" minlength="6">
+              <div class="form-text">Minimal 6 karakter</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary" id="userModalSubmitBtn" onclick="submitUserForm()">Simpan</button>
         </div>
       </div>
     </div>

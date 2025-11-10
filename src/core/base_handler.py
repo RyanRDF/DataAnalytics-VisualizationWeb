@@ -141,7 +141,8 @@ class BaseHandler(ABC):
             return "", error
         
         try:
-            table_html = df.to_html(classes='data-table', index=False, escape=False)
+            # Use Bootstrap table classes + existing custom class for consistent styling
+            table_html = df.to_html(classes='table table-striped table-hover data-table', index=False, escape=False)
             return table_html, None
         except Exception as e:
             return "", f"Error generating {self.view_name} table: {str(e)}"

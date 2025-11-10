@@ -4,13 +4,11 @@
 
 // Global variables
 let currentUsers = [];
-let currentCodes = [];
 
 // Initialize admin functionality when admin section is shown
 function initializeAdmin() {
     console.log('Initializing admin functionality...');
     loadUsersList();
-    loadCodesList();
 }
 
 // Load users list
@@ -31,23 +29,7 @@ async function loadUsersList() {
     }
 }
 
-// Load registration codes list
-async function loadCodesList() {
-    try {
-        const response = await fetch('/admin/registration-codes');
-        const data = await response.json();
-        
-        if (data.success) {
-            currentCodes = data.codes;
-            renderCodesTable(data.codes);
-        } else {
-            showNotification('Error loading codes: ' + data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error loading codes:', error);
-        showNotification('Error loading codes', 'error');
-    }
-}
+// Registration code list removed
 
 // Render users table
 function renderUsersTable(users) {
@@ -55,13 +37,12 @@ function renderUsersTable(users) {
     if (!tbody) return;
     
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ada data user</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Tidak ada data user</td></tr>';
         return;
     }
     
     tbody.innerHTML = users.map(user => `
         <tr>
-            <td>${user.user_id}</td>
             <td>${user.username}</td>
             <td>${user.email}</td>
             <td>${user.full_name}</td>
@@ -77,12 +58,17 @@ function renderUsersTable(users) {
             <td>${formatDateTime(user.created_at)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                            onclick="showEditUserModal(${user.user_id})" 
+                            title="Edit User">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button type="button" class="btn btn-outline-primary btn-sm" 
                             onclick="resetUserPassword(${user.user_id}, '${user.username}')" 
                             title="Reset Password">
                         <i class="fas fa-key"></i>
                     </button>
-                    ${user.user_id !== getCurrentUserId() ? `
+                    ${(user.user_id !== getCurrentUserId() && user.role !== 'admin') ? `
                     <button type="button" class="btn btn-outline-danger btn-sm" 
                             onclick="deleteUser(${user.user_id}, '${user.username}')" 
                             title="Hapus User">
@@ -95,43 +81,7 @@ function renderUsersTable(users) {
     `).join('');
 }
 
-// Render codes table
-function renderCodesTable(codes) {
-    const tbody = document.getElementById('codesTableBody');
-    if (!tbody) return;
-    
-    if (codes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Tidak ada kode registrasi</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = codes.map(code => `
-        <tr>
-            <td><code>${code.code}</code></td>
-            <td>
-                <span class="badge ${getRoleBadgeClass(code.role)}">${code.role}</span>
-            </td>
-            <td>
-                <span class="badge ${code.is_used ? 'bg-success' : 'bg-warning'}">
-                    ${code.is_used ? 'Digunakan' : 'Belum Digunakan'}
-                </span>
-            </td>
-            <td>${code.used_by_name || '-'}</td>
-            <td>${code.created_by_name}</td>
-            <td>${formatDateTime(code.created_at)}</td>
-            <td>${code.expires_at ? formatDateTime(code.expires_at) : 'Tidak ada'}</td>
-            <td>
-                ${!code.is_used ? `
-                <button type="button" class="btn btn-outline-danger btn-sm" 
-                        onclick="deleteCode(${code.code_id}, '${code.code}')" 
-                        title="Hapus Kode">
-                    <i class="fas fa-trash"></i>
-                </button>
-                ` : '-'}
-            </td>
-        </tr>
-    `).join('');
-}
+// Registration code table removed
 
 // Get role badge class
 function getRoleBadgeClass(role) {
@@ -221,87 +171,9 @@ async function deleteUser(userId, username) {
     }
 }
 
-// Delete registration code
-async function deleteCode(codeId, code) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus kode "${code}"?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/admin/registration-codes/${codeId}/delete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification(data.message, 'success');
-            loadCodesList(); // Refresh the list
-        } else {
-            showNotification(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting code:', error);
-        showNotification('Error deleting code', 'error');
-    }
-}
+// Registration code deletion removed
 
-// Show generate code modal
-function showGenerateCodeModal() {
-    const modal = new bootstrap.Modal(document.getElementById('generateCodeModal'));
-    modal.show();
-}
-
-// Generate registration codes
-async function generateRegistrationCodes() {
-    const role = document.getElementById('codeRole').value;
-    const expiryDays = parseInt(document.getElementById('codeExpiry').value);
-    const count = parseInt(document.getElementById('codeCount').value);
-    
-    if (!role) {
-        showNotification('Pilih role terlebih dahulu', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/admin/registration-codes/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                role: role,
-                expiry_days: expiryDays,
-                count: count
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification(data.message, 'success');
-            
-            // Show generated codes
-            let codesText = 'Kode yang digenerate:\n\n';
-            data.codes.forEach(code => {
-                codesText += `${code.code} (${code.role}) - Expires: ${new Date(code.expires_at).toLocaleDateString('id-ID')}\n`;
-            });
-            alert(codesText);
-            
-            // Close modal and refresh codes list
-            bootstrap.Modal.getInstance(document.getElementById('generateCodeModal')).hide();
-            loadCodesList();
-        } else {
-            showNotification(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error generating codes:', error);
-        showNotification('Error generating codes', 'error');
-    }
-}
+// Registration code generation removed
 
 // Refresh users list
 function refreshUsersList() {
@@ -322,75 +194,105 @@ function showNotification(message, type = 'info') {
     }
 }
 
-// Clear unused codes
-async function clearUnusedCodes() {
-    if (!confirm('Apakah Anda yakin ingin menghapus semua kode yang belum digunakan? Tindakan ini tidak dapat dibatalkan.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('/admin/registration-codes/clear-unused', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification(data.message, 'success');
-            if (data.deleted_count > 0) {
-                alert(`Berhasil menghapus ${data.deleted_count} kode:\n${data.deleted_codes.join(', ')}`);
-            }
-            loadCodesList(); // Refresh the list
-        } else {
-            showNotification(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error clearing unused codes:', error);
-        showNotification('Error clearing unused codes', 'error');
-    }
-}
-
-// Clear expired codes
-async function clearExpiredCodes() {
-    if (!confirm('Apakah Anda yakin ingin menghapus semua kode yang sudah kadaluarsa? Tindakan ini tidak dapat dibatalkan.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('/admin/registration-codes/clear-expired', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification(data.message, 'success');
-            if (data.deleted_count > 0) {
-                alert(`Berhasil menghapus ${data.deleted_count} kode:\n${data.deleted_codes.join(', ')}`);
-            }
-            loadCodesList(); // Refresh the list
-        } else {
-            showNotification(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error clearing expired codes:', error);
-        showNotification('Error clearing expired codes', 'error');
-    }
-}
+// Registration codes housekeeping removed
 
 // Export functions for global access
 window.initializeAdmin = initializeAdmin;
-window.showGenerateCodeModal = showGenerateCodeModal;
-window.generateRegistrationCodes = generateRegistrationCodes;
 window.refreshUsersList = refreshUsersList;
 window.resetUserPassword = resetUserPassword;
 window.deleteUser = deleteUser;
-window.deleteCode = deleteCode;
-window.clearUnusedCodes = clearUnusedCodes;
-window.clearExpiredCodes = clearExpiredCodes;
+window.showCreateUserModal = showCreateUserModal;
+window.showEditUserModal = showEditUserModal;
+window.submitUserForm = submitUserForm;
+
+// Show create user modal
+function showCreateUserModal() {
+    const modalEl = document.getElementById('userModal');
+    if (!modalEl) return;
+    document.getElementById('userModalLabel').innerText = 'Buat Akun';
+    document.getElementById('userId').value = '';
+    document.getElementById('username').value = '';
+    document.getElementById('fullName').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('role').value = 'user';
+    document.getElementById('password').value = '';
+    document.getElementById('passwordGroup').style.display = '';
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+// Show edit user modal
+function showEditUserModal(userId) {
+    const user = currentUsers.find(u => u.user_id === userId);
+    if (!user) return;
+    const modalEl = document.getElementById('userModal');
+    if (!modalEl) return;
+    document.getElementById('userModalLabel').innerText = 'Edit Akun';
+    document.getElementById('userId').value = user.user_id;
+    document.getElementById('username').value = user.username; // disabled for edit
+    document.getElementById('username').setAttribute('disabled', 'disabled');
+    document.getElementById('fullName').value = user.full_name;
+    document.getElementById('email').value = user.email;
+    document.getElementById('role').value = user.role;
+    // Lock role selector if user is admin
+    const roleSelect = document.getElementById('role');
+    if (roleSelect) {
+        if (user.role === 'admin') {
+            roleSelect.setAttribute('disabled', 'disabled');
+        } else {
+            roleSelect.removeAttribute('disabled');
+        }
+    }
+    document.getElementById('password').value = '';
+    document.getElementById('passwordGroup').style.display = '';
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+// Submit create/update user
+async function submitUserForm() {
+    const userId = document.getElementById('userId').value;
+    const payload = {
+        username: document.getElementById('username').value.trim(),
+        full_name: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        role: document.getElementById('role').value,
+        password: document.getElementById('password').value
+    };
+    
+    if (!payload.full_name || !payload.email || (!userId && (!payload.username || !payload.password))) {
+        showNotification('Lengkapi data yang wajib diisi', 'error');
+        return;
+    }
+    
+    try {
+        const url = userId ? `/admin/users/${userId}/update` : '/admin/users/create';
+        // For update, do not send username if unchanged
+        if (userId) delete payload.username;
+        // Exclude empty password on update
+        if (userId && !payload.password) delete payload.password;
+        // Prevent attempting to create admin via UI
+        if (!userId && payload.role === 'admin') {
+            showNotification('Pembuatan role admin hanya boleh manual di database', 'error');
+            return;
+        }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+            // Reset username disabled state
+            document.getElementById('username').removeAttribute('disabled');
+            loadUsersList();
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (e) {
+        console.error('Error submitting user form:', e);
+        showNotification('Gagal menyimpan data user', 'error');
+    }
+}

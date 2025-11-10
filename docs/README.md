@@ -49,7 +49,6 @@ Aplikasi web untuk analisis dan visualisasi data rumah sakit dengan PostgreSQL d
 4. `upload_logs` - Upload tracking
 5. `login_logs` - Login tracking
 6. `user_activity_logs` - Activity tracking
-7. `registration_codes` - Registration codes
 
 ## 🔐 Features
 

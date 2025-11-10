@@ -13,7 +13,7 @@ from web.app import create_app
 
 if __name__ == '__main__':
     app = create_app()
-    print("🚀 Starting Data Analytics Dashboard...")
-    print("📊 Access the application at: http://localhost:5000")
-    print("🔐 Default login: admin@ihc.com / admin123")
+    print("Starting Data Analytics Dashboard...")
+    print("Access the application at: http://localhost:5000")
+    print("Default login: admin@example.com / admin123")
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -11,11 +11,6 @@ Sistem telah diperbarui dengan implementasi role-based access control yang memun
   - Melihat daftar semua user
   - Reset password user
   - Hapus user (soft delete)
-  - Generate kode registrasi
-- **Kode Registrasi**:
-  - Generate kode untuk role user, viewer, atau admin
-  - Set expiry date untuk kode
-  - Hapus kode yang belum digunakan
 
 ### 2. Role Viewer
 - **Akses Terbatas**: Viewer hanya dapat melihat data, tidak dapat mengupload
@@ -33,21 +28,7 @@ Sistem telah diperbarui dengan implementasi role-based access control yang memun
 
 ## Struktur Database Baru
 
-### Tabel `registration_codes`
-```sql
-CREATE TABLE registration_codes (
-    code_id SERIAL PRIMARY KEY,
-    code VARCHAR(20) UNIQUE NOT NULL,
-    role VARCHAR(20) NOT NULL,
-    is_used BOOLEAN DEFAULT FALSE,
-    used_by INTEGER REFERENCES users(user_id),
-    used_at TIMESTAMP,
-    created_by INTEGER NOT NULL REFERENCES users(user_id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE
-);
-```
+<!-- Tabel `registration_codes` dihapus dari desain -->
 
 ## Cara Penggunaan
 
@@ -81,12 +62,9 @@ CREATE TABLE registration_codes (
 - `GET /admin/users` - Get all users
 - `POST /admin/users/{user_id}/reset-password` - Reset user password
 - `POST /admin/users/{user_id}/delete` - Delete user
-- `GET /admin/registration-codes` - Get all registration codes
-- `POST /admin/registration-codes/generate` - Generate new codes
-- `POST /admin/registration-codes/{code_id}/delete` - Delete code
 
-### Registration Endpoint (Updated)
-- `POST /auth/register` - Register with registration code
+### Registration Endpoint
+- `POST /auth/register` - Register tanpa registration code (role default `user`)
 
 ## Security Features
 
@@ -96,10 +74,7 @@ CREATE TABLE registration_codes (
 - UI menyesuaikan berdasarkan role user
 
 ### 2. Registration Code System
-- Kode registrasi wajib untuk registrasi
-- Kode memiliki expiry date
-- Kode hanya bisa digunakan sekali
-- Role ditentukan oleh kode yang digunakan
+- Dihapus. Registrasi tidak menggunakan kode.
 
 ### 3. Activity Logging
 - Semua aktivitas admin dicatat
@@ -110,16 +85,14 @@ CREATE TABLE registration_codes (
 ## File yang Dimodifikasi
 
 ### Backend
-- `src/core/database.py` - Added RegistrationCode model
-- `src/web/routes.py` - Added admin routes and registration code validation
-- `migrations/create_registration_codes_table.sql` - Database migration
+- Model/route terkait registration code dihapus
 
 ### Frontend
-- `src/web/templates/index.html` - Added admin section and role-based UI
-- `src/web/templates/login.html` - Added registration code field
+- `src/web/templates/index.html` - Admin section dan role-based UI
+- `src/web/templates/login.html` - Field registration code dihapus
 - `src/web/static/admin.js` - Admin functionality JavaScript
-- `src/web/static/login.js` - Updated registration form validation
-- `src/web/static/script.js` - Added admin content handling
+- `src/web/static/login.js` - Registrasi dan validasi kode dihapus
+- `src/web/static/script.js` - Admin content handling
 
 ### Tools
 - `tools/create_admin_user.py` - Tool untuk membuat admin user dan sample codes
@@ -139,11 +112,9 @@ CREATE TABLE registration_codes (
 3. Verifikasi tidak ada menu upload
 4. Test akses upload (harus ditolak)
 
-### 3. Test Registration Code System
-1. Test registrasi tanpa kode (harus gagal)
-2. Test registrasi dengan kode invalid (harus gagal)
-3. Test registrasi dengan kode expired (harus gagal)
-4. Test registrasi dengan kode valid (harus berhasil)
+### 3. Test Registrasi (tanpa kode)
+1. Test registrasi dengan data valid (sukses, role user)
+2. Test registrasi email/username duplikat (gagal)
 
 ## Troubleshooting
 
@@ -185,6 +156,9 @@ psql -h localhost -U postgres -d DAV -f migrations/create_registration_codes_tab
 - Admin user default password harus diubah setelah login pertama
 - Soft delete untuk user mempertahankan data integrity
 - Activity logging membantu monitoring dan debugging
+
+
+
 
 
 

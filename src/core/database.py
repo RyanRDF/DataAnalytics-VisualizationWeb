@@ -207,7 +207,8 @@ class DataAnalytics(db.Model):
     """Tabel utama untuk data analytics"""
     __tablename__ = 'data_analytics'
     
-    sep = db.Column(db.String(50), primary_key=True)  # Primary key
+    data_id = db.Column(db.Integer, primary_key=True)
+    sep = db.Column(db.String(50), unique=True, index=True)
     uploader_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)  # User yang pertama kali mengupload row ini
     kode_rs = db.Column(db.Text)
     kelas_rs = db.Column(db.Text)
@@ -261,7 +262,7 @@ class DataAnalytics(db.Model):
     dpjp = db.Column(db.Text)
     nokartu = db.Column(db.Text)
     payor_id = db.Column(db.Text)
-    coder_id = db.Column(db.Text)
+    coder_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
     versi_inacbg = db.Column(db.Text)
     versi_grouper = db.Column(db.Text)
     c1 = db.Column(db.Text)
@@ -289,6 +290,7 @@ class DataAnalytics(db.Model):
     
     # Relationship
     uploader = db.relationship('User', foreign_keys=[uploader_id])
+    coder = db.relationship('User', foreign_keys=[coder_id])
 
 
 class UserActivityLog(db.Model):
@@ -311,38 +313,4 @@ class UserActivityLog(db.Model):
     user = db.relationship('User')
     session = db.relationship('UserSession')
 
-class RegistrationCode(db.Model):
-    __tablename__ = 'registration_codes'
-    
-    code_id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    role = db.Column(db.String(20), nullable=False)  # 'user', 'viewer', 'admin'
-    is_used = db.Column(db.Boolean, default=False)
-    used_by = db.Column(db.Integer, db.ForeignKey('users.user_id'))
-    used_at = db.Column(db.DateTime)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=jakarta_now)
-    expires_at = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Relationships
-    creator = db.relationship('User', foreign_keys=[created_by])
-    user_who_used = db.relationship('User', foreign_keys=[used_by])
-    
-    def to_dict(self):
-        """Convert to dictionary"""
-        return {
-            'code_id': self.code_id,
-            'code': self.code,
-            'role': self.role,
-            'is_used': self.is_used,
-            'used_by': self.used_by,
-            'used_at': self.used_at.isoformat() if self.used_at else None,
-            'created_by': self.created_by,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
-            'is_active': self.is_active
-        }
-    
-    def __repr__(self):
-        return f'<RegistrationCode {self.code}: {self.role}>'
+# RegistrationCode model dihapus sesuai normalisasi dan penghapusan fitur kode registrasi

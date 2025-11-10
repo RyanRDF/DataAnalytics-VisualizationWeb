@@ -909,6 +909,37 @@ body {
   border: 1px solid var(--border-color);
 }
 
+/* Ensure upload form adapts to dark mode even with inline overrides */
+[data-theme="dark"] .upload-container .file-upload-form {
+  background: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Upload instructions panel theme consistency */
+[data-theme="dark"] .upload-container .upload-instructions {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* File input label and info contrast in dark mode */
+[data-theme="dark"] .file-input-label {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .file-input-label:hover {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--gray-300) !important;
+}
+
+[data-theme="dark"] .file-info {
+  background: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+}
+
 .file-input-wrapper {
     position: relative;
 }
@@ -1190,6 +1221,39 @@ body {
 
 [data-theme="dark"] .table-container {
   background: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Dark mode table readability (Bootstrap tables) */
+[data-theme="dark"] table.table {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table thead th {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table td, 
+[data-theme="dark"] .table th {
   border-color: var(--border-color) !important;
 }
 

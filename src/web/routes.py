@@ -1,14 +1,16 @@
 """
 Flask routes for the web application
 """
+from functools import wraps
 from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
 from datetime import datetime, timedelta
 from utils.timezone_utils import jakarta_now
-from functools import wraps
+from utils.session_utils import login_required, api_login_required, get_valid_user_session
+from utils.handler_registry import HandlerRegistry
 
 from core.data_handler import DataHandler
-from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog, RegistrationCode
+from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog
 from core.robust_data_extractor import RobustDataExtractor
 from core.upload_service import UploadService
 
@@ -89,18 +91,12 @@ class WebRoutes:
             return render_template('login.html')
         
         @self.app.route('/main')
-        @self.login_required
+        @login_required(redirect_on_fail=True)
         def main():
             # Get current user and session info
-            user_id = session.get('user_id')
-            session_token = session.get('session_token')
+            user_id, user_session = get_valid_user_session()
             
-            user = User.query.get(user_id)
-            user_session = UserSession.query.filter_by(
-                user_id=user_id,
-                session_token=session_token,
-                is_active=True
-            ).first()
+            user = User.query.get(user_id) if user_id else None
             
             return render_template('index.html', 
                                  table_html="", 
@@ -196,7 +192,6 @@ class WebRoutes:
             email = data.get('email')
             password = data.get('password')
             confirm_password = data.get('confirm_password')
-            registration_code = data.get('registration_code')
             
             # Get client info
             ip_address = request.remote_addr
@@ -233,25 +228,7 @@ class WebRoutes:
                     'message': 'Password tidak sama'
                 }), 400
             
-            # Validate registration code
-            if not registration_code:
-                return jsonify({
-                    'success': False,
-                    'message': 'Kode registrasi harus diisi!'
-                }), 400
-            
-            # Check registration code
-            reg_code = RegistrationCode.query.filter_by(
-                code=registration_code,
-                is_used=False,
-                is_active=True
-            ).filter(RegistrationCode.expires_at > jakarta_now()).first()
-            
-            if not reg_code:
-                return jsonify({
-                    'success': False,
-                    'message': 'Kode registrasi tidak valid atau sudah kadaluarsa!'
-                }), 400
+            # Registration code dihapus; registrasi tidak lagi memerlukan kode
             
             # Check if user already exists
             existing_user = User.query.filter(
@@ -275,24 +252,21 @@ class WebRoutes:
                     username=username,
                     full_name=full_name,
                     email=email,
-                    role=reg_code.role  # Use role from registration code
+                    role='user'
                 )
                 user.set_password(password)
                 
                 db.session.add(user)
                 db.session.flush()  # Get user ID
                 
-                # Mark registration code as used
-                reg_code.is_used = True
-                reg_code.used_by = user.user_id
-                reg_code.used_at = jakarta_now()
+                # Tidak ada penandaan kode registrasi (fitur dihapus)
                 
                 db.session.commit()
                 
                 # Log registration activity
                 user.log_activity(
                     activity_type='register',
-                    description=f'User registered successfully with role {reg_code.role}',
+                    description='User registered successfully with default role user',
                     ip_address=ip_address,
                     user_agent=user_agent
                 )
@@ -356,24 +330,16 @@ class WebRoutes:
             })
         
         @self.app.route('/upload', methods=['POST'])
-        @self.api_login_required
+        @api_login_required
         def upload_file():
             # Get user info from session (already validated by login_required decorator)
-            user_id = session.get('user_id')
-            session_token = session.get('session_token')
+            user_id, user_session = get_valid_user_session()
             
             # Check if user has permission to upload (not viewer)
-            current_user = User.query.get(user_id)
+            current_user = User.query.get(user_id) if user_id else None
             if current_user and current_user.role == 'viewer':
                 return render_template('index.html', table_html="", has_data=False, 
                                      error="Akses ditolak. Role viewer tidak dapat mengupload data.")
-            
-            # Get current user session for logging
-            user_session = UserSession.query.filter_by(
-                user_id=user_id,
-                session_token=session_token,
-                is_active=True
-            ).first()
 
             if 'file' not in request.files:
                 return redirect(url_for('index'))
@@ -542,148 +508,70 @@ class WebRoutes:
         self._register_admin_routes()
     
     def _register_analysis_routes(self):
-        """Register analysis-specific routes"""
+        """Register analysis-specific routes dynamically"""
+        # Define all handlers and their route prefixes
+        handlers = ['financial', 'patient', 'selisih_tarif', 'los', 'inacbg', 'ventilator']
         
-        # Financial routes
-        @self.app.route('/keuangan')
-        def keuangan():
-            return self._handle_analysis_route('financial', 'keuangan')
-        
-        @self.app.route('/keuangan/sort')
-        def keuangan_sort():
-            return self._handle_sort_route('financial')
-        
-        @self.app.route('/keuangan/filter')
-        def keuangan_filter():
-            return self._handle_filter_route('financial')
-        
-        @self.app.route('/keuangan/columns')
-        def keuangan_columns():
-            return self._handle_columns_route('financial')
-        
-        @self.app.route('/keuangan/specific-filter')
-        def keuangan_specific_filter():
-            return self._handle_specific_filter_route('financial')
-        
-        # Patient routes
-        @self.app.route('/pasien')
-        def pasien():
-            return self._handle_analysis_route('patient', 'pasien')
-        
-        @self.app.route('/pasien/sort')
-        def pasien_sort():
-            return self._handle_sort_route('patient')
-        
-        @self.app.route('/pasien/filter')
-        def pasien_filter():
-            return self._handle_filter_route('patient')
-        
-        @self.app.route('/pasien/columns')
-        def pasien_columns():
-            return self._handle_columns_route('patient')
-        
-        @self.app.route('/pasien/specific-filter')
-        def pasien_specific_filter():
-            return self._handle_specific_filter_route('patient')
-        
-        # Selisih Tarif routes
-        @self.app.route('/selisih-tarif')
-        def selisih_tarif():
-            return self._handle_analysis_route('selisih_tarif', 'selisih-tarif')
-        
-        @self.app.route('/selisih-tarif/sort')
-        def selisih_tarif_sort():
-            return self._handle_sort_route('selisih_tarif')
-        
-        @self.app.route('/selisih-tarif/filter')
-        def selisih_tarif_filter():
-            return self._handle_filter_route('selisih_tarif')
-        
-        @self.app.route('/selisih-tarif/columns')
-        def selisih_tarif_columns():
-            return self._handle_columns_route('selisih_tarif')
-        
-        @self.app.route('/selisih-tarif/specific-filter')
-        def selisih_tarif_specific_filter():
-            return self._handle_specific_filter_route('selisih_tarif')
-        
-        # LOS routes
-        @self.app.route('/los')
-        def los():
-            return self._handle_analysis_route('los', 'los')
-        
-        @self.app.route('/los/sort')
-        def los_sort():
-            return self._handle_sort_route('los')
-        
-        @self.app.route('/los/filter')
-        def los_filter():
-            return self._handle_filter_route('los')
-        
-        @self.app.route('/los/columns')
-        def los_columns():
-            return self._handle_columns_route('los')
-        
-        @self.app.route('/los/specific-filter')
-        def los_specific_filter():
-            return self._handle_specific_filter_route('los')
-        
-        # INACBG routes
-        @self.app.route('/inacbg')
-        def inacbg():
-            return self._handle_analysis_route('inacbg', 'inacbg')
-        
-        @self.app.route('/inacbg/sort')
-        def inacbg_sort():
-            return self._handle_sort_route('inacbg')
-        
-        @self.app.route('/inacbg/filter')
-        def inacbg_filter():
-            return self._handle_filter_route('inacbg')
-        
-        @self.app.route('/inacbg/columns')
-        def inacbg_columns():
-            return self._handle_columns_route('inacbg')
-        
-        @self.app.route('/inacbg/specific-filter')
-        def inacbg_specific_filter():
-            return self._handle_specific_filter_route('inacbg')
-        
-        # Ventilator routes
-        @self.app.route('/ventilator')
-        def ventilator():
-            return self._handle_analysis_route('ventilator', 'ventilator')
-        
-        @self.app.route('/ventilator/sort')
-        def ventilator_sort():
-            return self._handle_sort_route('ventilator')
-        
-        @self.app.route('/ventilator/filter')
-        def ventilator_filter():
-            return self._handle_filter_route('ventilator')
-        
-        @self.app.route('/ventilator/columns')
-        def ventilator_columns():
-            return self._handle_columns_route('ventilator')
-        
-        @self.app.route('/ventilator/specific-filter')
-        def ventilator_specific_filter():
-            return self._handle_specific_filter_route('ventilator')
+        for handler_name in handlers:
+            view_name = HandlerRegistry.get_view_name(handler_name)
+            
+            # Create unique endpoint names to avoid conflicts
+            endpoint_prefix = f"{handler_name}_{view_name}"
+            
+            # Capture values in closure to avoid late binding issues
+            def make_route_handler(h_name, v_name):
+                return lambda: self._handle_analysis_route(h_name, v_name)
+            
+            def make_sort_handler(h_name):
+                return lambda: self._handle_sort_route(h_name)
+            
+            def make_filter_handler(h_name):
+                return lambda: self._handle_filter_route(h_name)
+            
+            def make_columns_handler(h_name):
+                return lambda: self._handle_columns_route(h_name)
+            
+            def make_specific_filter_handler(h_name):
+                return lambda: self._handle_specific_filter_route(h_name)
+            
+            # Main view route
+            self.app.add_url_rule(
+                f'/{view_name}',
+                endpoint=f'{endpoint_prefix}_view',
+                view_func=make_route_handler(handler_name, view_name)
+            )
+            
+            # Sort route
+            self.app.add_url_rule(
+                f'/{view_name}/sort',
+                endpoint=f'{endpoint_prefix}_sort',
+                view_func=make_sort_handler(handler_name)
+            )
+            
+            # Filter route
+            self.app.add_url_rule(
+                f'/{view_name}/filter',
+                endpoint=f'{endpoint_prefix}_filter',
+                view_func=make_filter_handler(handler_name)
+            )
+            
+            # Columns route
+            self.app.add_url_rule(
+                f'/{view_name}/columns',
+                endpoint=f'{endpoint_prefix}_columns',
+                view_func=make_columns_handler(handler_name)
+            )
+            
+            # Specific filter route
+            self.app.add_url_rule(
+                f'/{view_name}/specific-filter',
+                endpoint=f'{endpoint_prefix}_specific_filter',
+                view_func=make_specific_filter_handler(handler_name)
+            )
     
     def _get_handler(self, handler_name: str):
-        """Get handler by name"""
-        handler_map = {
-            'keuangan': self.data_handler.financial_handler,
-            'financial': self.data_handler.financial_handler,
-            'pasien': self.data_handler.patient_handler,
-            'patient': self.data_handler.patient_handler,
-            'selisih-tarif': self.data_handler.selisih_tarif_handler,
-            'selisih_tarif': self.data_handler.selisih_tarif_handler,
-            'los': self.data_handler.los_handler,
-            'inacbg': self.data_handler.inacbg_handler,
-            'ventilator': self.data_handler.ventilator_handler
-        }
-        return handler_map.get(handler_name)
+        """Get handler by name using centralized registry"""
+        return HandlerRegistry.get_handler(self.data_handler, handler_name)
     
     def _handle_analysis_route(self, handler_name: str, view_name: str):
         """Handle analysis route"""
@@ -802,7 +690,7 @@ class WebRoutes:
         """Register admin-specific routes"""
         
         @self.app.route('/admin/users', methods=['GET'])
-        @self.api_login_required
+        @api_login_required
         def admin_get_users():
             """Get all users for admin management"""
             # Check if current user is admin
@@ -835,6 +723,134 @@ class WebRoutes:
                     'success': False,
                     'message': f'Error: {str(e)}'
                 }), 500
+
+        @self.app.route('/admin/users/create', methods=['POST'])
+        @api_login_required
+        def admin_create_user():
+            """Admin creates a new user account"""
+            current_user_id = session.get('user_id')
+            current_user = User.query.get(current_user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            data = request.get_json()
+            username = data.get('username')
+            full_name = data.get('full_name')
+            email = data.get('email')
+            role = data.get('role', 'user')
+            password = data.get('password')
+            
+            if not username or not full_name or not email:
+                return jsonify({'success': False, 'message': 'Username, nama lengkap, dan email wajib diisi'}), 400
+            
+            # Disallow creating admin via API
+            if role not in ['user', 'viewer']:
+                return jsonify({'success': False, 'message': 'Role tidak valid. Role admin hanya dibuat manual di database.'}), 400
+            
+            if not password or len(password) < 6:
+                return jsonify({'success': False, 'message': 'Password minimal 6 karakter'}), 400
+            
+            try:
+                # Check uniqueness
+                if User.query.filter((User.username==username) | (User.email==email)).first():
+                    return jsonify({'success': False, 'message': 'Username atau email sudah digunakan'}), 400
+                
+                new_user = User(
+                    username=username,
+                    full_name=full_name,
+                    email=email,
+                    role=role,
+                    created_by=current_user_id
+                )
+                new_user.set_password(password)
+                db.session.add(new_user)
+                db.session.flush()
+                
+                # Log activity
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Created user {username} with role {role}',
+                    table_affected='users',
+                    record_id=str(new_user.user_id),
+                    new_values={'username': username, 'email': email, 'role': role}
+                )
+                
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'User berhasil dibuat', 'user': new_user.to_dict()})
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+        @self.app.route('/admin/users/<int:user_id>/update', methods=['POST'])
+        @api_login_required
+        def admin_update_user(user_id):
+            """Admin updates user details"""
+            current_user_id = session.get('user_id')
+            current_user = User.query.get(current_user_id)
+            
+            if not current_user or current_user.role != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                }), 403
+            
+            data = request.get_json()
+            full_name = data.get('full_name')
+            email = data.get('email')
+            role = data.get('role')
+            is_active = data.get('is_active')
+            password = data.get('password')  # optional
+            
+            try:
+                user = User.query.get(user_id)
+                if not user:
+                    return jsonify({'success': False, 'message': 'User tidak ditemukan'}), 404
+                
+                old_values = user.to_dict()
+                
+                if full_name:
+                    user.full_name = full_name
+                if email and email != user.email:
+                    # check uniqueness
+                    if User.query.filter(User.email==email, User.user_id!=user_id).first():
+                        return jsonify({'success': False, 'message': 'Email sudah digunakan'}), 400
+                    user.email = email
+                # Guardrails for admin role
+                if role is not None:
+                    if role == 'admin' and user.role != 'admin':
+                        return jsonify({'success': False, 'message': 'Tidak boleh mengubah role ke admin melalui aplikasi'}), 403
+                    if user.role == 'admin' and role != 'admin':
+                        return jsonify({'success': False, 'message': 'Tidak boleh mengubah role admin melalui aplikasi'}), 403
+                    if role in ['user', 'viewer'] and user.role != 'admin':
+                        user.role = role
+                if isinstance(is_active, bool):
+                    user.is_active = is_active
+                if password:
+                    if len(password) < 6:
+                        return jsonify({'success': False, 'message': 'Password minimal 6 karakter'}), 400
+                    user.set_password(password)
+                user.updated_at = jakarta_now()
+                
+                new_values = user.to_dict()
+                
+                current_user.log_activity(
+                    activity_type='admin_action',
+                    description=f'Updated user {user.username}',
+                    table_affected='users',
+                    record_id=str(user_id),
+                    old_values=old_values,
+                    new_values=new_values
+                )
+                
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'User berhasil diperbarui', 'user': user.to_dict()})
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
         
         @self.app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
         @self.api_login_required
@@ -892,7 +908,7 @@ class WebRoutes:
                 }), 500
         
         @self.app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
-        @self.api_login_required
+        @api_login_required
         def admin_delete_user(user_id):
             """Delete user (soft delete)"""
             # Check if current user is admin
@@ -917,6 +933,11 @@ class WebRoutes:
                     return jsonify({
                         'success': False,
                         'message': 'Tidak dapat menghapus akun sendiri'
+                    }), 400
+                if target_user.role == 'admin':
+                    return jsonify({
+                        'success': False,
+                        'message': 'Tidak dapat menghapus user dengan role admin'
                     }), 400
                 
                 # Soft delete - deactivate user
@@ -947,285 +968,4 @@ class WebRoutes:
                     'message': f'Error: {str(e)}'
                 }), 500
         
-        @self.app.route('/admin/registration-codes', methods=['GET'])
-        @self.api_login_required
-        def admin_get_registration_codes():
-            """Get all registration codes"""
-            # Check if current user is admin
-            user_id = session.get('user_id')
-            current_user = User.query.get(user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            try:
-                codes = RegistrationCode.query.order_by(RegistrationCode.created_at.desc()).all()
-                codes_data = []
-                
-                for code in codes:
-                    code_data = code.to_dict()
-                    # Add additional info
-                    code_data['created_by_name'] = code.creator.username if code.creator else 'System'
-                    code_data['used_by_name'] = code.user_who_used.username if code.user_who_used else None
-                    codes_data.append(code_data)
-                
-                return jsonify({
-                    'success': True,
-                    'codes': codes_data
-                })
-                
-            except Exception as e:
-                return jsonify({
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }), 500
-        
-        @self.app.route('/admin/registration-codes/generate', methods=['POST'])
-        @self.api_login_required
-        def admin_generate_registration_codes():
-            """Generate new registration codes"""
-            # Check if current user is admin
-            user_id = session.get('user_id')
-            current_user = User.query.get(user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            data = request.get_json()
-            role = data.get('role')
-            expiry_days = data.get('expiry_days', 30)
-            count = data.get('count', 1)
-            
-            if not role or role not in ['user', 'viewer', 'admin']:
-                return jsonify({
-                    'success': False,
-                    'message': 'Role tidak valid'
-                }), 400
-            
-            try:
-                import random
-                import string
-                generated_codes = []
-                
-                for _ in range(count):
-                    # Generate unique code
-                    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-                    
-                    # Check if code already exists
-                    while RegistrationCode.query.filter_by(code=code).first():
-                        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-                    
-                    # Create registration code
-                    expires_at = jakarta_now() + timedelta(days=expiry_days)
-                    reg_code = RegistrationCode(
-                        code=code,
-                        role=role,
-                        created_by=user_id,
-                        expires_at=expires_at
-                    )
-                    
-                    db.session.add(reg_code)
-                    generated_codes.append({
-                        'code': code,
-                        'role': role,
-                        'expires_at': expires_at.isoformat()
-                    })
-                
-                # Log activity
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Generated {count} registration codes for role {role}',
-                    table_affected='registration_codes',
-                    new_values={'codes_generated': count, 'role': role}
-                )
-                
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Berhasil generate {count} kode untuk role {role}',
-                    'codes': generated_codes
-                })
-                
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }), 500
-        
-        @self.app.route('/admin/registration-codes/<int:code_id>/delete', methods=['POST'])
-        @self.api_login_required
-        def admin_delete_registration_code(code_id):
-            """Delete registration code"""
-            # Check if current user is admin
-            user_id = session.get('user_id')
-            current_user = User.query.get(user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            try:
-                reg_code = RegistrationCode.query.get(code_id)
-                if not reg_code:
-                    return jsonify({
-                        'success': False,
-                        'message': 'Kode registrasi tidak ditemukan'
-                    }), 404
-                
-                if reg_code.is_used:
-                    return jsonify({
-                        'success': False,
-                        'message': 'Tidak dapat menghapus kode yang sudah digunakan'
-                    }), 400
-                
-                # Log activity
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Deleted registration code {reg_code.code}',
-                    table_affected='registration_codes',
-                    record_id=str(code_id)
-                )
-                
-                db.session.delete(reg_code)
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Kode {reg_code.code} berhasil dihapus'
-                })
-                
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }), 500
-        
-        @self.app.route('/admin/registration-codes/clear-unused', methods=['POST'])
-        @self.api_login_required
-        def admin_clear_unused_codes():
-            """Clear all unused registration codes"""
-            # Check if current user is admin
-            user_id = session.get('user_id')
-            current_user = User.query.get(user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            try:
-                # Get all unused codes
-                unused_codes = RegistrationCode.query.filter_by(
-                    is_used=False,
-                    is_active=True
-                ).all()
-                
-                if not unused_codes:
-                    return jsonify({
-                        'success': True,
-                        'message': 'Tidak ada kode yang belum digunakan',
-                        'deleted_count': 0
-                    })
-                
-                # Count codes to be deleted
-                deleted_count = len(unused_codes)
-                code_list = [code.code for code in unused_codes]
-                
-                # Delete all unused codes
-                for code in unused_codes:
-                    db.session.delete(code)
-                
-                # Log activity
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Cleared {deleted_count} unused registration codes: {", ".join(code_list)}',
-                    table_affected='registration_codes',
-                    new_values={'deleted_codes': code_list, 'count': deleted_count}
-                )
-                
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Berhasil menghapus {deleted_count} kode yang belum digunakan',
-                    'deleted_count': deleted_count,
-                    'deleted_codes': code_list
-                })
-                
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }), 500
-        
-        @self.app.route('/admin/registration-codes/clear-expired', methods=['POST'])
-        @self.api_login_required
-        def admin_clear_expired_codes():
-            """Clear all expired registration codes"""
-            # Check if current user is admin
-            user_id = session.get('user_id')
-            current_user = User.query.get(user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            try:
-                # Get all expired codes
-                expired_codes = RegistrationCode.query.filter(
-                    RegistrationCode.expires_at < jakarta_now()
-                ).all()
-                
-                if not expired_codes:
-                    return jsonify({
-                        'success': True,
-                        'message': 'Tidak ada kode yang sudah kadaluarsa',
-                        'deleted_count': 0
-                    })
-                
-                # Count codes to be deleted
-                deleted_count = len(expired_codes)
-                code_list = [code.code for code in expired_codes]
-                
-                # Delete all expired codes
-                for code in expired_codes:
-                    db.session.delete(code)
-                
-                # Log activity
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Cleared {deleted_count} expired registration codes: {", ".join(code_list)}',
-                    table_affected='registration_codes',
-                    new_values={'deleted_codes': code_list, 'count': deleted_count}
-                )
-                
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Berhasil menghapus {deleted_count} kode yang sudah kadaluarsa',
-                    'deleted_count': deleted_count,
-                    'deleted_codes': code_list
-                })
-                
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }), 500
+        # Semua endpoint admin terkait registration codes telah dihapus

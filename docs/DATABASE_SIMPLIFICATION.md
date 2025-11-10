@@ -28,8 +28,7 @@ Tracking semua aktivitas login (success, failed, blocked).
 ### 6. **user_activity_logs**
 Log semua aktivitas user dalam sistem.
 
-### 7. **registration_codes**
-Kode registrasi untuk user baru dengan expiry date.
+<!-- registration_codes dihapus dari desain normalisasi -->
 
 ## ❌ Tabel Yang Dihapus
 

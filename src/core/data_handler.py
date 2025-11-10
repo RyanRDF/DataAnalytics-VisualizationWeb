@@ -3,6 +3,7 @@ Main data handler that coordinates all data processing
 """
 import pandas as pd
 import os
+import logging
 from typing import Optional, Tuple
 
 from core.data_processor import DataProcessor
@@ -12,6 +13,8 @@ from handlers.selisih_tarif_handler import SelisihTarifHandler
 from handlers.los_handler import LOSHandler
 from handlers.inacbg_handler import INACBGHandler
 from handlers.ventilator_handler import VentilatorHandler
+
+logger = logging.getLogger(__name__)
 
 
 class DataHandler:

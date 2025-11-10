@@ -18,8 +18,7 @@ Proyek telah diperiksa secara menyeluruh dan dibersihkan untuk memastikan semua 
 3. `upload_logs` - Upload tracking
 4. `login_logs` - Login tracking
 5. `user_activity_logs` - Activity tracking
-6. `registration_codes` - Registration code management
-7. `data_analytics` - Main data table
+6. `data_analytics` - Main data table
 
 #### Perubahan:
 - ✅ Removed `UserRole` and `UserRoleAssignment` models dari `src/core/database.py`

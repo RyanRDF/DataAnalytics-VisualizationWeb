@@ -1956,3 +1956,49 @@ function logout() {
         });
     }
 }
+
+// ===== AUTO LOGOUT ON INACTIVITY =====
+(function setupAutoLogout() {
+	// 20 minutes in milliseconds
+	const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
+	let inactivityTimerId = null;
+	let lastActivityTs = Date.now();
+
+	function performAutoLogout() {
+		// Avoid duplicate triggers
+		if (inactivityTimerId) {
+			clearTimeout(inactivityTimerId);
+			inactivityTimerId = null;
+		}
+		// Silent logout without confirmation
+		fetch('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+			.finally(() => {
+				window.location.replace('/login');
+			});
+	}
+
+	function resetInactivityTimer() {
+		lastActivityTs = Date.now();
+		if (inactivityTimerId) clearTimeout(inactivityTimerId);
+		inactivityTimerId = setTimeout(performAutoLogout, INACTIVITY_LIMIT_MS);
+	}
+
+	function activityListener() {
+		resetInactivityTimer();
+	}
+
+	// Start after DOM ready
+	document.addEventListener('DOMContentLoaded', () => {
+		// Bind common activity events
+		['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click'].forEach(evt => {
+			window.addEventListener(evt, activityListener, { passive: true });
+		});
+
+		// Reset timer on visibility change (e.g., user returns to the tab)
+		document.addEventListener('visibilitychange', () => {
+			if (!document.hidden) resetInactivityTimer();
+		});
+
+		resetInactivityTimer();
+	});
+})();

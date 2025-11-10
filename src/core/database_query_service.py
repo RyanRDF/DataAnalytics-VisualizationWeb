@@ -19,6 +19,56 @@ class DatabaseQueryService:
     def __init__(self):
         pass
     
+    def _query_to_dataframe(self, query, column_mapping: Dict[str, str] = None) -> pd.DataFrame:
+        """
+        Helper method to convert SQLAlchemy query results to DataFrame
+        
+        Args:
+            query: SQLAlchemy query object
+            column_mapping: Optional mapping from model attributes to DataFrame column names
+                           If None, uses direct attribute access
+            
+        Returns:
+            DataFrame with query results
+        """
+        try:
+            results = query.all()
+            
+            if not results:
+                return pd.DataFrame()
+            
+            # If column mapping provided, use it
+            if column_mapping:
+                df = pd.DataFrame([{
+                    df_col: getattr(row, model_attr, None) 
+                    for df_col, model_attr in column_mapping.items()
+                } for row in results])
+            else:
+                # Try to infer columns from first result
+                first_row = results[0]
+                if hasattr(first_row, '__table__'):
+                    # SQLAlchemy model instance
+                    columns = {col.name: col.name for col in first_row.__table__.columns}
+                    df = pd.DataFrame([{
+                        col: getattr(row, col, None) for col in columns.keys()
+                    } for row in results])
+                else:
+                    # Raw query result (e.g., from func.aggregate())
+                    # Get column names from first row's keys
+                    if hasattr(first_row, '_fields'):
+                        # Named tuple from query
+                        columns = first_row._fields
+                        df = pd.DataFrame([dict(row._asdict()) for row in results])
+                    else:
+                        # Try to convert directly
+                        df = pd.DataFrame([dict(row) for row in results])
+            
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error converting query to DataFrame: {e}", exc_info=True)
+            return pd.DataFrame()
+    
     def get_financial_data(self, filters: Dict[str, Any] = None, limit: int = 1000) -> pd.DataFrame:
         """
         Get financial data from DataAnalytics table with performance optimization
@@ -41,36 +91,33 @@ class DatabaseQueryService:
             # Apply limit for performance
             query = query.limit(limit)
             
-            # Execute query
-            results = query.all()
+            # Column mapping for financial data
+            column_mapping = {
+                'SEP': 'sep',
+                'MRN': 'mrn',
+                'NAMA_PASIEN': 'nama_pasien',
+                'DPJP': 'dpjp',
+                'ADMISSION_DATE': 'admission_date',
+                'DISCHARGE_DATE': 'discharge_date',
+                'LOS': 'los',
+                'KELAS_RAWAT': 'kelas_rawat',
+                'INACBG': 'inacbg',
+                'TOTAL_TARIF': 'total_tarif',
+                'TARIF_RS': 'tarif_rs',
+                'PROSEDUR_NON_BEDAH': 'prosedur_non_bedah',
+                'PROSEDUR_BEDAH': 'prosedur_bedah',
+                'KONSULTASI': 'konsultasi',
+                'TENAGA_AHLI': 'tenaga_ahli',
+                'KEPERAWATAN': 'keperawatan',
+                'PENUNJANG': 'penunjang',
+                'RADIOLOGI': 'radiologi',
+                'LABORATORIUM': 'laboratorium',
+                'PELAYANAN_DARAH': 'pelayanan_darah',
+                'KAMAR_AKOMODASI': 'kamar_akomodasi',
+                'OBAT': 'obat'
+            }
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'DPJP': row.dpjp,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'LOS': row.los,
-                'KELAS_RAWAT': row.kelas_rawat,
-                'INACBG': row.inacbg,
-                'TOTAL_TARIF': row.total_tarif,
-                'TARIF_RS': row.tarif_rs,
-                'PROSEDUR_NON_BEDAH': row.prosedur_non_bedah,
-                'PROSEDUR_BEDAH': row.prosedur_bedah,
-                'KONSULTASI': row.konsultasi,
-                'TENAGA_AHLI': row.tenaga_ahli,
-                'KEPERAWATAN': row.keperawatan,
-                'PENUNJANG': row.penunjang,
-                'RADIOLOGI': row.radiologi,
-                'LABORATORIUM': row.laboratorium,
-                'PELAYANAN_DARAH': row.pelayanan_darah,
-                'KAMAR_AKOMODASI': row.kamar_akomodasi,
-                'OBAT': row.obat
-            } for row in results])
-            
-            return df
+            return self._query_to_dataframe(query, column_mapping)
             
         except Exception as e:
             logger.error(f"Error getting financial data: {e}", exc_info=True)
@@ -102,33 +149,35 @@ class DatabaseQueryService:
             
             # Apply pagination
             offset = (page - 1) * per_page
-            results = query.offset(offset).limit(per_page).all()
+            paginated_query = query.offset(offset).limit(per_page)
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'DPJP': row.dpjp,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'LOS': row.los,
-                'KELAS_RAWAT': row.kelas_rawat,
-                'INACBG': row.inacbg,
-                'TOTAL_TARIF': row.total_tarif,
-                'TARIF_RS': row.tarif_rs,
-                'PROSEDUR_NON_BEDAH': row.prosedur_non_bedah,
-                'PROSEDUR_BEDAH': row.prosedur_bedah,
-                'KONSULTASI': row.konsultasi,
-                'TENAGA_AHLI': row.tenaga_ahli,
-                'KEPERAWATAN': row.keperawatan,
-                'PENUNJANG': row.penunjang,
-                'RADIOLOGI': row.radiologi,
-                'LABORATORIUM': row.laboratorium,
-                'PELAYANAN_DARAH': row.pelayanan_darah,
-                'KAMAR_AKOMODASI': row.kamar_akomodasi,
-                'OBAT': row.obat
-            } for row in results])
+            # Column mapping for financial data
+            column_mapping = {
+                'SEP': 'sep',
+                'MRN': 'mrn',
+                'NAMA_PASIEN': 'nama_pasien',
+                'DPJP': 'dpjp',
+                'ADMISSION_DATE': 'admission_date',
+                'DISCHARGE_DATE': 'discharge_date',
+                'LOS': 'los',
+                'KELAS_RAWAT': 'kelas_rawat',
+                'INACBG': 'inacbg',
+                'TOTAL_TARIF': 'total_tarif',
+                'TARIF_RS': 'tarif_rs',
+                'PROSEDUR_NON_BEDAH': 'prosedur_non_bedah',
+                'PROSEDUR_BEDAH': 'prosedur_bedah',
+                'KONSULTASI': 'konsultasi',
+                'TENAGA_AHLI': 'tenaga_ahli',
+                'KEPERAWATAN': 'keperawatan',
+                'PENUNJANG': 'penunjang',
+                'RADIOLOGI': 'radiologi',
+                'LABORATORIUM': 'laboratorium',
+                'PELAYANAN_DARAH': 'pelayanan_darah',
+                'KAMAR_AKOMODASI': 'kamar_akomodasi',
+                'OBAT': 'obat'
+            }
+            
+            df = self._query_to_dataframe(paginated_query, column_mapping)
             
             return {
                 'data': df,
@@ -164,7 +213,7 @@ class DatabaseQueryService:
             DataFrame with INACBG data
         """
         try:
-            # Base query
+            # Base query with aggregations
             query = db.session.query(
                 DataAnalytics.inacbg,
                 DataAnalytics.deskripsi_inacbg,
@@ -182,22 +231,26 @@ class DatabaseQueryService:
             if filters:
                 query = self._apply_filters(query, filters)
             
-            # Execute query
+            # Convert to DataFrame (use named tuple conversion)
             results = query.all()
+            df = pd.DataFrame([dict(row._asdict()) for row in results])
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'INACBG': row.inacbg,
-                'DESKRIPSI_INACBG': row.deskripsi_inacbg,
-                'jumlah_kunjungan': row.jumlah_kunjungan,
-                'rata_los': row.rata_los,
-                'min_los': row.min_los,
-                'max_los': row.max_los,
-                'rata_tarif': row.rata_tarif,
-                'total_tarif': row.total_tarif,
-                'rata_tarif_rs': row.rata_tarif_rs,
-                'total_tarif_rs': row.total_tarif_rs
-            } for row in results])
+            # Rename columns to match expected format
+            if not df.empty:
+                df.columns = [col.upper() if col not in ['inacbg', 'deskripsi_inacbg'] else col.upper()
+                             for col in df.columns]
+                df.rename(columns={
+                    'INACBG': 'INACBG',
+                    'DESKRIPSI_INACBG': 'DESKRIPSI_INACBG',
+                    'JUMLAH_KUNJUNGAN': 'jumlah_kunjungan',
+                    'RATA_LOS': 'rata_los',
+                    'MIN_LOS': 'min_los',
+                    'MAX_LOS': 'max_los',
+                    'RATA_TARIF': 'rata_tarif',
+                    'TOTAL_TARIF': 'total_tarif',
+                    'RATA_TARIF_RS': 'rata_tarif_rs',
+                    'TOTAL_TARIF_RS': 'total_tarif_rs'
+                }, inplace=True)
             
             return df
             
@@ -213,7 +266,7 @@ class DatabaseQueryService:
             filters: Dictionary of filters to apply
             
         Returns:
-            DataFrame with LOS data
+            ADMINFrame with LOS data
         """
         try:
             # Base query
@@ -234,24 +287,21 @@ class DatabaseQueryService:
             if filters:
                 query = self._apply_filters(query, filters)
             
-            # Execute query
-            results = query.all()
+            # Column mapping
+            column_mapping = {
+                'SEP': 'sep',
+                'MRN': 'mrn',
+                'NAMA_PASIEN': 'nama_pasien',
+                'INACBG': 'inacbg',
+                'DESKRIPSI_INACBG': 'deskripsi_inacbg',
+                'LOS': 'los',
+                'ADMISSION_DATE': 'admission_date',
+                'DISCHARGE_DATE': 'discharge_date',
+                'TOTAL_TARIF': 'total_tarif',
+                'TARIF_RS': 'tarif_rs'
+            }
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'INACBG': row.inacbg,
-                'DESKRIPSI_INACBG': row.deskripsi_inacbg,
-                'LOS': row.los,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'TOTAL_TARIF': row.total_tarif,
-                'TARIF_RS': row.tarif_rs
-            } for row in results])
-            
-            return df
+            return self._query_to_dataframe(query, column_mapping)
             
         except Exception as e:
             logger.error(f"Error getting LOS data: {e}", exc_info=True)
@@ -289,27 +339,24 @@ class DatabaseQueryService:
             if filters:
                 query = self._apply_filters(query, filters)
             
-            # Execute query
-            results = query.all()
+            # Column mapping
+            column_mapping = {
+                'SEP': 'sep',
+                'MRN': 'mrn',
+                'NAMA_PASIEN': 'nama_pasien',
+                'ADMISSION_DATE': 'admission_date',
+                'DISCHARGE_DATE': 'discharge_date',
+                'LOS': 'los',
+                'VENT_HOUR': 'vent_hour',
+                'ICU_INDIKATOR': 'icu_indikator',
+                'ICU_LOS': 'icu_los',
+                'INACBG': 'inacbg',
+                'DESKRIPSI_INACBG': 'deskripsi_inacbg',
+                'TOTAL_TARIF': 'total_tarif',
+                'TARIF_RS': 'tarif_rs'
+            }
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'LOS': row.los,
-                'VENT_HOUR': row.vent_hour,
-                'ICU_INDIKATOR': row.icu_indikator,
-                'ICU_LOS': row.icu_los,
-                'INACBG': row.inacbg,
-                'DESKRIPSI_INACBG': row.deskripsi_inacbg,
-                'TOTAL_TARIF': row.total_tarif,
-                'TARIF_RS': row.tarif_rs
-            } for row in results])
-            
-            return df
+            return self._query_to_dataframe(query, column_mapping)
             
         except Exception as e:
             logger.error(f"Error getting ventilator data: {e}", exc_info=True)
@@ -358,38 +405,35 @@ class DatabaseQueryService:
             if filters:
                 query = self._apply_filters(query, filters)
             
-            # Execute query
-            results = query.all()
+            # Column mapping
+            column_mapping = {
+                'SEP': 'sep',
+                'MRN': 'mrn',
+                'NAMA_PASIEN': 'nama_pasien',
+                'ADMISSION_DATE': 'admission_date',
+                'DISCHARGE_DATE': 'discharge_date',
+                'LOS': 'los',
+                'KELAS_RAWAT': 'kelas_rawat',
+                'INACBG': 'inacbg',
+                'BIRTH_DATE': 'birth_date',
+                'BIRTH_WEIGHT': 'birth_weight',
+                'SEX': 'sex',
+                'DISCHARGE_STATUS': 'discharge_status',
+                'DIAGLIST': 'diaglist',
+                'PROCLIST': 'proclist',
+                'ADL1': 'adl1',
+                'ADL2': 'adl2',
+                'UMUR_TAHUN': 'umur_tahun',
+                'UMUR_HARI': 'umur_hari',
+                'DPJP': 'dpjp',
+                'NOKARTU': 'nokartu',
+                'PAYOR_ID': 'payor_id',
+                'CODER_ID': 'coder_id',
+                'VERSI_INACBG': 'versi_inacbg',
+                'VERSI_GROUPER': 'versi_grouper'
+            }
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'LOS': row.los,
-                'KELAS_RAWAT': row.kelas_rawat,
-                'INACBG': row.inacbg,
-                'BIRTH_DATE': row.birth_date,
-                'BIRTH_WEIGHT': row.birth_weight,
-                'SEX': row.sex,
-                'DISCHARGE_STATUS': row.discharge_status,
-                'DIAGLIST': row.diaglist,
-                'PROCLIST': row.proclist,
-                'ADL1': row.adl1,
-                'ADL2': row.adl2,
-                'UMUR_TAHUN': row.umur_tahun,
-                'UMUR_HARI': row.umur_hari,
-                'DPJP': row.dpjp,
-                'NOKARTU': row.nokartu,
-                'PAYOR_ID': row.payor_id,
-                'CODER_ID': row.coder_id,
-                'VERSI_INACBG': row.versi_inacbg,
-                'VERSI_GROUPER': row.versi_grouper
-            } for row in results])
-            
-            return df
+            return self._query_to_dataframe(query, column_mapping)
             
         except Exception as e:
             logger.error(f"Error getting patient data: {e}", exc_info=True)
@@ -426,24 +470,13 @@ class DatabaseQueryService:
             if filters:
                 query = self._apply_filters(query, filters)
             
-            # Execute query
+            # For queries with calculated fields, use direct conversion
             results = query.all()
+            df = pd.DataFrame([dict(row._asdict()) for row in results])
             
-            # Convert to DataFrame
-            df = pd.DataFrame([{
-                'SEP': row.sep,
-                'MRN': row.mrn,
-                'NAMA_PASIEN': row.nama_pasien,
-                'INACBG': row.inacbg,
-                'TOTAL_TARIF': row.total_tarif,
-                'TARIF_RS': row.tarif_rs,
-                'LOS': row.los,
-                'DIAGLIST': row.diaglist,
-                'PROCLIST': row.proclist,
-                'ADMISSION_DATE': row.admission_date,
-                'DISCHARGE_DATE': row.discharge_date,
-                'SELISIH_TARIF': row.SELISIH_TARIF
-            } for row in results])
+            # Rename to uppercase for consistency
+            if not df.empty:
+                df.columns = [col.upper() if col != 'SELISIH_TARIF' else col for col in df.columns]
             
             return df
             
@@ -604,4 +637,3 @@ class DatabaseQueryService:
         except Exception as e:
             logger.error(f"Error getting kunjungan by patient: {e}", exc_info=True)
             return []
-

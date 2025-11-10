@@ -31,15 +31,12 @@ function addEventListeners() {
     
     // Form submission
     const loginForm = document.querySelector('.login-form');
-    const registerForm = document.querySelector('.register-form');
     
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
     
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
-    }
+    // Register form sudah dihapus
     
     // Real-time validation
     const inputs = document.querySelectorAll('input');
@@ -171,100 +168,7 @@ function handleLogin(event) {
     });
 }
 
-function handleRegister(event) {
-    event.preventDefault();
-    
-    // Prevent multiple submissions
-    const submitBtn = event.target.querySelector('.submit-btn');
-    if (submitBtn.disabled) {
-        return;
-    }
-    
-    const formData = new FormData(event.target);
-    const username = formData.get('username');
-    const fullName = formData.get('full_name');
-    const email = formData.get('email');
-    const password = formData.get('password');
-    const confirmPassword = formData.get('confirm_password');
-    const registrationCode = formData.get('registration_code');
-    
-    // Validate form
-    if (!validateRegisterForm(username, fullName, email, password, confirmPassword, registrationCode)) {
-        return;
-    }
-    
-    // Disable submit button to prevent multiple submissions
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Memproses...';
-    
-    // Record start time for minimum loading duration
-    const startTime = Date.now();
-    const minLoadingTime = 1000; // 1 second minimum
-    
-    // Show loading with existing animation
-    showLoadingWithAnimation();
-    
-    // Make API call to register endpoint
-    fetch('/auth/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            username: username,
-            full_name: fullName,
-            email: email,
-            password: password,
-            confirm_password: confirmPassword,
-            registration_code: registrationCode
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Calculate elapsed time
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-        
-        // Wait for minimum loading time + remaining time
-        setTimeout(() => {
-            hideLoading();
-            
-            if (data.success) {
-                // Show success notification with better message
-                showNotification('Registrasi berhasil! Data telah tersimpan ke database. Silakan login dengan akun baru Anda.', 'success');
-                
-                // Clear registration form
-                event.target.reset();
-                
-                // Switch to login tab after showing notification
-                setTimeout(() => {
-                    switchTab('login');
-                    // Pre-fill email
-                    document.getElementById('login-email').value = email;
-                }, 2000);
-            } else {
-                showNotification(data.message, 'error');
-                // Re-enable submit button on error
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Daftar</span>';
-            }
-        }, remainingTime);
-    })
-    .catch(error => {
-        // Calculate elapsed time for error case too
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-        
-        setTimeout(() => {
-            hideLoading();
-            console.error('Register error:', error);
-            showNotification('Terjadi kesalahan saat registrasi. Silakan coba lagi.', 'error');
-            // Re-enable submit button on error
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>Daftar</span>';
-        }, remainingTime);
-    });
-}
+// Fungsi registrasi dihapus
 
 function validateLoginForm(email, password) {
     let isValid = true;
@@ -293,71 +197,7 @@ function validateLoginForm(email, password) {
     return isValid;
 }
 
-function validateRegisterForm(username, fullName, email, password, confirmPassword, registrationCode) {
-    let isValid = true;
-    
-    // Clear previous errors
-    clearFormErrors('register');
-    
-    // Validate username
-    if (!username) {
-        showFieldError('register-username', 'Username harus diisi');
-        isValid = false;
-    } else if (username.length < 3) {
-        showFieldError('register-username', 'Username minimal 3 karakter');
-        isValid = false;
-    }
-    
-    // Validate full name
-    if (!fullName) {
-        showFieldError('register-name', 'Nama lengkap harus diisi');
-        isValid = false;
-    } else if (fullName.length < 2) {
-        showFieldError('register-name', 'Nama minimal 2 karakter');
-        isValid = false;
-    }
-    
-    // Validate email
-    if (!email) {
-        showFieldError('register-email', 'Email harus diisi');
-        isValid = false;
-    } else if (!isValidEmail(email)) {
-        showFieldError('register-email', 'Format email tidak valid');
-        isValid = false;
-    }
-    
-    // Validate password
-    if (!password) {
-        showFieldError('register-password', 'Password harus diisi');
-        isValid = false;
-    } else if (password.length < 6) {
-        showFieldError('register-password', 'Password minimal 6 karakter');
-        isValid = false;
-    } else if (!isStrongPassword(password)) {
-        showFieldError('register-password', 'Password harus mengandung huruf dan angka');
-        isValid = false;
-    }
-    
-    // Validate confirm password
-    if (!confirmPassword) {
-        showFieldError('register-confirm-password', 'Konfirmasi password harus diisi');
-        isValid = false;
-    } else if (password !== confirmPassword) {
-        showFieldError('register-confirm-password', 'Password tidak sama');
-        isValid = false;
-    }
-    
-    // Validate registration code
-    if (!registrationCode) {
-        showFieldError('register-code', 'Kode registrasi harus diisi');
-        isValid = false;
-    } else if (registrationCode.length < 6) {
-        showFieldError('register-code', 'Kode registrasi tidak valid');
-        isValid = false;
-    }
-    
-    return isValid;
-}
+// Validasi registrasi dihapus
 
 function validateField(event) {
     const field = event.target;
@@ -547,7 +387,7 @@ function showLoadingWithAnimation() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         // Update loading content to use existing animation
-        const loadingText = currentTab === 'login' ? 'Memproses login...' : 'Memproses registrasi...';
+        const loadingText = 'Memproses...';
         overlay.innerHTML = `
             <div class="loading-content">
                 <video autoplay loop muted class="loading-video">
@@ -637,11 +477,7 @@ document.addEventListener('keydown', function(e) {
         switchTab('login');
     }
     
-    // Alt + R for register tab
-    if (e.altKey && e.key === 'r') {
-        e.preventDefault();
-        switchTab('register');
-    }
+    // Register tab removed
     
     // Enter key in forms
     if (e.key === 'Enter') {
@@ -707,5 +543,4 @@ function clearFormData() {
 // Export functions for global access
 window.switchTab = switchTab;
 window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
 window.showNotification = showNotification;
