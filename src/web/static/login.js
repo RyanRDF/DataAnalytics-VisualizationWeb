@@ -17,6 +17,9 @@ function initializePage() {
     
     // Initialize form validation
     initializeValidation();
+    
+    // Initialize CAPTCHA
+    generateCaptcha();
 }
 
 function addEventListeners() {
@@ -44,6 +47,15 @@ function addEventListeners() {
         input.addEventListener('blur', validateField);
         input.addEventListener('input', clearFieldError);
     });
+    
+    // CAPTCHA refresh button
+    const refreshCaptchaBtn = document.getElementById('refreshCaptcha');
+    if (refreshCaptchaBtn) {
+        refreshCaptchaBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            generateCaptcha();
+        });
+    }
 }
 
 function switchTab(tabName) {
@@ -86,15 +98,16 @@ function handleLogin(event) {
     const email = formData.get('email');
     const password = formData.get('password');
     const rememberMe = formData.get('remember-me');
+    const captchaInput = formData.get('captcha');
     
     // Validate form
-    if (!validateLoginForm(email, password)) {
+    if (!validateLoginForm(email, password, captchaInput)) {
         return;
     }
     
     // Disable submit button to prevent multiple submissions
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Memproses...';
+    submitBtn.textContent = 'Processing...';
     
     // Record start time for minimum loading duration
     const startTime = Date.now();
@@ -112,7 +125,8 @@ function handleLogin(event) {
         body: JSON.stringify({
             email: email,
             password: password,
-            remember_me: rememberMe
+            remember_me: rememberMe,
+            captcha_answer: parseInt(captchaInput)
         })
     })
     .then(response => response.json())
@@ -134,7 +148,7 @@ function handleLogin(event) {
                 }
                 
                 // Show success notification
-                showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
+                showNotification('Login successful! Redirecting to dashboard...', 'success');
                 
                 // Clear login form
                 event.target.reset();
@@ -146,9 +160,13 @@ function handleLogin(event) {
                 }, 1500);
             } else {
                 showNotification(data.message, 'error');
+                // Generate new CAPTCHA on error (especially CAPTCHA errors)
+                if (data.message.includes('CAPTCHA') || data.message.includes('captcha')) {
+                    generateCaptcha();
+                }
                 // Re-enable submit button on error
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Masuk</span>';
+                submitBtn.innerHTML = '<span>Login</span>';
             }
         }, remainingTime);
     })
@@ -160,17 +178,19 @@ function handleLogin(event) {
         setTimeout(() => {
             hideLoading();
             console.error('Login error:', error);
-            showNotification('Terjadi kesalahan saat login. Silakan coba lagi.', 'error');
+            showNotification('Login error occurred. Please try again.', 'error');
+            // Generate new CAPTCHA on error
+            generateCaptcha();
             // Re-enable submit button on error
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>Masuk</span>';
+            submitBtn.innerHTML = '<span>Login</span>';
         }, remainingTime);
     });
 }
 
 // Fungsi registrasi dihapus
 
-function validateLoginForm(email, password) {
+function validateLoginForm(email, password, captchaInput) {
     let isValid = true;
     
     // Clear previous errors
@@ -178,20 +198,32 @@ function validateLoginForm(email, password) {
     
     // Validate email
     if (!email) {
-        showFieldError('login-email', 'Email harus diisi');
+        showFieldError('login-email', 'Email is required');
         isValid = false;
     } else if (!isValidEmail(email)) {
-        showFieldError('login-email', 'Format email tidak valid');
+        showFieldError('login-email', 'Invalid email format');
         isValid = false;
     }
     
     // Validate password
     if (!password) {
-        showFieldError('login-password', 'Password harus diisi');
+        showFieldError('login-password', 'Password is required');
         isValid = false;
     } else if (password.length < 6) {
-        showFieldError('login-password', 'Password minimal 6 karakter');
+        showFieldError('login-password', 'Password must be at least 6 characters');
         isValid = false;
+    }
+    
+    // Validate CAPTCHA (basic validation - full validation on backend)
+    if (!captchaInput || captchaInput.trim() === '') {
+        showFieldError('captcha', 'Please solve the security check');
+        isValid = false;
+    } else {
+        const userAnswer = parseInt(captchaInput);
+        if (isNaN(userAnswer)) {
+            showFieldError('captcha', 'Please enter a valid number');
+            isValid = false;
+        }
     }
     
     return isValid;
@@ -210,15 +242,15 @@ function validateField(event) {
     // Validate based on field type
     if (fieldId.includes('email')) {
         if (value && !isValidEmail(value)) {
-            showFieldError(fieldId, 'Format email tidak valid');
+            showFieldError(fieldId, 'Invalid email format');
         }
     } else if (fieldId.includes('password')) {
         if (value && value.length < 6) {
-            showFieldError(fieldId, 'Password minimal 6 karakter');
+            showFieldError(fieldId, 'Password must be at least 6 characters');
         }
     } else if (fieldId.includes('name')) {
         if (value && value.length < 2) {
-            showFieldError(fieldId, 'Nama minimal 2 karakter');
+            showFieldError(fieldId, 'Name must be at least 2 characters');
         }
     }
 }
@@ -387,7 +419,7 @@ function showLoadingWithAnimation() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         // Update loading content to use existing animation
-        const loadingText = 'Memproses...';
+        const loadingText = 'Processing...';
         overlay.innerHTML = `
             <div class="loading-content">
                 <video autoplay loop muted class="loading-video">
@@ -407,7 +439,7 @@ function hideLoading() {
         // Reset to original content
         overlay.innerHTML = `
             <div class="loading-spinner"></div>
-            <p>Memproses...</p>
+            <p>Processing...</p>
         `;
     }
 }
@@ -440,12 +472,12 @@ function handleForgotPassword() {
     const email = document.getElementById('login-email').value;
     
     if (!email) {
-        showNotification('Silakan masukkan email terlebih dahulu', 'warning');
+        showNotification('Please enter email first', 'warning');
         return;
     }
     
     if (!isValidEmail(email)) {
-        showNotification('Format email tidak valid', 'error');
+        showNotification('Invalid email format', 'error');
         return;
     }
     
@@ -454,7 +486,7 @@ function handleForgotPassword() {
     // Simulate password reset
     setTimeout(() => {
         hideLoading();
-        showNotification('Link reset password telah dikirim ke email Anda', 'success');
+        showNotification('Password reset link has been sent to your email', 'success');
     }, 2000);
 }
 
@@ -540,7 +572,39 @@ function clearFormData() {
     });
 }
 
+// CAPTCHA Functions
+function generateCaptcha() {
+    // Fetch CAPTCHA from backend
+    fetch('/auth/captcha')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Display the question
+                const captchaQuestion = document.getElementById('captchaQuestion');
+                if (captchaQuestion) {
+                    captchaQuestion.textContent = data.question;
+                }
+                
+                // Clear the input
+                const captchaInput = document.getElementById('captcha');
+                if (captchaInput) {
+                    captchaInput.value = '';
+                }
+                
+                // Clear any error
+                if (captchaInput) {
+                    clearFieldError({ target: captchaInput });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error generating CAPTCHA:', error);
+            showNotification('Failed to generate CAPTCHA. Please refresh the page.', 'error');
+        });
+}
+
 // Export functions for global access
 window.switchTab = switchTab;
 window.handleLogin = handleLogin;
 window.showNotification = showNotification;
+window.generateCaptcha = generateCaptcha;

@@ -478,12 +478,12 @@ class UploadService:
             message_parts = []
             
             if valid_rows > 0:
-                message_parts.append(f"{valid_rows} baris berhasil")
+                message_parts.append(f"{valid_rows} rows successful")
             
             if duplicate_rows > 0:
-                message_parts.append(f"{duplicate_rows} baris duplikat")
+                message_parts.append(f"{duplicate_rows} duplicate rows")
             
-            # Tambahkan informasi penyesuaian harga jika ada
+            # Add pricing adjustment information if available
             if pricing_result and pricing_result.get('success'):
                 digit_0_count = pricing_result.get('digit_0_count', 0)
                 digit_i_ii_iii_count = pricing_result.get('digit_i_ii_iii_count', 0)
@@ -491,18 +491,18 @@ class UploadService:
                 
                 pricing_info = []
                 if digit_0_count > 0:
-                    pricing_info.append(f"{digit_0_count} baris (digit 4='0', 79%)")
+                    pricing_info.append(f"{digit_0_count} rows (digit 4='0', 79%)")
                 if digit_i_ii_iii_count > 0:
-                    pricing_info.append(f"{digit_i_ii_iii_count} baris (digit 4='I/II/III', 73%)")
+                    pricing_info.append(f"{digit_i_ii_iii_count} rows (digit 4='I/II/III', 73%)")
                 if other_count > 0:
-                    pricing_info.append(f"{other_count} baris (tanpa penyesuaian)")
+                    pricing_info.append(f"{other_count} rows (no adjustment)")
                 
                 if pricing_info:
-                    message_parts.append(f"Penyesuaian harga: {', '.join(pricing_info)}")
+                    message_parts.append(f"Price adjustment: {', '.join(pricing_info)}")
             
             if message_parts:
-                return f"Data diproses: {', '.join(message_parts)}"
+                return f"Data processed: {', '.join(message_parts)}"
             else:
-                return "Tidak ada data untuk diproses"
+                return "No data to process"
         else:
-            return f"Error memproses data: {upload_result.get('error', 'Unknown error')}"
+            return f"Error processing data: {upload_result.get('error', 'Unknown error')}"

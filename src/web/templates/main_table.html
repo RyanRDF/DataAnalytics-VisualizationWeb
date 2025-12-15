@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Analytics - IHC</title>
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='modern-table-styles.css') }}?v=1.0">
+  <script src="{{ url_for('static', filename='script.js') }}?v=3.0" defer></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Header Section -->
+    <header class="header-section">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">Analisis Patient</h1>
+          <p class="page-subtitle">Menampilkan analisis data patient with complete medical information</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filter Bar Section -->
+    <div class="filter-section">
+      <div class="filter-grid">
+        <!-- Date Range -->
+        <div class="filter-item date-range-item">
+          <label class="filter-label">Date Range</label>
+          <div class="date-range-wrapper" onclick="openDatePicker('pasien', 'pasien')">
+            <div class="date-range-content">
+              <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <span id="pasienDateRange" class="date-range-text">Date, 2023 - Nov 17, 2023</span>
+            </div>
+            <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <input type="date" id="pasienStartDate" class="hidden-date-input" style="display: none;">
+            <input type="date" id="pasienEndDate" class="hidden-date-input" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Sort By -->
+        <div class="filter-item">
+          <label class="filter-label">Sort By</label>
+          <div class="select-wrapper">
+            <select id="pasienSortColumn" class="filter-select">
+              <option value="">Select Column</option>
+            </select>
+            <div class="select-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+              </svg>
+            </div>
+            <input type="hidden" id="pasienSortOrder" value="ASC">
+          </div>
+        </div>
+
+        <!-- Select Column -->
+        <div class="filter-item">
+          <label class="filter-label">Select Column</label>
+          <div class="select-wrapper">
+            <select id="pasienFilterColumn" class="filter-select">
+              <option value="">Select Column</option>
+            </select>
+            <div class="select-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Value -->
+        <div class="filter-item">
+          <label class="filter-label">Search Value</label>
+          <div class="input-wrapper">
+            <input type="text" id="pasienFilterValue" class="filter-input" placeholder="Search Value">
+            <div class="input-icon">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="filter-actions">
+        <button id="pasienApplyAllFilters" class="btn-primary">
+          <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          SEARCH
+        </button>
+        <button id="pasienClearAllFilters" class="btn-secondary" title="Click: Clear filters & show all data | Double-click: Clear filters only">
+          <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          CLEAR
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+      <div class="table-wrapper">
+        <div id="tableContainer" class="table-container">
+          <div class="no-data-container">
+            <h3>No Data Available</h3>
+            <p>Please select a date range first to display data.</p>
+            <div class="upload-instructions">
+              <h4>How to Display Data:</h4>
+              <ol>
+                <li>Upload .txt, .xlsx, or .xls file using the upload form</li>
+                <li>Select the desired date range</li>
+                <li>Click the "SEARCH" button</li>
+                <li>Data will appear according to the selected date range</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Hidden container for view type -->
+    <div id="viewType" style="display: none;">{{ view_type|default('pasien') }}</div>
+  </div>
+
+  <!-- Notification Container -->
+  <div class="notification-container" id="notificationContainer"></div>
+
+  <script>
+    // Get view type from server or URL
+    const viewType = '{{ view_type|default("pasien") }}';
+    
+    // View configuration
+    const viewConfig = {
+      'keuangan': { title: 'Financial Analysis', subtitle: 'Display financial data analysis with profit and loss calculation', prefix: '' },
+      'pasien': { title: 'Analisis Patient', subtitle: 'Menampilkan analisis data patient with complete medical information', prefix: 'pasien' },
+      'selisih-tarif': { title: 'Rate Difference Analysis', subtitle: 'Display rate difference analysis between charged rates and standard rates', prefix: 'selisih' },
+      'los': { title: 'LOS (Length of Stay) Analysis', subtitle: 'Display patient length of stay analysis with various parameters', prefix: 'los' },
+      'inacbg': { title: 'INACBG Analysis', subtitle: 'Display data analysis grouped by INACBG with aggregate statistics', prefix: 'inacbg' },
+      'ventilator': { title: 'Ventilator Analysis', subtitle: 'Display ventilator usage data analysis with detailed information', prefix: 'ventilator' }
+    };
+    
+    const config = viewConfig[viewType] || viewConfig['pasien'];
+    const prefix = config.prefix;
+    
+    // Update page title and subtitle on load
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelector('.page-title').textContent = config.title;
+      document.querySelector('.page-subtitle').textContent = config.subtitle;
+      
+      // Update all element IDs with correct prefix
+      const elementsToUpdate = {
+        'DateRange': document.getElementById('pasienDateRange'),
+        'StartDate': document.getElementById('pasienStartDate'),
+        'EndDate': document.getElementById('pasienEndDate'),
+        'SortColumn': document.getElementById('pasienSortColumn'),
+        'SortOrder': document.getElementById('pasienSortOrder'),
+        'FilterColumn': document.getElementById('pasienFilterColumn'),
+        'FilterValue': document.getElementById('pasienFilterValue'),
+        'ApplyAllFilters': document.getElementById('pasienApplyAllFilters'),
+        'ClearAllFilters': document.getElementById('pasienClearAllFilters')
+      };
+      
+      // Update IDs
+      Object.keys(elementsToUpdate).forEach(key => {
+        const element = elementsToUpdate[key];
+        if (element) {
+          const newId = prefix ? `${prefix}${key}` : key;
+          element.id = newId;
+        }
+      });
+      
+      // Update onclick handlers
+      const dateRangeWrapper = document.querySelector('.date-range-wrapper');
+      if (dateRangeWrapper) {
+        dateRangeWrapper.setAttribute('onclick', `openDatePicker('${prefix}', '${viewType}')`);
+      }
+      
+      // Wait for script.js to load before calling functions
+      function initializeAfterScriptLoad() {
+        if (typeof loadFilterColumns === 'function' && typeof loadSortingColumns === 'function') {
+          // Load filter columns
+          loadFilterColumns(viewType);
+          loadSortingColumns(viewType);
+          
+          // Attach event listeners
+          const applyBtnId = prefix ? `${prefix}ApplyAllFilters` : 'ApplyAllFilters';
+          const clearBtnId = prefix ? `${prefix}ClearAllFilters` : 'ClearAllFilters';
+          
+          const applyBtn = document.getElementById(applyBtnId);
+          const clearBtn = document.getElementById(clearBtnId);
+          
+          if (applyBtn && typeof applyAllFilters === 'function') {
+            applyBtn.addEventListener('click', () => {
+              // Patch the table container selector for this page
+              const originalQuery = document.querySelector;
+              document.querySelector = function(selector) {
+                if (selector && selector.includes(`#${viewType} .table-container`)) {
+                  return document.getElementById('tableContainer');
+                }
+                return originalQuery.call(document, selector);
+              };
+              
+              try {
+                applyAllFilters(viewType);
+              } finally {
+                // Restore original querySelector
+                document.querySelector = originalQuery;
+              }
+            });
+          }
+          
+          if (clearBtn) {
+            if (typeof clearAllFilters === 'function') {
+              clearBtn.addEventListener('click', () => {
+                const originalQuery = document.querySelector;
+                document.querySelector = function(selector) {
+                  if (selector && selector.includes(`#${viewType} .table-container`)) {
+                    return document.getElementById('tableContainer');
+                  }
+                  return originalQuery.call(document, selector);
+                };
+                
+                try {
+                  clearAllFilters(viewType);
+                } finally {
+                  document.querySelector = originalQuery;
+                }
+              });
+            }
+            if (typeof clearFiltersOnly === 'function') {
+              clearBtn.addEventListener('dblclick', () => clearFiltersOnly(viewType));
+            }
+          }
+          
+          // Initialize date range picker
+          if (typeof initializeDateRangePicker === 'function') {
+            initializeDateRangePicker(viewType, prefix);
+          }
+        } else {
+          // Retry after a short delay if script.js hasn't loaded yet
+          setTimeout(initializeAfterScriptLoad, 100);
+        }
+      }
+      
+      // Start initialization
+      initializeAfterScriptLoad();
+    });
+  </script>
+</body>
+</html>
+

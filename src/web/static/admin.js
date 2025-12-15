@@ -37,7 +37,7 @@ function renderUsersTable(users) {
     if (!tbody) return;
     
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Tidak ada data user</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No user data</td></tr>';
         return;
     }
     
@@ -51,10 +51,10 @@ function renderUsersTable(users) {
             </td>
             <td>
                 <span class="badge ${user.is_active ? 'bg-success' : 'bg-danger'}">
-                    ${user.is_active ? 'Aktif' : 'Tidak Aktif'}
+                    ${user.is_active ? 'Active' : 'Inactive'}
                 </span>
             </td>
-            <td>${user.last_login ? formatDateTime(user.last_login) : 'Belum pernah'}</td>
+            <td>${user.last_login ? formatDateTime(user.last_login) : 'Never'}</td>
             <td>${formatDateTime(user.created_at)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
@@ -71,7 +71,7 @@ function renderUsersTable(users) {
                     ${(user.user_id !== getCurrentUserId() && user.role !== 'admin') ? `
                     <button type="button" class="btn btn-outline-danger btn-sm" 
                             onclick="deleteUser(${user.user_id}, '${user.username}')" 
-                            title="Hapus User">
+                            title="Delete User">
                         <i class="fas fa-trash"></i>
                     </button>
                     ` : ''}
@@ -115,7 +115,7 @@ function getCurrentUserId() {
 
 // Reset user password
 async function resetUserPassword(userId, username) {
-    if (!confirm(`Apakah Anda yakin ingin mereset password untuk user "${username}"?`)) {
+    if (!confirm(`Are you sure you want to reset password for user "${username}"?`)) {
         return;
     }
     
@@ -132,7 +132,7 @@ async function resetUserPassword(userId, username) {
         if (data.success) {
             showNotification(data.message, 'success');
             // Show new password in a modal or alert
-            alert(`Password baru untuk ${username}: ${data.new_password}`);
+            alert(`New password for ${username}: ${data.new_password}`);
             loadUsersList(); // Refresh the list
         } else {
             showNotification(data.message, 'error');
@@ -145,7 +145,7 @@ async function resetUserPassword(userId, username) {
 
 // Delete user
 async function deleteUser(userId, username) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus user "${username}"? Tindakan ini tidak dapat dibatalkan.`)) {
+    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
         return;
     }
     
@@ -180,17 +180,24 @@ function refreshUsersList() {
     loadUsersList();
 }
 
-// Show notification (you might need to implement this function)
+// Show notification using the global notification system
 function showNotification(message, type = 'info') {
-    // This should show a notification to the user
-    // You can implement this using your existing notification system
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    
-    // Simple alert for now - you should replace this with a proper notification system
-    if (type === 'error') {
-        alert('Error: ' + message);
-    } else if (type === 'success') {
-        alert('Success: ' + message);
+    if (window.notificationSystem) {
+        if (type === 'error') {
+            window.notificationSystem.error(message, 'Error');
+        } else if (type === 'success') {
+            window.notificationSystem.success(message, 'Success');
+        } else {
+            window.notificationSystem.info(message, 'Information');
+        }
+    } else {
+        // Fallback to console if notification system is not available
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        if (type === 'error') {
+            alert('Error: ' + message);
+        } else if (type === 'success') {
+            alert('Success: ' + message);
+        }
     }
 }
 
@@ -209,7 +216,7 @@ window.submitUserForm = submitUserForm;
 function showCreateUserModal() {
     const modalEl = document.getElementById('userModal');
     if (!modalEl) return;
-    document.getElementById('userModalLabel').innerText = 'Buat Akun';
+    document.getElementById('userModalLabel').innerText = 'Create Account';
     document.getElementById('userId').value = '';
     document.getElementById('username').value = '';
     document.getElementById('fullName').value = '';
@@ -227,7 +234,7 @@ function showEditUserModal(userId) {
     if (!user) return;
     const modalEl = document.getElementById('userModal');
     if (!modalEl) return;
-    document.getElementById('userModalLabel').innerText = 'Edit Akun';
+    document.getElementById('userModalLabel').innerText = 'Edit Account';
     document.getElementById('userId').value = user.user_id;
     document.getElementById('username').value = user.username; // disabled for edit
     document.getElementById('username').setAttribute('disabled', 'disabled');
@@ -261,7 +268,7 @@ async function submitUserForm() {
     };
     
     if (!payload.full_name || !payload.email || (!userId && (!payload.username || !payload.password))) {
-        showNotification('Lengkapi data yang wajib diisi', 'error');
+        showNotification('Please complete all required fields', 'error');
         return;
     }
     
@@ -273,7 +280,7 @@ async function submitUserForm() {
         if (userId && !payload.password) delete payload.password;
         // Prevent attempting to create admin via UI
         if (!userId && payload.role === 'admin') {
-            showNotification('Pembuatan role admin hanya boleh manual di database', 'error');
+            showNotification('Admin role creation must be done manually in database', 'error');
             return;
         }
         const response = await fetch(url, {
@@ -293,6 +300,6 @@ async function submitUserForm() {
         }
     } catch (e) {
         console.error('Error submitting user form:', e);
-        showNotification('Gagal menyimpan data user', 'error');
+        showNotification('Failed to save user data', 'error');
     }
 }

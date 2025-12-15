@@ -10,531 +10,324 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-  
   <!-- Font Awesome -->
   <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 
-  <!-- Muat CSS dan JS dari static -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9.0">
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='modern-styles.css') }}?v=1.0">
   <script src="{{ url_for('static', filename='script.js') }}?v=3.0" defer></script>
   <script src="{{ url_for('static', filename='admin.js') }}?v=1.0" defer></script>
-  
-  <!-- FORCE OVERRIDE DASHBOARD BLUE - INLINE CSS -->
-  <style>
-    /* NUCLEAR OPTION - KILL ALL BLUE DASHBOARD STYLES */
-    .sb-sidenav-dark .nav-link,
-    .sb-sidenav-dark .nav-link.active,
-    .sb-sidenav-dark .nav-link:focus,
-    .sb-sidenav-dark .nav-link:visited,
-    .sb-sidenav-dark .nav-link:link,
-    .sb-sidenav-dark .nav-link:active {
-      background-color: transparent !important;
-      background: transparent !important;
-      color: rgba(255, 255, 255, 0.75) !important;
-    }
-    
-    .sb-sidenav-dark .nav-link:hover {
-      background-color: rgba(255, 255, 255, 0.075) !important;
-      background: rgba(255, 255, 255, 0.075) !important;
-      color: #fff !important;
-    }
-    
-    .sb-sidenav-dark .nav-link.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background-color: rgba(255, 255, 255, 0.5);
-      border-radius: 0 2px 2px 0;
-    }
-    
-     /* ENSURE CARDS ARE VISIBLE - MATCH SIDEBAR COLORS */
-     .card.bg-primary {
-       background-color: #495057 !important; /* Dark gray like sidebar */
-       display: block !important;
-       visibility: visible !important;
-     }
-    
-    .card.bg-success {
-      background-color: #198754 !important;
-    }
-    
-    .card.bg-warning {
-      background-color: #ffc107 !important;
-    }
-    
-     .card.bg-danger {
-       background-color: #dc3545 !important;
-     }
-     
-     /* FIX UPLOAD FORM BACKGROUND */
-     .upload-container .upload-header {
-       background: linear-gradient(135deg, #495057 0%, #6c757d 100%) !important;
-       color: #fff !important;
-     }
-     
-     .upload-container .file-upload-form {
-       background-color: #f8f9fa !important;
-       border: 1px solid #dee2e6 !important;
-     }
-     
-     /* UPLOAD INSTRUCTIONS STYLING (scoped only to upload form) */
-     .upload-container .upload-instructions {
-       width: 100% !important;
-       max-width: none !important;
-       margin-top: 20px !important;
-       padding: 15px !important;
-       background-color: #f8f9fa !important;
-       border: 1px solid #dee2e6 !important;
-       border-radius: 8px !important;
-       font-size: 14px !important;
-     }
-     
-     .upload-container .upload-instructions h4 {
-       color: #495057 !important;
-       margin-bottom: 10px !important;
-       font-size: 16px !important;
-     }
-     
-     .upload-container .upload-instructions ul {
-       margin: 0 !important;
-       padding-left: 20px !important;
-       color: #6c757d !important;
-     }
-     
-     .upload-container .upload-instructions li {
-       margin-bottom: 5px !important;
-       line-height: 1.4 !important;
-     }
-    
-    /* FIXED NAVBAR AND SIDEBAR POSITIONING */
-    body {
-      padding-top: 56px !important;
-    }
-    
-    .sb-topnav {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 1039 !important;
-    }
-    
-     #layoutSidenav #layoutSidenav_nav {
-       position: fixed !important;
-       top: 56px !important;
-       left: 0 !important;
-       height: calc(100vh - 56px) !important;
-       z-index: 1038 !important;
-     }
-     
-     /* REPLACE ALL BLUE/PURPLE COLORS WITH SIDEBAR GRAY - BUTTONS */
-     .btn-primary,
-     .badge.bg-primary,
-     .alert-info,
-     .search-btn.primary-btn,
-     .primary-btn,
-     .upload-btn {
-       background-color: #495057 !important;
-       border-color: #495057 !important;
-       color: #fff !important;
-     }
-     
-     /* FIX VIEW DETAILS LINKS */
-     .stretched-link {
-       background-color: transparent !important;
-       border-color: transparent !important;
-       color: rgba(255, 255, 255, 0.8) !important;
-       text-decoration: none !important;
-     }
-     
-     .stretched-link:hover {
-       color: rgba(255, 255, 255, 1) !important;
-       text-decoration: underline !important;
-     }
-     
-     /* REMOVE NAVBAR BRAND HIGHLIGHT */
-     .navbar-brand,
-     .navbar-brand:hover,
-     .navbar-brand:focus {
-       background-color: transparent !important;
-       color: rgba(255, 255, 255, 0.9) !important;
-       text-decoration: none !important;
-     }
-     
-     .btn-primary:hover,
-     .search-btn.primary-btn:hover,
-     .primary-btn:hover,
-     .upload-btn:hover {
-       background-color: #6c757d !important;
-       border-color: #6c757d !important;
-       color: #fff !important;
-     }
-     
-     .btn-primary:focus,
-     .btn-primary:active,
-     .search-btn.primary-btn:focus,
-     .search-btn.primary-btn:active {
-       background-color: #495057 !important;
-       border-color: #495057 !important;
-       box-shadow: 0 0 0 0.2rem rgba(73, 80, 87, 0.5) !important;
-     }
-     
-     /* FIX SEARCH INPUT FOCUS COLORS */
-     .search-input:focus,
-     .search-select:focus {
-       border-color: #495057 !important;
-       box-shadow: 0 0 0 3px rgba(73, 80, 87, 0.1) !important;
-     }
-     
-     /* FIX CONTROL BORDER COLORS */
-     .black-control {
-       border-color: #495057 !important;
-       background: linear-gradient(135deg, rgba(73, 80, 87, 0.05) 0%, rgba(73, 80, 87, 0.1) 100%) !important;
-     }
-     
-     .light-blue-control {
-       border-color: #495057 !important;
-       background: linear-gradient(135deg, rgba(73, 80, 87, 0.08) 0%, rgba(73, 80, 87, 0.12) 100%) !important;
-     }
-    /* Align navbar right controls */
-    .navbar .navbar-nav { align-items: center; }
-    #themeToggle.nav-link, #navbarDropdown.nav-link {
-      height: 56px; /* match topnav height */
-      padding-top: 0; padding-bottom: 0;
-      display: flex; align-items: center;
-    }
-    /* Tighten right spacing */
-    .navbar-nav.ms-auto { margin-right: .5rem !important; }
-  </style>
 </head>
-<body class="sb-nav-fixed">
-  <!-- Top Navigation -->
-  <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
-    <!-- Navbar Brand -->
-    <a class="navbar-brand ps-3" href="#" onclick="showContent('home')">
-      <img src="{{ url_for('static', filename='logo_ihc.png') }}" alt="IHC Logo" class="navbar-logo me-2">
-      IHC Data Analytics
-    </a>
-    
-    <!-- Sidebar Toggle -->
-    <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle">
-      <i class="fas fa-bars"></i>
-  </button>
-
-    
-    <!-- Navbar -->
-    <ul class="navbar-nav ms-auto me-0 d-flex align-items-center">
-        <li class="nav-item">
-        <button class="btn btn-link nav-link d-flex align-items-center" id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-          <i class="fas fa-moon" id="themeIcon"></i>
-        </button>
-        </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle d-flex align-items-center" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fas fa-user fa-fw"></i>
-          {% if current_user %}
-            {{ current_user.username }}
-          {% endif %}
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-          {% if current_user %}
-          <li><h6 class="dropdown-header">
-            <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
-          </h6></li>
-          <li><h6 class="dropdown-header text-muted small">
-            <i class="fas fa-envelope me-2"></i>{{ current_user.email }}
-          </h6></li>
-          {% if user_session %}
-          <li><h6 class="dropdown-header text-muted small">
-            <i class="fas fa-clock me-2"></i>Login: {{ user_session.login_time | jakarta_time_short }}
-          </h6></li>
-          {% endif %}
-          <li><hr class="dropdown-divider" /></li>
-          {% endif %}
-          <li><a class="dropdown-item" href="#" onclick="logout()">
-            <i class="fas fa-sign-out-alt me-2"></i>Logout
-          </a></li>
-          </ul>
-        </li>
-      </ul>
-    </nav>
-
-  <div id="layoutSidenav">
-    <div id="layoutSidenav_nav">
-      <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
-        <div class="sb-sidenav-menu">
-          <div class="nav">
-            <!-- Dashboard -->
-            <a class="nav-link" href="javascript:void(0);" onclick="showContent('home'); updateActiveMenu(this)">
-              <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-              Dashboard
+<body>
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <div class="logo-icon">
+            <i class="fas fa-chart-area"></i>
+            </div>
+          <div class="logo-text">
+            <h1>IHC Data Analytics</h1>
+          </div>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+          <!-- E-Claim Section -->
+          <div class="nav-section">
+            <p class="nav-section-title">E-Claim</p>
+            
+            <a href="javascript:void(0);" class="nav-item" onclick="showContent('home'); updateActiveMenu(this)">
+              <i class="fas fa-home nav-icon"></i>
+              <span>Dashboard</span>
             </a>
             
-            <!-- E-Claim Section -->
-            <div class="sb-sidenav-menu-heading">E-Claim</div>
-            <a class="nav-link collapsed" href="javascript:void(0);" onclick="toggleSidebarDropdown('collapseEClaim', this)" aria-expanded="false" aria-controls="collapseEClaim">
-              <div class="sb-nav-link-icon"><i class="fas fa-money-bill-wave"></i></div>
-              Financial Data
-              <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-            </a>
-            <div class="collapse" id="collapseEClaim" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
-              <nav class="sb-sidenav-menu-nested nav">
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('keuangan'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
-                  Keuangan
+            <div class="nav-group">
+              <button class="nav-item nav-group-toggle" onclick="toggleNavGroup(this)">
+                <i class="fas fa-money-bill-wave nav-icon"></i>
+                <span>Financial Data</span>
+                <i class="fas fa-chevron-down nav-arrow"></i>
+              </button>
+              <div class="nav-group-content">
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('keuangan'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Financial</span>
                 </a>
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('pasien'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
-                  Pasien
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('pasien'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Patient</span>
                 </a>
                 {% if current_user and current_user.role != 'viewer' %}
-                <a class="nav-link" href="javascript:void(0);" onclick="showFileUpload(); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
-                  Upload File
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showFileUpload(); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Upload File</span>
                 </a>
                 {% endif %}
-              </nav>
+              </div>
+            </div>
             </div>
             
             <!-- Analytics Section -->
-            <div class="sb-sidenav-menu-heading">Analytics</div>
-            <a class="nav-link collapsed" href="javascript:void(0);" onclick="toggleSidebarDropdown('collapseAnalytics', this)" aria-expanded="false" aria-controls="collapseAnalytics">
-              <div class="sb-nav-link-icon"><i class="fas fa-chart-area"></i></div>
-              Data Analysis
-              <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-            </a>
-            <div class="collapse" id="collapseAnalytics" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
-              <nav class="sb-sidenav-menu-nested nav">
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('selisih-tarif'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-balance-scale"></i></div>
-                  Selisih Tarif
+          <div class="nav-section">
+            <p class="nav-section-title">Analytics</p>
+            
+            <div class="nav-group">
+              <button class="nav-item nav-group-toggle active" onclick="toggleNavGroup(this)">
+                <i class="fas fa-chart-area nav-icon"></i>
+                <span>Data Analysis</span>
+                <i class="fas fa-chevron-down nav-arrow"></i>
+              </button>
+              <div class="nav-group-content show">
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('selisih-tarif'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Rate Difference</span>
                 </a>
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('los'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-clock"></i></div>
-                  Length of Stay
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('los'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Length of Stay</span>
                 </a>
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('inacbg'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-hospital"></i></div>
-                  INACBG
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('inacbg'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>INACBG</span>
                 </a>
-                <a class="nav-link" href="javascript:void(0);" onclick="showContent('ventilator'); updateActiveMenu(this)">
-                  <div class="sb-nav-link-icon"><i class="fas fa-lungs"></i></div>
-                  Ventilator
+                <a href="javascript:void(0);" class="nav-item nav-subitem" onclick="showContent('ventilator'); updateActiveMenu(this)">
+                  <span class="nav-dot"></span>
+                  <span>Ventilator</span>
                 </a>
-              </nav>
+              </div>
+            </div>
             </div>
             
-            <!-- Admin Section (Only visible for admin users) -->
+          <!-- Admin Section -->
             {% if current_user and current_user.role == 'admin' %}
-            <div class="sb-sidenav-menu-heading">Administration</div>
-            <a class="nav-link" href="javascript:void(0);" onclick="showContent('admin'); updateActiveMenu(this)">
-              <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
-              User Management
+          <div class="nav-section">
+            <p class="nav-section-title">Administration</p>
+            
+            <a href="javascript:void(0);" class="nav-item" onclick="showContent('admin'); updateActiveMenu(this)">
+              <i class="fas fa-users-cog nav-icon"></i>
+              <span>User Management</span>
             </a>
-            {% endif %}
           </div>
-      </div>
+          {% endif %}
+        </nav>
         
-        <!-- Sidebar Footer -->
-        <div class="sb-sidenav-footer">
-          <!-- Session Info -->
+        <!-- User Info -->
+        <div class="sidebar-footer">
           {% if current_user %}
-          <div class="small mb-2">
-            <i class="fas fa-user-circle me-1"></i>
-            <strong>{{ current_user.username }}</strong>
+          <div class="user-card">
+            <div class="user-info">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="user-details">
+                <p class="user-name">{{ current_user.username }}</p>
+                {% if user_session %}
+                <p class="user-status">Online</p>
+                {% endif %}
+              </div>
+            </div>
           </div>
-          {% if user_session %}
-          <div class="small text-muted mb-2">
-            <i class="fas fa-clock me-1"></i>
-            Login: {{ user_session.login_time | jakarta_time_short }}
-          </div>
-          {% endif %}
-          <hr class="my-2">
-          {% endif %}
           
-          <!-- Data Status -->
-          <div class="small">Data Status:</div>
-          <div id="dataInfo">
-            <div class="data-status">
-              <div class="status-indicator"></div>
-              <span id="dataStatusText">No data uploaded</span>
-            </div>
-            <div id="dataStats" class="mt-2" style="display: none;">
-              <small class="text-muted">
-                <div id="uploadStats"></div>
-              </small>
-            </div>
-          </div>
+          <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </button>
+          {% endif %}
         </div>
-      </nav>
     </div>
-    
-    <div id="layoutSidenav_content">
-      <main>
-        <div class="container-fluid px-4">
-          <!-- Page Header -->
-          <h1 class="mt-4">Dashboard</h1>
-          <ol class="breadcrumb mb-4">
-            <li class="breadcrumb-item active">IHC Data Analytics Dashboard</li>
-          </ol>
+    </aside>
 
-    <!-- Home Content -->
-    <div id="home" class="content-section">
-            <!-- Welcome Cards Row -->
-            <div class="row">
-              <div class="col-xl-3 col-md-6">
-                <div class="card bg-primary text-white mb-4">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                      <div>
-                        <div class="text-white-75 small">E-Claim</div>
-                        <div class="text-lg fw-bold">Financial Data</div>
-                      </div>
-                      <i class="fas fa-money-bill-wave fa-2x text-white-25"></i>
-                    </div>
-                  </div>
-                  <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="javascript:void(0);" onclick="showContent('keuangan')">View Details</a>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-xl-3 col-md-6">
-                <div class="card bg-success text-white mb-4">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                      <div>
-                        <div class="text-white-75 small">Patient</div>
-                        <div class="text-lg fw-bold">Data Pasien</div>
-                      </div>
-                      <i class="fas fa-users fa-2x text-white-25"></i>
-                    </div>
-                  </div>
-                  <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="javascript:void(0);" onclick="showContent('pasien')">View Details</a>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-xl-3 col-md-6">
-                <div class="card bg-warning text-white mb-4">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                      <div>
-                        <div class="text-white-75 small">Analytics</div>
-                        <div class="text-lg fw-bold">Data Analysis</div>
-                      </div>
-                      <i class="fas fa-chart-area fa-2x text-white-25"></i>
-                    </div>
-                  </div>
-                  <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="javascript:void(0);" onclick="showContent('selisih-tarif')">View Details</a>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-xl-3 col-md-6">
-                <div class="card bg-danger text-white mb-4">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                      <div>
-                        <div class="text-white-75 small">Upload</div>
-                        <div class="text-lg fw-bold">File Upload</div>
-                      </div>
-                      <i class="fas fa-upload fa-2x text-white-25"></i>
-        </div>
+    <!-- Mobile Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper">
+      <!-- Header -->
+      <header class="main-header">
+        <div class="header-content">
+          <button class="menu-toggle" onclick="toggleSidebar()" id="menuToggleBtn">
+            <i class="fas fa-bars" id="toggleIcon"></i>
+          </button>
+
+          <div class="header-search">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" placeholder="Search patients, data..." class="search-input">
           </div>
-                  <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="javascript:void(0);" onclick="showFileUpload()">View Details</a>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-          </div>
+
+          <div class="header-actions">
+            <button class="header-btn">
+              <i class="fas fa-bell"></i>
+              <span class="notification-badge"></span>
+            </button>
+            
+            <button class="header-btn" onclick="toggleTheme()" id="themeToggle">
+              <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+
+            <div class="user-menu">
+              <div class="user-avatar-small">
+                {% if current_user %}
+                  {{ current_user.username[0].upper() }}
+                {% endif %}
+                      </div>
+              <span class="user-name-small">
+                {% if current_user %}
+                  {{ current_user.username }}
+                {% endif %}
+              </span>
+                    </div>
+                  </div>
+                  </div>
+      </header>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Dashboard Title -->
+        <div class="page-header">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">IHC Data Analytics Dashboard</p>
+                </div>
+
+        <!-- Content Sections -->
+        <!-- Home Content -->
+        <div id="home" class="content-section active">
+          <!-- Welcome Cards -->
+          <div class="cards-grid">
+            <div class="welcome-card card-primary" onclick="showContent('keuangan')">
+              <div class="card-content">
+                <div class="card-text">
+                  <div class="card-label">E-Claim</div>
+                  <div class="card-title">Financial Data</div>
+              </div>
+                <i class="fas fa-money-bill-wave card-icon"></i>
+                      </div>
+              <div class="card-footer">
+                <a href="javascript:void(0);" onclick="showContent('keuangan')">View Details</a>
+                <i class="fas fa-angle-right"></i>
+                    </div>
+                  </div>
+
+            <div class="welcome-card card-success" onclick="showContent('pasien')">
+              <div class="card-content">
+                <div class="card-text">
+                  <div class="card-label">Patient</div>
+                  <div class="card-title">Patient Data</div>
+                  </div>
+                <i class="fas fa-users card-icon"></i>
+                </div>
+              <div class="card-footer">
+                <a href="javascript:void(0);" onclick="showContent('pasien')">View Details</a>
+                <i class="fas fa-angle-right"></i>
+              </div>
+                      </div>
+
+            <div class="welcome-card card-warning" onclick="showContent('selisih-tarif')">
+              <div class="card-content">
+                <div class="card-text">
+                  <div class="card-label">Analytics</div>
+                  <div class="card-title">Data Analysis</div>
+                    </div>
+                <i class="fas fa-chart-area card-icon"></i>
+                  </div>
+              <div class="card-footer">
+                <a href="javascript:void(0);" onclick="showContent('selisih-tarif')">View Details</a>
+                <i class="fas fa-angle-right"></i>
+                  </div>
+                </div>
+
+            <div class="welcome-card card-danger" onclick="showFileUpload()">
+              <div class="card-content">
+                <div class="card-text">
+                  <div class="card-label">Upload</div>
+                  <div class="card-title">File Upload</div>
+              </div>
+                <i class="fas fa-upload card-icon"></i>
+                      </div>
+              <div class="card-footer">
+                <a href="javascript:void(0);" onclick="showFileUpload()">View Details</a>
+                <i class="fas fa-angle-right"></i>
           </div>
           </div>
         </div>
         
             <!-- Welcome Section -->
-            <div class="card mb-4">
-              <div class="card-header">
-                <i class="fas fa-tachometer-alt me-1"></i>
-                Selamat Datang di IHC Data Analytics Dashboard
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="fas fa-tachometer-alt"></i>
+              <span>Welcome to IHC Data Analytics Dashboard</span>
               </div>
-              <div class="card-body">
-                <p>Dashboard ini menyediakan berbagai analisis data untuk:</p>
-                <div class="row">
-                  <div class="col-md-6">
-                    <ul class="list-unstyled">
-                      <li><i class="fas fa-check text-success me-2"></i>Analisis keuangan dan data pasien dengan perhitungan laba rugi yang akurat</li>
-                      <li><i class="fas fa-check text-success me-2"></i>Selisih tarif, LOS, dan INACBG dengan visualisasi data yang interaktif</li>
-                    </ul>
+            <div class="info-card-body">
+                <p>This dashboard provides various data analysis for:</p>
+              <div class="info-list">
+                <div class="info-list-item">
+                  <i class="fas fa-check text-success"></i>
+                  <span>Financial and patient data analysis with accurate profit and loss calculation</span>
                   </div>
-                  <div class="col-md-6">
-                    <ul class="list-unstyled">
-                      <li><i class="fas fa-check text-success me-2"></i>Manajemen data pasien dengan informasi medis lengkap dan terstruktur</li>
-                      <li><i class="fas fa-check text-success me-2"></i>Monitoring penggunaan ventilator dengan analisis detail dan laporan</li>
-                    </ul>
+                <div class="info-list-item">
+                  <i class="fas fa-check text-success"></i>
+                  <span>Rate difference, LOS, and INACBG with interactive data visualization</span>
                   </div>
+                <div class="info-list-item">
+                  <i class="fas fa-check text-success"></i>
+                  <span>Patient data management with complete and structured medical information</span>
                 </div>
-                <div class="alert alert-info mt-3">
-                  <i class="fas fa-info-circle me-2"></i>
-                  <strong>Cara Memulai:</strong> Untuk memulai, silakan upload file .txt, .xlsx, atau .xls menggunakan menu Upload File di sidebar.
+                <div class="info-list-item">
+                  <i class="fas fa-check text-success"></i>
+                  <span>Ventilator usage monitoring with detailed analysis and reports</span>
+                </div>
+              </div>
+              <div class="alert-info">
+                <i class="fas fa-info-circle"></i>
+                  <strong>Getting Started:</strong> To get started, please upload .txt, .xlsx, or .xls file using the Upload File menu in the sidebar.
                 </div>
               </div>
         </div>
         
         <!-- Data Processing Information -->
         {% if processing_summary %}
-            <div class="card mb-4">
-              <div class="card-header">
-                <i class="fas fa-chart-bar me-1"></i>
-                Informasi Pemrosesan Data
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="fas fa-chart-bar"></i>
+              <span>Data Processing Information</span>
               </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6">
-            <p><strong>Total Baris Data:</strong> {{ processing_summary.total_rows }}</p>
-            <p><strong>Penyesuaian Harga Diterapkan:</strong> {{ processing_summary.pricing_adjustments_applied }}</p>
+            <div class="info-card-body">
+              <div class="processing-info-grid">
+                <div>
+            <p><strong>Total Data Rows:</strong> {{ processing_summary.total_rows }}</p>
+            <p><strong>Price Adjustments Applied:</strong> {{ processing_summary.pricing_adjustments_applied }}</p>
                   </div>
-                  <div class="col-md-6">
+                <div>
             {% if processing_summary.upload_count %}
                     <p><strong>Total File Upload:</strong> {{ processing_summary.upload_count }} file</p>
                 {% if processing_summary.accumulated_rows %}
-                    <p><strong>Total Baris Terakumulasi:</strong> {{ processing_summary.accumulated_rows }} baris</p>
+                    <p><strong>Total Accumulated Rows:</strong> {{ processing_summary.accumulated_rows }} rows</p>
                     {% endif %}
                 {% endif %}
                   </div>
                 </div>
                 
-                <h5 class="mt-3">Breakdown INACBG:</h5>
-                <div class="row">
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
+              <h5>Breakdown INACBG:</h5>
+              <div class="inacbg-breakdown">
+                <div class="breakdown-item">
                       <h6>Digit 4 = '0' (79%)</h6>
-                      <span class="badge bg-primary">{{ processing_summary.inacbg_0_count }} baris</span>
+                  <span class="badge badge-primary">{{ processing_summary.inacbg_0_count }} rows</span>
                     </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
+                <div class="breakdown-item">
                       <h6>Digit 4 = 'I/II/III' (73%)</h6>
-                      <span class="badge bg-success">{{ processing_summary.inacbg_i_ii_iii_count }} baris</span>
+                  <span class="badge badge-success">{{ processing_summary.inacbg_i_ii_iii_count }} rows</span>
                     </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="text-center p-3 bg-light rounded">
-                      <h6>Lainnya (100%)</h6>
-                      <span class="badge bg-warning">{{ processing_summary.inacbg_other_count }} baris</span>
-                    </div>
+                <div class="breakdown-item">
+                      <h6>Others (100%)</h6>
+                  <span class="badge badge-warning">{{ processing_summary.inacbg_other_count }} rows</span>
             </div>
             </div>
                 
-                <div class="alert alert-info mt-3">
-                  <strong>Catatan:</strong> Data yang ditampilkan telah diproses dengan penyesuaian harga berdasarkan digit ke-4 INACBG.
+              <div class="alert-info">
+                  <strong>Note:</strong> Displayed data has been processed with price adjustments based on INACBG 4th digit.
               {% if processing_summary.upload_count and processing_summary.upload_count > 1 %}
-                  <br><strong>Akumulasi:</strong> Data dari {{ processing_summary.upload_count }} file telah digabungkan.
+                  <br><strong>Accumulation:</strong> Data from {{ processing_summary.upload_count }} files have been merged.
               {% endif %}
             </div>
           </div>
@@ -542,658 +335,40 @@
         {% endif %}
     </div>
 
-    <!-- Keuangan Content -->
-    <div id="keuangan" class="content-section" style="display:none;">
-      <h2>Analisis Keuangan</h2>
-      <p>Menampilkan analisis data keuangan dengan perhitungan laba rugi</p>
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="startDate">Tanggal Mulai</label>
-            <input type="date" id="startDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="endDate">Tanggal Akhir</label>
-            <input type="date" id="endDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="sortColumn">Sort By</label>
-            <select id="sortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="sortOrder">Order</label>
-            <select id="sortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="filterColumn">Pilih Kolom</label>
-            <select id="filterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="filterValue">Nilai yang Dicari</label>
-            <input type="text" id="filterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="applyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="clearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pasien Content -->
-    <div id="pasien" class="content-section" style="display:none;">
-      <h2>Analisis Pasien</h2>
-      <p>Menampilkan analisis data pasien dengan informasi medis lengkap</p>
-      
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="pasienStartDate">Tanggal Mulai</label>
-            <input type="date" id="pasienStartDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="pasienEndDate">Tanggal Akhir</label>
-            <input type="date" id="pasienEndDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="pasienSortColumn">Sort By</label>
-            <select id="pasienSortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="pasienSortOrder">Order</label>
-            <select id="pasienSortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="pasienFilterColumn">Pilih Kolom</label>
-            <select id="pasienFilterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="pasienFilterValue">Nilai yang Dicari</label>
-            <input type="text" id="pasienFilterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="pasienApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="pasienClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Analisis Selisih Tarif Content -->
-    <div id="selisih-tarif" class="content-section" style="display:none;">
-      <h2>Analisis Selisih Tarif</h2>
-      <p>Menampilkan analisis selisih tarif antara tarif yang dikenakan dan tarif standar</p>
-      
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="selisihStartDate">Tanggal Mulai</label>
-            <input type="date" id="selisihStartDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="selisihEndDate">Tanggal Akhir</label>
-            <input type="date" id="selisihEndDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="selisihSortColumn">Sort By</label>
-            <select id="selisihSortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="selisihSortOrder">Order</label>
-            <select id="selisihSortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="selisihFilterColumn">Pilih Kolom</label>
-            <select id="selisihFilterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="selisihFilterValue">Nilai yang Dicari</label>
-            <input type="text" id="selisihFilterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="selisihApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="selisihClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Analisis LOS Content -->
-    <div id="los" class="content-section" style="display:none;">
-      <h2>Analisis LOS (Length of Stay)</h2>
-      <p>Menampilkan analisis lama rawat inap pasien dengan berbagai parameter</p>
-      
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="losStartDate">Tanggal Mulai</label>
-            <input type="date" id="losStartDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="losEndDate">Tanggal Akhir</label>
-            <input type="date" id="losEndDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="losSortColumn">Sort By</label>
-            <select id="losSortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="losSortOrder">Order</label>
-            <select id="losSortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="losFilterColumn">Pilih Kolom</label>
-            <select id="losFilterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="losFilterValue">Nilai yang Dicari</label>
-            <input type="text" id="losFilterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="losApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="losClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Analisis INACBG Content -->
-    <div id="inacbg" class="content-section" style="display:none;">
-      <h2>Analisis INACBG</h2>
-      <p>Menampilkan analisis data yang dikelompokkan berdasarkan INACBG dengan statistik agregat</p>
-      
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="inacbgStartDate">Tanggal Mulai</label>
-            <input type="date" id="inacbgStartDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="inacbgEndDate">Tanggal Akhir</label>
-            <input type="date" id="inacbgEndDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="inacbgSortColumn">Sort By</label>
-            <select id="inacbgSortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="inacbgSortOrder">Order</label>
-            <select id="inacbgSortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="inacbgFilterColumn">Pilih Kolom</label>
-            <select id="inacbgFilterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="inacbgFilterValue">Nilai yang Dicari</label>
-            <input type="text" id="inacbgFilterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="inacbgApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="inacbgClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Analisis Ventilator Content -->
-    <div id="ventilator" class="content-section" style="display:none;">
-      <h2>Analisis Ventilator</h2>
-      <p>Menampilkan analisis data penggunaan ventilator dengan informasi detail</p>
-      
-      
-      <!-- Search Controls Layout - Top Row (6 controls) -->
-      <div class="search-controls-container">
-        <div class="search-controls-top-row">
-          <!-- Black Controls (2) -->
-          <div class="search-control black-control">
-            <label for="ventilatorStartDate">Tanggal Mulai</label>
-            <input type="date" id="ventilatorStartDate" class="search-input">
-          </div>
-          <div class="search-control black-control">
-            <label for="ventilatorEndDate">Tanggal Akhir</label>
-            <input type="date" id="ventilatorEndDate" class="search-input">
-          </div>
-          
-          <!-- Red Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="ventilatorSortColumn">Sort By</label>
-            <select id="ventilatorSortColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="ventilatorSortOrder">Order</label>
-            <select id="ventilatorSortOrder" class="search-select">
-              <option value="ASC">ASC</option>
-              <option value="DESC">DESC</option>
-            </select>
-          </div>
-          
-          <!-- Green Controls (2) -->
-          <div class="search-control grey-control">
-            <label for="ventilatorFilterColumn">Pilih Kolom</label>
-            <select id="ventilatorFilterColumn" class="search-select">
-              <option value="">Pilih Kolom</option>
-            </select>
-          </div>
-          <div class="search-control grey-control">
-            <label for="ventilatorFilterValue">Nilai yang Dicari</label>
-            <input type="text" id="ventilatorFilterValue" class="search-input" placeholder="Masukkan nilai">
-          </div>
-        </div>
-        
-        <!-- Bottom Row (2 main action buttons) -->
-        <div class="search-controls-bottom-row">
-          <div class="search-control light-blue-control">
-            <button id="ventilatorApplyAllFilters" class="search-btn primary-btn">
-              <img src="{{ url_for('static', filename='Search_Logo-removebg-preview.png') }}" alt="Search" class="btn-icon">
-              <span>Search</span>
-            </button>
-          </div>
-          <div class="search-control light-blue-control">
-            <button id="ventilatorClearAllFilters" class="search-btn secondary-btn" title="Click: Clear filters & show all data | Double-click: Clear filters only">
-              <img src="{{ url_for('static', filename='Clear_Logo-removebg-preview.png') }}" alt="Clear" class="btn-icon">
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-container">
-        <div class="no-data-container">
-          <h3>Data Belum Tersedia</h3>
-          <p>Silakan pilih rentang waktu terlebih dahulu untuk menampilkan data.</p>
-          <div class="upload-instructions">
-            <h4>Cara Menampilkan Data:</h4>
-            <ol>
-              <li>Upload file .txt, .xlsx, atau .xls menggunakan form di sebelah kiri</li>
-              <li>Pilih rentang waktu yang diinginkan</li>
-              <li>Klik tombol "Filter Data"</li>
-              <li>Data akan muncul sesuai rentang waktu yang dipilih</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Admin Content -->
-    <div id="admin" class="content-section" style="display:none;">
-      <h2>User Management</h2>
-      <p>Kelola pengguna sistem dan kode registrasi</p>
-      
-      <!-- Admin Tabs (only Users) -->
-      <ul class="nav nav-tabs" id="adminTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">
-            <i class="fas fa-users me-2"></i>Daftar User
-          </button>
-        </li>
-      </ul>
-      
-      <div class="tab-content" id="adminTabContent">
-        <!-- Users Tab -->
-        <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
-          <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="fas fa-users me-2"></i>Daftar User</h5>
-              <div class="btn-group">
-                <button class="btn btn-success btn-sm" onclick="showCreateUserModal()">
-                  <i class="fas fa-user-plus me-1"></i>Create Akun
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="refreshUsersList()">
-                  <i class="fas fa-sync-alt me-1"></i>Refresh
-                </button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-striped table-hover" id="usersTable">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>Username</th>
-                      <th>Email</th>
-                      <th>Nama Lengkap</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Terakhir Login</th>
-                      <th>Dibuat</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="usersTableBody">
-                    <tr>
-                      <td colspan="8" class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                          <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Memuat data user...</p>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        
-      </div>
-    </div>
-
-    <!-- File Upload Content -->
-    <div id="file-upload" class="content-section" style="display:none;">
-      <h2>Upload File Data</h2>
-      <p>Upload file .txt untuk memproses data E-Claim</p>
-      
-      {% if success_message %}
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ success_message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endif %}
-      
-      {% if import_stats %}
-      <div data-import-stats="{{ import_stats | tojson }}" style="display: none;"></div>
-      {% endif %}
-      
-      {% if upload_result %}
-      <div data-upload-result="{{ upload_result | tojson }}" style="display: none;"></div>
-      {% endif %}
-      
-      {% if error %}
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ error }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endif %}
-      
-      <div class="upload-container">
-        <form class="file-upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" onsubmit="handleFormSubmit(event)">
-          <div class="upload-header">
-            <div class="upload-icon">📁</div>
-            <h3>Pilih File untuk Upload</h3>
-            <p>Silakan pilih file .txt, .xlsx, atau .xls yang berisi data E-Claim</p>
-          </div>
-          
-          <div class="file-input-wrapper">
-            <input type="file" id="fileInput" name="file" accept=".txt,.xlsx,.xls" onchange="handleFileUpload(event)" required>
-            <label for="fileInput" class="file-input-label">
-              <div class="file-input-icon">📄</div>
-              <span>Choose .txt, .xlsx, or .xls file</span>
-            </label>
-          </div>
-          
-          <div class="file-info" id="fileInfo">No file selected</div>
-          
-          <button type="submit" id="uploadBtn" class="upload-btn" disabled>
-            <div class="btn-icon">⚡</div>
-            <span>Process File</span>
-          </button>
-          
-          <!-- Instruksi Upload di dalam form -->
-          <div class="upload-instructions">
-            <h4>📋 Instruksi Upload:</h4>
-            <ul>
-              <li>Pastikan file berformat .txt, .xlsx, atau .xls</li>
-              <li>File harus berisi data E-Claim yang valid dengan format kolom yang sama</li>
-              <li>Data akan diproses dan tersedia untuk analisis</li>
-              <li>File yang sama dapat diupload berkali-kali untuk akumulasi data</li>
-              <li><strong>Format Excel:</strong> Pastikan kolom memiliki nama yang sama dengan file .txt</li>
-            </ul>
-          </div>
-        </form>
-        
-        </div>
+        <!-- Table Content Sections (keuangan, pasien, selisih-tarif, los, inacbg, ventilator) -->
+        <!-- These will be dynamically loaded by JavaScript -->
+        <div id="keuangan" class="content-section" style="display:none;"></div>
+        <div id="pasien" class="content-section" style="display:none;"></div>
+        <div id="selisih-tarif" class="content-section" style="display:none;"></div>
+        <div id="los" class="content-section" style="display:none;"></div>
+        <div id="inacbg" class="content-section" style="display:none;"></div>
+        <div id="ventilator" class="content-section" style="display:none;"></div>
+        <div id="file-upload" class="content-section" style="display:none;"></div>
+        <div id="admin" class="content-section" style="display:none;"></div>
       </main>
-      
-      <!-- Footer -->
-      <footer class="py-4 bg-light mt-auto">
-        <div class="container-fluid px-4">
-          <div class="d-flex align-items-center justify-content-between small">
-            <div class="text-muted">Copyright &copy; IHC Data Analytics 2024</div>
-            <div>
-              <a href="#">Privacy Policy</a>
-              &middot;
-              <a href="#">Terms &amp; Conditions</a>
-            </div>
-        </div>
-      </div>
-      </footer>
     </div>
   </div>
 
+  <!-- Notification Container -->
+  <div class="notification-container" id="notificationContainer"></div>
+
   <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
-  
 
   <!-- User Action Modal -->
   <div class="modal fade" id="userActionModal" tabindex="-1" aria-labelledby="userActionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="userActionModalLabel">Aksi User</h5>
+          <h5 class="modal-title" id="userActionModalLabel">User Action</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="userActionModalBody">
           <!-- Content will be loaded dynamically -->
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="confirmUserAction">Konfirmasi</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmUserAction">Confirm</button>
         </div>
       </div>
     </div>
@@ -1204,7 +379,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="userModalLabel"><i class="fas fa-user me-2"></i>Buat Akun</h5>
+          <h5 class="modal-title" id="userModalLabel"><i class="fas fa-user me-2"></i>Create Account</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -1215,7 +390,7 @@
               <input type="text" class="form-control" id="username" required>
             </div>
             <div class="mb-3">
-              <label for="fullName" class="form-label">Nama Lengkap</label>
+              <label for="fullName" class="form-label">Full Name</label>
               <input type="text" class="form-control" id="fullName" required>
             </div>
             <div class="mb-3">
@@ -1232,19 +407,58 @@
             <div class="mb-3" id="passwordGroup">
               <label for="password" class="form-label">Password</label>
               <input type="password" class="form-control" id="password" minlength="6">
-              <div class="form-text">Minimal 6 karakter</div>
+              <div class="form-text">Minimum 6 characters</div>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="userModalSubmitBtn" onclick="submitUserForm()">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="userModalSubmitBtn" onclick="submitUserForm()">Save</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Notification Container -->
-  <div class="notification-container" id="notificationContainer"></div>
+  <script>
+    // Sidebar toggle functions are handled in script.js
+
+    // Nav group toggle
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const content = group.querySelector('.nav-group-content');
+      const arrow = button.querySelector('.nav-arrow');
+      
+      content.classList.toggle('show');
+      button.classList.toggle('active');
+      arrow.style.transform = content.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const menuToggle = document.getElementById('menuToggleBtn');
+      
+      if (window.innerWidth <= 1024 && 
+          sidebar && sidebar.classList.contains('open') &&
+          !sidebar.contains(e.target) && 
+          menuToggle && !menuToggle.contains(e.target)) {
+        if (typeof closeSidebar === 'function') {
+          closeSidebar();
+        }
+      }
+    });
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Show home content by default
+      showContent('home');
+      
+      // Initialize data management info
+      if (typeof updateDataManagementInfo === 'function') {
+        updateDataManagementInfo();
+      }
+    });
+  </script>
 </body>
 </html>

@@ -1,13 +1,12 @@
 """
 Flask routes for the web application
 """
-from functools import wraps
 from flask import render_template, request, redirect, url_for, jsonify, session
 from typing import Dict, Any
 from datetime import datetime, timedelta
 from utils.timezone_utils import jakarta_now
-from utils.session_utils import login_required, api_login_required, get_valid_user_session
-from utils.handler_registry import HandlerRegistry
+from functools import wraps
+import random
 
 from core.data_handler import DataHandler
 from core.database import db, User, UserSession, LoginLog, UploadLog, UserActivityLog
@@ -59,7 +58,7 @@ class WebRoutes:
             if not user_id or not session_token:
                 return jsonify({
                     'success': False,
-                    'message': 'Anda harus login terlebih dahulu!'
+                    'message': 'Please login first'
                 }), 401
             
             # Verify session is still valid
@@ -73,7 +72,7 @@ class WebRoutes:
                 session.clear()
                 return jsonify({
                     'success': False,
-                    'message': 'Session expired. Silakan login kembali!'
+                    'message': 'Session expired. Please login again'
                 }), 401
             
             return f(*args, **kwargs)
@@ -90,19 +89,101 @@ class WebRoutes:
         def login():
             return render_template('login.html')
         
+        @self.app.route('/auth/captcha', methods=['GET'])
+        def generate_captcha():
+            """Generate CAPTCHA question and store answer in session - all results are integers"""
+            operations = ['+', '-', '*', '/']
+            operation = random.choice(operations)
+            
+            num1, num2, answer = 0, 0, 0
+            
+            if operation == '+':
+                # Penjumlahan: hasil selalu integer
+                num1 = random.randint(1, 20)
+                num2 = random.randint(1, 20)
+                answer = int(num1 + num2)
+            elif operation == '-':
+                # Pengurangan: hasil selalu positif integer
+                num1 = random.randint(10, 30)
+                num2 = random.randint(1, num1 - 1)
+                answer = int(num1 - num2)
+            elif operation == '*':
+                # Perkalian: hasil selalu integer
+                num1 = random.randint(1, 10)
+                num2 = random.randint(1, 10)
+                answer = int(num1 * num2)
+            elif operation == '/':
+                # Pembagian: pastikan hasil selalu integer (num1 adalah kelipatan num2)
+                num2 = random.randint(2, 10)  # Minimal 2 untuk menghindari pembagian 1
+                answer = random.randint(1, 10)  # Hasil pembagian (selalu integer)
+                num1 = int(num2 * answer)  # num1 adalah kelipatan num2, jadi hasil pasti integer
+            
+            # Ensure all values are integers
+            num1 = int(num1)
+            num2 = int(num2)
+            answer = int(answer)
+            
+            # Verify answer is correct (double check)
+            if operation == '+':
+                assert answer == num1 + num2, "Addition answer mismatch"
+            elif operation == '-':
+                assert answer == num1 - num2, "Subtraction answer mismatch"
+            elif operation == '*':
+                assert answer == num1 * num2, "Multiplication answer mismatch"
+            elif operation == '/':
+                assert answer == num1 // num2, "Division answer mismatch"  # Use integer division
+                assert num1 % num2 == 0, "Division should result in integer"  # Ensure no remainder
+            
+            # Store answer in session as integer
+            session['captcha_answer'] = answer
+            
+            return jsonify({
+                'success': True,
+                'question': f'{num1} {operation} {num2} = ?'
+            })
+        
         @self.app.route('/main')
-        @login_required(redirect_on_fail=True)
+        @self.login_required
         def main():
             # Get current user and session info
-            user_id, user_session = get_valid_user_session()
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
             
-            user = User.query.get(user_id) if user_id else None
+            user = User.query.get(user_id)
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).first()
             
             return render_template('index.html', 
                                  table_html="", 
                                  has_data=False,
                                  current_user=user,
                                  user_session=user_session)
+        
+        @self.app.route('/table')
+        @self.login_required
+        def table():
+            """Modern table page with professional design"""
+            # Get current user and session info
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
+            
+            user = User.query.get(user_id)
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).first()
+            
+            # Get view type from query parameter
+            view_type = request.args.get('view', 'pasien')
+            
+            return render_template('main_table.html',
+                                 current_user=user,
+                                 user_session=user_session,
+                                 view_type=view_type)
         
         @self.app.route('/auth/login', methods=['POST'])
         def auth_login():
@@ -111,6 +192,7 @@ class WebRoutes:
             email = data.get('email')
             password = data.get('password')
             remember_me = data.get('remember_me', False)
+            captcha_answer = data.get('captcha_answer')
             
             # Get client info
             ip_address = request.remote_addr
@@ -119,8 +201,27 @@ class WebRoutes:
             if not email or not password:
                 return jsonify({
                     'success': False,
-                    'message': 'Email dan password harus diisi!'
+                    'message': 'Email and password are required'
                 }), 400
+            
+            # Validate CAPTCHA
+            expected_answer = session.get('captcha_answer')
+            if not expected_answer:
+                return jsonify({
+                    'success': False,
+                    'message': 'CAPTCHA expired. Please refresh the page.'
+                }), 400
+            
+            if captcha_answer is None or int(captcha_answer) != int(expected_answer):
+                # Clear CAPTCHA answer on wrong attempt
+                session.pop('captcha_answer', None)
+                return jsonify({
+                    'success': False,
+                    'message': 'Incorrect CAPTCHA answer. Please try again.'
+                }), 400
+            
+            # Clear CAPTCHA answer after successful validation
+            session.pop('captcha_answer', None)
             
             # Find user in database
             user = User.query.filter_by(email=email, is_active=True).first()
@@ -155,7 +256,7 @@ class WebRoutes:
                 
                 response_data = {
                     'success': True,
-                    'message': 'Login berhasil!',
+                    'message': 'Login successful',
                     'user': user.to_dict(),
                     'session_token': session_token
                 }
@@ -180,7 +281,7 @@ class WebRoutes:
                 
                 return jsonify({
                     'success': False,
-                    'message': 'Email atau password tidak valid!'
+                    'message': 'Invalid email or password'
                 }), 400
         
         @self.app.route('/auth/register', methods=['POST'])
@@ -201,34 +302,32 @@ class WebRoutes:
             if not username or len(username) < 3:
                 return jsonify({
                     'success': False,
-                    'message': 'Username minimal 3 karakter'
+                    'message': 'Username must be at least 3 characters'
                 }), 400
             
             if not full_name or len(full_name) < 2:
                 return jsonify({
                     'success': False,
-                    'message': 'Nama lengkap minimal 2 karakter'
+                    'message': 'Full name must be at least 2 characters'
                 }), 400
             
             if not email or '@' not in email:
                 return jsonify({
                     'success': False,
-                    'message': 'Format email tidak valid'
+                    'message': 'Invalid email format'
                 }), 400
             
             if not password or len(password) < 6:
                 return jsonify({
                     'success': False,
-                    'message': 'Password minimal 6 karakter'
+                    'message': 'Password must be at least 6 characters'
                 }), 400
             
             if password != confirm_password:
                 return jsonify({
                     'success': False,
-                    'message': 'Password tidak sama'
+                    'message': 'Passwords do not match'
                 }), 400
-            
-            # Registration code dihapus; registrasi tidak lagi memerlukan kode
             
             # Check if user already exists
             existing_user = User.query.filter(
@@ -238,12 +337,12 @@ class WebRoutes:
                 if existing_user.email == email:
                     return jsonify({
                         'success': False,
-                        'message': 'Email sudah terdaftar!'
+                        'message': 'Email already registered'
                     }), 400
                 else:
                     return jsonify({
                         'success': False,
-                        'message': 'Username sudah digunakan!'
+                        'message': 'Username already taken'
                     }), 400
             
             # Create new user
@@ -252,28 +351,24 @@ class WebRoutes:
                     username=username,
                     full_name=full_name,
                     email=email,
-                    role='user'
+                    role='user'  # Default role is 'user'
                 )
                 user.set_password(password)
                 
                 db.session.add(user)
-                db.session.flush()  # Get user ID
-                
-                # Tidak ada penandaan kode registrasi (fitur dihapus)
-                
                 db.session.commit()
                 
                 # Log registration activity
                 user.log_activity(
                     activity_type='register',
-                    description='User registered successfully with default role user',
+                    description=f'User registered successfully with role user',
                     ip_address=ip_address,
                     user_agent=user_agent
                 )
                 
                 return jsonify({
                     'success': True,
-                    'message': 'Registrasi berhasil! Silakan login dengan akun baru Anda.',
+                    'message': 'Registration successful. Please login with your new account.',
                     'user': user.to_dict()
                 })
             
@@ -281,7 +376,7 @@ class WebRoutes:
                 db.session.rollback()
                 return jsonify({
                     'success': False,
-                    'message': 'Terjadi kesalahan saat registrasi!'
+                    'message': 'Registration failed. Please try again.'
                 }), 500
         
         @self.app.route('/auth/logout', methods=['POST'])
@@ -326,20 +421,28 @@ class WebRoutes:
             
             return jsonify({
                 'success': True,
-                'message': 'Logout berhasil!'
+                'message': 'Logout successful'
             })
         
         @self.app.route('/upload', methods=['POST'])
-        @api_login_required
+        @self.api_login_required
         def upload_file():
             # Get user info from session (already validated by login_required decorator)
-            user_id, user_session = get_valid_user_session()
+            user_id = session.get('user_id')
+            session_token = session.get('session_token')
             
             # Check if user has permission to upload (not viewer)
-            current_user = User.query.get(user_id) if user_id else None
+            current_user = User.query.get(user_id)
             if current_user and current_user.role == 'viewer':
                 return render_template('index.html', table_html="", has_data=False, 
                                      error="Akses ditolak. Role viewer tidak dapat mengupload data.")
+            
+            # Get current user session for logging
+            user_session = UserSession.query.filter_by(
+                user_id=user_id,
+                session_token=session_token,
+                is_active=True
+            ).first()
 
             if 'file' not in request.files:
                 return redirect(url_for('index'))
@@ -391,7 +494,7 @@ class WebRoutes:
                 db_stats = db_query_service.get_database_stats()
 
                 # Show success message with upload stats
-                success_message = upload_result.get('message', 'Data berhasil diproses!')
+                success_message = upload_result.get('message', 'Data processed successfully')
 
                 # Prepare clean upload result for template (remove non-serializable objects)
                 clean_upload_result = {
@@ -508,70 +611,148 @@ class WebRoutes:
         self._register_admin_routes()
     
     def _register_analysis_routes(self):
-        """Register analysis-specific routes dynamically"""
-        # Define all handlers and their route prefixes
-        handlers = ['financial', 'patient', 'selisih_tarif', 'los', 'inacbg', 'ventilator']
+        """Register analysis-specific routes"""
         
-        for handler_name in handlers:
-            view_name = HandlerRegistry.get_view_name(handler_name)
-            
-            # Create unique endpoint names to avoid conflicts
-            endpoint_prefix = f"{handler_name}_{view_name}"
-            
-            # Capture values in closure to avoid late binding issues
-            def make_route_handler(h_name, v_name):
-                return lambda: self._handle_analysis_route(h_name, v_name)
-            
-            def make_sort_handler(h_name):
-                return lambda: self._handle_sort_route(h_name)
-            
-            def make_filter_handler(h_name):
-                return lambda: self._handle_filter_route(h_name)
-            
-            def make_columns_handler(h_name):
-                return lambda: self._handle_columns_route(h_name)
-            
-            def make_specific_filter_handler(h_name):
-                return lambda: self._handle_specific_filter_route(h_name)
-            
-            # Main view route
-            self.app.add_url_rule(
-                f'/{view_name}',
-                endpoint=f'{endpoint_prefix}_view',
-                view_func=make_route_handler(handler_name, view_name)
-            )
-            
-            # Sort route
-            self.app.add_url_rule(
-                f'/{view_name}/sort',
-                endpoint=f'{endpoint_prefix}_sort',
-                view_func=make_sort_handler(handler_name)
-            )
-            
-            # Filter route
-            self.app.add_url_rule(
-                f'/{view_name}/filter',
-                endpoint=f'{endpoint_prefix}_filter',
-                view_func=make_filter_handler(handler_name)
-            )
-            
-            # Columns route
-            self.app.add_url_rule(
-                f'/{view_name}/columns',
-                endpoint=f'{endpoint_prefix}_columns',
-                view_func=make_columns_handler(handler_name)
-            )
-            
-            # Specific filter route
-            self.app.add_url_rule(
-                f'/{view_name}/specific-filter',
-                endpoint=f'{endpoint_prefix}_specific_filter',
-                view_func=make_specific_filter_handler(handler_name)
-            )
+        # Financial routes
+        @self.app.route('/keuangan')
+        def keuangan():
+            return self._handle_analysis_route('financial', 'keuangan')
+        
+        @self.app.route('/keuangan/sort')
+        def keuangan_sort():
+            return self._handle_sort_route('financial')
+        
+        @self.app.route('/keuangan/filter')
+        def keuangan_filter():
+            return self._handle_filter_route('financial')
+        
+        @self.app.route('/keuangan/columns')
+        def keuangan_columns():
+            return self._handle_columns_route('financial')
+        
+        @self.app.route('/keuangan/specific-filter')
+        def keuangan_specific_filter():
+            return self._handle_specific_filter_route('financial')
+        
+        # Patient routes
+        @self.app.route('/pasien')
+        def pasien():
+            return self._handle_analysis_route('patient', 'pasien')
+        
+        @self.app.route('/pasien/sort')
+        def pasien_sort():
+            return self._handle_sort_route('patient')
+        
+        @self.app.route('/pasien/filter')
+        def pasien_filter():
+            return self._handle_filter_route('patient')
+        
+        @self.app.route('/pasien/columns')
+        def pasien_columns():
+            return self._handle_columns_route('patient')
+        
+        @self.app.route('/pasien/specific-filter')
+        def pasien_specific_filter():
+            return self._handle_specific_filter_route('patient')
+        
+        # Selisih Tarif routes
+        @self.app.route('/selisih-tarif')
+        def selisih_tarif():
+            return self._handle_analysis_route('selisih_tarif', 'selisih-tarif')
+        
+        @self.app.route('/selisih-tarif/sort')
+        def selisih_tarif_sort():
+            return self._handle_sort_route('selisih_tarif')
+        
+        @self.app.route('/selisih-tarif/filter')
+        def selisih_tarif_filter():
+            return self._handle_filter_route('selisih_tarif')
+        
+        @self.app.route('/selisih-tarif/columns')
+        def selisih_tarif_columns():
+            return self._handle_columns_route('selisih_tarif')
+        
+        @self.app.route('/selisih-tarif/specific-filter')
+        def selisih_tarif_specific_filter():
+            return self._handle_specific_filter_route('selisih_tarif')
+        
+        # LOS routes
+        @self.app.route('/los')
+        def los():
+            return self._handle_analysis_route('los', 'los')
+        
+        @self.app.route('/los/sort')
+        def los_sort():
+            return self._handle_sort_route('los')
+        
+        @self.app.route('/los/filter')
+        def los_filter():
+            return self._handle_filter_route('los')
+        
+        @self.app.route('/los/columns')
+        def los_columns():
+            return self._handle_columns_route('los')
+        
+        @self.app.route('/los/specific-filter')
+        def los_specific_filter():
+            return self._handle_specific_filter_route('los')
+        
+        # INACBG routes
+        @self.app.route('/inacbg')
+        def inacbg():
+            return self._handle_analysis_route('inacbg', 'inacbg')
+        
+        @self.app.route('/inacbg/sort')
+        def inacbg_sort():
+            return self._handle_sort_route('inacbg')
+        
+        @self.app.route('/inacbg/filter')
+        def inacbg_filter():
+            return self._handle_filter_route('inacbg')
+        
+        @self.app.route('/inacbg/columns')
+        def inacbg_columns():
+            return self._handle_columns_route('inacbg')
+        
+        @self.app.route('/inacbg/specific-filter')
+        def inacbg_specific_filter():
+            return self._handle_specific_filter_route('inacbg')
+        
+        # Ventilator routes
+        @self.app.route('/ventilator')
+        def ventilator():
+            return self._handle_analysis_route('ventilator', 'ventilator')
+        
+        @self.app.route('/ventilator/sort')
+        def ventilator_sort():
+            return self._handle_sort_route('ventilator')
+        
+        @self.app.route('/ventilator/filter')
+        def ventilator_filter():
+            return self._handle_filter_route('ventilator')
+        
+        @self.app.route('/ventilator/columns')
+        def ventilator_columns():
+            return self._handle_columns_route('ventilator')
+        
+        @self.app.route('/ventilator/specific-filter')
+        def ventilator_specific_filter():
+            return self._handle_specific_filter_route('ventilator')
     
     def _get_handler(self, handler_name: str):
-        """Get handler by name using centralized registry"""
-        return HandlerRegistry.get_handler(self.data_handler, handler_name)
+        """Get handler by name"""
+        handler_map = {
+            'keuangan': self.data_handler.financial_handler,
+            'financial': self.data_handler.financial_handler,
+            'pasien': self.data_handler.patient_handler,
+            'patient': self.data_handler.patient_handler,
+            'selisih-tarif': self.data_handler.selisih_tarif_handler,
+            'selisih_tarif': self.data_handler.selisih_tarif_handler,
+            'los': self.data_handler.los_handler,
+            'inacbg': self.data_handler.inacbg_handler,
+            'ventilator': self.data_handler.ventilator_handler
+        }
+        return handler_map.get(handler_name)
     
     def _handle_analysis_route(self, handler_name: str, view_name: str):
         """Handle analysis route"""
@@ -690,7 +871,7 @@ class WebRoutes:
         """Register admin-specific routes"""
         
         @self.app.route('/admin/users', methods=['GET'])
-        @api_login_required
+        @self.api_login_required
         def admin_get_users():
             """Get all users for admin management"""
             # Check if current user is admin
@@ -700,7 +881,7 @@ class WebRoutes:
             if not current_user or current_user.role != 'admin':
                 return jsonify({
                     'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                    'message': 'Access denied. Admin only.'
                 }), 403
             
             try:
@@ -723,134 +904,6 @@ class WebRoutes:
                     'success': False,
                     'message': f'Error: {str(e)}'
                 }), 500
-
-        @self.app.route('/admin/users/create', methods=['POST'])
-        @api_login_required
-        def admin_create_user():
-            """Admin creates a new user account"""
-            current_user_id = session.get('user_id')
-            current_user = User.query.get(current_user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            data = request.get_json()
-            username = data.get('username')
-            full_name = data.get('full_name')
-            email = data.get('email')
-            role = data.get('role', 'user')
-            password = data.get('password')
-            
-            if not username or not full_name or not email:
-                return jsonify({'success': False, 'message': 'Username, nama lengkap, dan email wajib diisi'}), 400
-            
-            # Disallow creating admin via API
-            if role not in ['user', 'viewer']:
-                return jsonify({'success': False, 'message': 'Role tidak valid. Role admin hanya dibuat manual di database.'}), 400
-            
-            if not password or len(password) < 6:
-                return jsonify({'success': False, 'message': 'Password minimal 6 karakter'}), 400
-            
-            try:
-                # Check uniqueness
-                if User.query.filter((User.username==username) | (User.email==email)).first():
-                    return jsonify({'success': False, 'message': 'Username atau email sudah digunakan'}), 400
-                
-                new_user = User(
-                    username=username,
-                    full_name=full_name,
-                    email=email,
-                    role=role,
-                    created_by=current_user_id
-                )
-                new_user.set_password(password)
-                db.session.add(new_user)
-                db.session.flush()
-                
-                # Log activity
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Created user {username} with role {role}',
-                    table_affected='users',
-                    record_id=str(new_user.user_id),
-                    new_values={'username': username, 'email': email, 'role': role}
-                )
-                
-                db.session.commit()
-                return jsonify({'success': True, 'message': 'User berhasil dibuat', 'user': new_user.to_dict()})
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
-
-        @self.app.route('/admin/users/<int:user_id>/update', methods=['POST'])
-        @api_login_required
-        def admin_update_user(user_id):
-            """Admin updates user details"""
-            current_user_id = session.get('user_id')
-            current_user = User.query.get(current_user_id)
-            
-            if not current_user or current_user.role != 'admin':
-                return jsonify({
-                    'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
-                }), 403
-            
-            data = request.get_json()
-            full_name = data.get('full_name')
-            email = data.get('email')
-            role = data.get('role')
-            is_active = data.get('is_active')
-            password = data.get('password')  # optional
-            
-            try:
-                user = User.query.get(user_id)
-                if not user:
-                    return jsonify({'success': False, 'message': 'User tidak ditemukan'}), 404
-                
-                old_values = user.to_dict()
-                
-                if full_name:
-                    user.full_name = full_name
-                if email and email != user.email:
-                    # check uniqueness
-                    if User.query.filter(User.email==email, User.user_id!=user_id).first():
-                        return jsonify({'success': False, 'message': 'Email sudah digunakan'}), 400
-                    user.email = email
-                # Guardrails for admin role
-                if role is not None:
-                    if role == 'admin' and user.role != 'admin':
-                        return jsonify({'success': False, 'message': 'Tidak boleh mengubah role ke admin melalui aplikasi'}), 403
-                    if user.role == 'admin' and role != 'admin':
-                        return jsonify({'success': False, 'message': 'Tidak boleh mengubah role admin melalui aplikasi'}), 403
-                    if role in ['user', 'viewer'] and user.role != 'admin':
-                        user.role = role
-                if isinstance(is_active, bool):
-                    user.is_active = is_active
-                if password:
-                    if len(password) < 6:
-                        return jsonify({'success': False, 'message': 'Password minimal 6 karakter'}), 400
-                    user.set_password(password)
-                user.updated_at = jakarta_now()
-                
-                new_values = user.to_dict()
-                
-                current_user.log_activity(
-                    activity_type='admin_action',
-                    description=f'Updated user {user.username}',
-                    table_affected='users',
-                    record_id=str(user_id),
-                    old_values=old_values,
-                    new_values=new_values
-                )
-                
-                db.session.commit()
-                return jsonify({'success': True, 'message': 'User berhasil diperbarui', 'user': user.to_dict()})
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
         
         @self.app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
         @self.api_login_required
@@ -863,7 +916,7 @@ class WebRoutes:
             if not current_user or current_user.role != 'admin':
                 return jsonify({
                     'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                    'message': 'Access denied. Admin only.'
                 }), 403
             
             try:
@@ -871,7 +924,7 @@ class WebRoutes:
                 if not target_user:
                     return jsonify({
                         'success': False,
-                        'message': 'User tidak ditemukan'
+                        'message': 'User not found'
                     }), 404
                 
                 # Generate new password
@@ -896,7 +949,7 @@ class WebRoutes:
                 
                 return jsonify({
                     'success': True,
-                    'message': f'Password berhasil direset untuk user {target_user.username}',
+                    'message': f'Password reset successful for user {target_user.username}',
                     'new_password': new_password
                 })
                 
@@ -908,7 +961,7 @@ class WebRoutes:
                 }), 500
         
         @self.app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
-        @api_login_required
+        @self.api_login_required
         def admin_delete_user(user_id):
             """Delete user (soft delete)"""
             # Check if current user is admin
@@ -918,7 +971,7 @@ class WebRoutes:
             if not current_user or current_user.role != 'admin':
                 return jsonify({
                     'success': False,
-                    'message': 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.'
+                    'message': 'Access denied. Admin only.'
                 }), 403
             
             try:
@@ -926,18 +979,13 @@ class WebRoutes:
                 if not target_user:
                     return jsonify({
                         'success': False,
-                        'message': 'User tidak ditemukan'
+                        'message': 'User not found'
                     }), 404
                 
                 if target_user.user_id == current_user_id:
                     return jsonify({
                         'success': False,
-                        'message': 'Tidak dapat menghapus akun sendiri'
-                    }), 400
-                if target_user.role == 'admin':
-                    return jsonify({
-                        'success': False,
-                        'message': 'Tidak dapat menghapus user dengan role admin'
+                        'message': 'Cannot delete your own account'
                     }), 400
                 
                 # Soft delete - deactivate user
@@ -958,7 +1006,7 @@ class WebRoutes:
                 
                 return jsonify({
                     'success': True,
-                    'message': f'User {target_user.username} berhasil dihapus'
+                    'message': f'User {target_user.username} deleted successfully'
                 })
                 
             except Exception as e:
@@ -968,4 +1016,47 @@ class WebRoutes:
                     'message': f'Error: {str(e)}'
                 }), 500
         
-        # Semua endpoint admin terkait registration codes telah dihapus
+        @self.app.route('/admin/registration-codes', methods=['GET'])
+        @self.api_login_required
+        def admin_get_registration_codes():
+            """Get all registration codes - DISABLED: Feature removed"""
+            return jsonify({
+                'success': False,
+                'message': 'Registration code feature is disabled. Registration no longer requires a code.'
+            }), 410  # 410 Gone
+        
+        @self.app.route('/admin/registration-codes/generate', methods=['POST'])
+        @self.api_login_required
+        def admin_generate_registration_codes():
+            """Generate new registration codes - DISABLED: Feature removed"""
+            return jsonify({
+                'success': False,
+                'message': 'Registration code feature is disabled. Registration no longer requires a code.'
+            }), 410  # 410 Gone
+        
+        @self.app.route('/admin/registration-codes/<int:code_id>/delete', methods=['POST'])
+        @self.api_login_required
+        def admin_delete_registration_code(code_id):
+            """Delete registration code - DISABLED: Feature removed"""
+            return jsonify({
+                'success': False,
+                'message': 'Registration code feature is disabled. Registration no longer requires a code.'
+            }), 410  # 410 Gone
+        
+        @self.app.route('/admin/registration-codes/clear-unused', methods=['POST'])
+        @self.api_login_required
+        def admin_clear_unused_codes():
+            """Clear all unused registration codes - DISABLED: Feature removed"""
+            return jsonify({
+                'success': False,
+                'message': 'Registration code feature is disabled. Registration no longer requires a code.'
+            }), 410  # 410 Gone
+        
+        @self.app.route('/admin/registration-codes/clear-expired', methods=['POST'])
+        @self.api_login_required
+        def admin_clear_expired_codes():
+            """Clear all expired registration codes - DISABLED: Feature removed"""
+            return jsonify({
+                'success': False,
+                'message': 'Registration code feature is disabled. Registration no longer requires a code.'
+            }), 410  # 410 Gone

@@ -43,7 +43,7 @@
         </div>
       </div>
       <div class="welcome-text">
-        <h3>Selamat Datang</h3>
+        <h3>Welcome</h3>
       </div>
     </div>
 
@@ -57,7 +57,7 @@
 
         <!-- Login Form -->
         <div id="login-form" class="form-content active">
-          <h2>Masuk ke Dashboard</h2>
+          <h2>Login to Dashboard</h2>
           <form class="login-form" onsubmit="handleLogin(event)">
             <div class="input-group">
               <label for="login-email">Email</label>
@@ -67,16 +67,26 @@
               <label for="login-password">Password</label>
               <input type="password" id="login-password" name="password" required>
             </div>
+            <div class="input-group">
+              <label for="captcha">Security Check</label>
+              <div class="captcha-container">
+                <div class="captcha-question" id="captchaQuestion"></div>
+                <input type="text" id="captcha" name="captcha" placeholder="Enter answer" required autocomplete="off">
+                <button type="button" class="captcha-refresh" id="refreshCaptcha" title="Refresh CAPTCHA">
+                  <span>↻</span>
+                </button>
+              </div>
+            </div>
             <div class="form-options">
               <label class="checkbox-label">
                 <input type="checkbox" id="remember-me">
                 <span class="checkmark"></span>
-                Ingat saya
+                Remember me
               </label>
-              <a href="#" class="forgot-password">Lupa password?</a>
+              <a href="#" class="forgot-password">Forgot password?</a>
             </div>
             <button type="submit" class="submit-btn">
-              <span>Masuk</span>
+              <span>Login</span>
             </button>
           </form>
         </div>
@@ -92,7 +102,7 @@
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
-    <p>Memproses...</p>
+    <p>Processing...</p>
   </div>
 
   <!-- Muat JavaScript -->
