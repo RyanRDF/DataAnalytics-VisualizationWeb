@@ -1,9 +1,9 @@
 /* Login Page Styles - Using Professional Bootstrap Color Palette */
 :root {
   /* Colors - Corporate Blue Palette */
-  --primary-color: #007bff; /* Biru Cerah - Tombol "Masuk", link */
-  --primary-light: #66B2FF; /* Light Blue */
-  --primary-dark: #0056b3; /* Dark Blue */
+  --primary-color: #2143E5; /* Biru Cerah - Tombol "Masuk", link */
+  --primary-light: #5B6FF5; /* Light Blue */
+  --primary-dark: #1A35B8; /* Dark Blue */
   --brand-color: #0052cc; /* Biru Korporat */
   --navy-dark: #0d1b2a; /* Biru Navy Pekat - Latar login kiri */
   --secondary-color: #6c757d;
@@ -81,7 +81,7 @@ body {
 /* Left Section - Logo IHC */
 .left-section {
   flex: 1.2;
-  background: #0d1b2a; /* Biru Navy Pekat - Latar login kiri */
+  background: #2143E5; /* Biru Navy Pekat - Latar login kiri */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -232,7 +232,7 @@ body {
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
-  border: 2px solid #0d1b2a; /* Biru Navy Pekat */
+  border: 2px solid #2143E5; /* Biru Navy Pekat */
 }
 
 .tab-navigation {
@@ -253,7 +253,7 @@ body {
 }
 
 .tab-btn.active {
-  background: #0d1b2a; /* Biru Navy Pekat */
+  background: #2143E5; /* Biru Navy Pekat */
   color: var(--white);
 }
 
@@ -307,14 +307,14 @@ body {
 
 .input-group input:focus {
   outline: none;
-  border-color: #007bff; /* Biru Cerah */
+  border-color: #2143E5; /* Biru Cerah */
   background: var(--white);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(33, 67, 229, 0.15);
   transform: translateY(-1px);
 }
 
 .input-group input:focus-visible {
-  outline: 2px solid #007bff;
+  outline: 2px solid #2143E5;
   outline-offset: 2px;
 }
 
@@ -418,8 +418,8 @@ body {
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkmark {
-  background: #007bff; /* Biru Cerah */
-  border-color: #007bff;
+  background: #2143E5; /* Biru Cerah */
+  border-color: #2143E5;
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
@@ -434,7 +434,7 @@ body {
 }
 
 .forgot-password, .terms-link {
-  color: #007bff; /* Biru Cerah - link */
+  color: #2143E5; /* Biru Cerah - link */
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -442,13 +442,13 @@ body {
 
 .forgot-password:hover, .terms-link:hover {
   text-decoration: underline;
-  color: #0056b3; /* Dark Blue */
+  color: #1A35B8; /* Dark Blue */
 }
 
 .submit-btn {
   width: 100%;
   padding: var(--spacing-md);
-  background: #007bff; /* Biru Cerah - Tombol "Masuk" */
+  background: #2143E5; /* Biru Cerah - Tombol "Masuk" */
   color: var(--white);
   border: none;
   border-radius: var(--radius-lg);
@@ -476,7 +476,7 @@ body {
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
-  background: #0056b3; /* Dark Blue - Hover */
+  background: #1A35B8; /* Dark Blue - Hover */
 }
 
 .submit-btn:hover::before {
@@ -489,7 +489,7 @@ body {
 }
 
 .submit-btn:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid #2143E5;
   outline-offset: 2px;
 }
 
@@ -514,7 +514,7 @@ body {
   padding: var(--spacing-md) var(--spacing-lg);
   margin-bottom: var(--spacing-md);
   box-shadow: var(--shadow-lg);
-  border-left: 4px solid #007bff; /* Biru Cerah */
+  border-left: 4px solid #2143E5; /* Biru Cerah */
   animation: slideIn 0.3s ease;
   max-width: 400px;
 }
@@ -565,7 +565,7 @@ body {
   width: 50px;
   height: 50px;
   border: 4px solid var(--gray-200);
-  border-top: 4px solid #007bff; /* Biru Cerah */
+  border-top: 4px solid #2143E5; /* Biru Cerah */
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: var(--spacing-md);
