@@ -350,7 +350,11 @@ function showContent(content) {
     updateActiveMenu(content);
     
     // Handle special content loading
-    if (content === 'keuangan') {
+    if (content === 'home') {
+        if (typeof loadDashboardView === 'function') {
+            loadDashboardView();
+        }
+    } else if (content === 'keuangan') {
         loadDataView('keuangan');
     } else if (content === 'pasien') {
         loadDataView('pasien');
