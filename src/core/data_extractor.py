@@ -69,7 +69,12 @@ class DataExtractor:
                 
                 logger.info(f"Data extracted successfully: {len(df)} rows, {len(df.columns)} columns")
             else:
-                extraction_info['error'] = 'DataFrame kosong atau tidak dapat diekstrak'
+                if df is None:
+                    extraction_info['error'] = 'Gagal membaca file. Pastikan file memiliki format yang benar (.txt dengan tab separator atau .xlsx/.xls)'
+                elif df.empty:
+                    extraction_info['error'] = 'File berhasil dibaca tetapi tidak ada data yang ditemukan. Pastikan file memiliki baris data selain header.'
+                else:
+                    extraction_info['error'] = 'DataFrame kosong atau tidak dapat diekstrak'
             
             return df, extraction_info
             

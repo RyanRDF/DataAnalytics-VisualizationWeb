@@ -695,18 +695,33 @@ function handleFormSubmit(event) {
         const tableContainer = doc.querySelector('.table-container');
         const errorMessage = doc.querySelector('.alert-danger');
         
+        // Also check for upload_result data attribute
+        const importStatsElement = doc.querySelector('[data-import-stats]');
+        let hasUploadData = false;
+        if (importStatsElement) {
+            try {
+                const stats = JSON.parse(importStatsElement.getAttribute('data-import-stats'));
+                hasUploadData = stats && (stats.rows_success > 0 || stats.total_rows > 0);
+            } catch (e) {
+                console.log('Could not parse import stats');
+            }
+        }
+        
         if (successMessage) {
             // Success message found - upload was successful
             console.log('Upload successful - success message found');
         } else if (tableContainer && tableContainer.innerHTML.trim() !== '' && !tableContainer.innerHTML.includes('Data Belum Tersedia')) {
             // Table data found - upload was successful
             console.log('Upload successful - table data found');
+        } else if (hasUploadData) {
+            // Upload data found in stats
+            console.log('Upload successful - upload stats found');
         } else {
             // No success indicators found
             console.log('Upload failed - no success indicators found');
         }
         
-        if (successMessage || (tableContainer && tableContainer.innerHTML.trim() !== '' && !tableContainer.innerHTML.includes('Data Belum Tersedia'))) {
+        if (successMessage || hasUploadData || (tableContainer && tableContainer.innerHTML.trim() !== '' && !tableContainer.innerHTML.includes('Data Belum Tersedia'))) {
             // Extract table HTML if available
             const tableHtml = tableContainer ? tableContainer.innerHTML : '';
             
@@ -750,8 +765,7 @@ function handleFormSubmit(event) {
             // Update data management info
             updateDataManagementInfo();
             
-            // Extract import stats from response if available
-            const importStatsElement = doc.querySelector('[data-import-stats]');
+            // Extract import stats from response if available (already found above)
             if (importStatsElement) {
                 try {
                     const importStats = JSON.parse(importStatsElement.getAttribute('data-import-stats'));

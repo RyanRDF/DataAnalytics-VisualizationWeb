@@ -649,6 +649,10 @@ let startX = 0;
 let startY = 0;
 let startWidth = 0;
 let startHeight = 0;
+let startWidthGrid = 0; // Starting width in grid units
+let startHeightGrid = 0; // Starting height in grid units
+let currentWidthGrid = 0; // Current width in grid units (to track changes)
+let currentHeightGrid = 0; // Current height in grid units (to track changes)
 
 function handleResizeStart(e, element) {
     e.preventDefault();
@@ -660,6 +664,13 @@ function handleResizeStart(e, element) {
     startY = e.clientY;
     startWidth = parseInt(window.getComputedStyle(element).width, 10);
     startHeight = parseInt(window.getComputedStyle(element).height, 10);
+    
+    // Calculate starting size in grid units (snapped to grid)
+    const gridSize = ChartConfig.gridSize;
+    startWidthGrid = Math.round(startWidth / gridSize);
+    startHeightGrid = Math.round(startHeight / gridSize);
+    currentWidthGrid = startWidthGrid;
+    currentHeightGrid = startHeightGrid;
 
     document.addEventListener('mousemove', handleResize);
     document.addEventListener('mouseup', handleResizeEnd);
@@ -670,31 +681,74 @@ function handleResizeStart(e, element) {
 function handleResize(e) {
     if (!isResizing || !resizeElement) return;
 
-    const width = startWidth + (e.clientX - startX);
-    const height = startHeight + (e.clientY - startY);
-
-    // Apply constraints
-    const constrainedWidth = Math.max(
-        ChartConfig.minWidth,
-        Math.min(ChartConfig.maxWidth, width)
-    );
-    const constrainedHeight = Math.max(
-        ChartConfig.minHeight,
-        Math.min(ChartConfig.maxHeight, height)
-    );
-
-    resizeElement.style.width = constrainedWidth + 'px';
-    resizeElement.style.height = constrainedHeight + 'px';
-    resizeElement.classList.add('resizing');
-
-    // Update chart after a small delay to avoid too many resize calls
-    clearTimeout(resizeElement._resizeTimeout);
-    resizeElement._resizeTimeout = setTimeout(() => {
-        const chartId = resizeElement.dataset.chartId;
-        if (DashboardState.chartInstances[chartId] && typeof DashboardState.chartInstances[chartId].resize === 'function') {
-            DashboardState.chartInstances[chartId].resize();
+    const gridSize = ChartConfig.gridSize;
+    
+    // Calculate mouse movement in pixels
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    
+    // Calculate new size in grid units based on mouse movement
+    // Round to nearest grid unit to determine target grid size
+    const targetWidthGrid = Math.round((startWidth + deltaX) / gridSize);
+    const targetHeightGrid = Math.round((startHeight + deltaY) / gridSize);
+    
+    // Only update if the grid unit count has changed by at least 1
+    let newWidthGrid = currentWidthGrid;
+    let newHeightGrid = currentHeightGrid;
+    
+    if (targetWidthGrid !== currentWidthGrid) {
+        // Only allow change by one grid unit at a time
+        if (targetWidthGrid > currentWidthGrid) {
+            newWidthGrid = currentWidthGrid + 1;
+        } else if (targetWidthGrid < currentWidthGrid) {
+            newWidthGrid = currentWidthGrid - 1;
         }
-    }, 50);
+    }
+    
+    if (targetHeightGrid !== currentHeightGrid) {
+        // Only allow change by one grid unit at a time
+        if (targetHeightGrid > currentHeightGrid) {
+            newHeightGrid = currentHeightGrid + 1;
+        } else if (targetHeightGrid < currentHeightGrid) {
+            newHeightGrid = currentHeightGrid - 1;
+        }
+    }
+    
+    // Convert grid units back to pixels
+    let newWidth = newWidthGrid * gridSize;
+    let newHeight = newHeightGrid * gridSize;
+    
+    // Apply constraints (in grid units first, then convert)
+    const minWidthGrid = Math.ceil(ChartConfig.minWidth / gridSize);
+    const maxWidthGrid = Math.floor(ChartConfig.maxWidth / gridSize);
+    const minHeightGrid = Math.ceil(ChartConfig.minHeight / gridSize);
+    const maxHeightGrid = Math.floor(ChartConfig.maxHeight / gridSize);
+    
+    newWidthGrid = Math.max(minWidthGrid, Math.min(maxWidthGrid, newWidthGrid));
+    newHeightGrid = Math.max(minHeightGrid, Math.min(maxHeightGrid, newHeightGrid));
+    
+    // Convert back to pixels
+    newWidth = newWidthGrid * gridSize;
+    newHeight = newHeightGrid * gridSize;
+    
+    // Only update if size actually changed
+    if (newWidthGrid !== currentWidthGrid || newHeightGrid !== currentHeightGrid) {
+        currentWidthGrid = newWidthGrid;
+        currentHeightGrid = newHeightGrid;
+        
+        resizeElement.style.width = newWidth + 'px';
+        resizeElement.style.height = newHeight + 'px';
+        resizeElement.classList.add('resizing');
+
+        // Update chart after a small delay to avoid too many resize calls
+        clearTimeout(resizeElement._resizeTimeout);
+        resizeElement._resizeTimeout = setTimeout(() => {
+            const chartId = resizeElement.dataset.chartId;
+            if (DashboardState.chartInstances[chartId] && typeof DashboardState.chartInstances[chartId].resize === 'function') {
+                DashboardState.chartInstances[chartId].resize();
+            }
+        }, 50);
+    }
 }
 
 function handleResizeEnd() {
@@ -703,14 +757,31 @@ function handleResizeEnd() {
         resizeElement.style.cursor = 'default';
         resizeElement.classList.remove('resizing');
         
+        // Ensure final size is snapped to grid
+        const gridSize = ChartConfig.gridSize;
+        const computedStyle = window.getComputedStyle(resizeElement);
+        let finalWidth = parseInt(computedStyle.width, 10);
+        let finalHeight = parseInt(computedStyle.height, 10);
+        
+        // Snap to grid
+        finalWidth = Math.round(finalWidth / gridSize) * gridSize;
+        finalHeight = Math.round(finalHeight / gridSize) * gridSize;
+        
+        // Apply constraints one more time
+        finalWidth = Math.max(ChartConfig.minWidth, Math.min(ChartConfig.maxWidth, finalWidth));
+        finalHeight = Math.max(ChartConfig.minHeight, Math.min(ChartConfig.maxHeight, finalHeight));
+        
+        // Update element size
+        resizeElement.style.width = finalWidth + 'px';
+        resizeElement.style.height = finalHeight + 'px';
+        
         // Save position and size
         const chartId = resizeElement.dataset.chartId;
-        const computedStyle = window.getComputedStyle(resizeElement);
         DashboardState.chartPositions[chartId] = {
             x: parseInt(computedStyle.left) || 0,
             y: parseInt(computedStyle.top) || 0,
-            width: computedStyle.width,
-            height: computedStyle.height
+            width: finalWidth + 'px',
+            height: finalHeight + 'px'
         };
         saveChartPositions();
         
@@ -719,7 +790,10 @@ function handleResizeEnd() {
             DashboardState.chartInstances[chartId].resize();
         }
         
+        // Reset tracking variables
         resizeElement = null;
+        currentWidthGrid = 0;
+        currentHeightGrid = 0;
     }
     document.removeEventListener('mousemove', handleResize);
     document.removeEventListener('mouseup', handleResizeEnd);
@@ -821,3 +895,5 @@ if (typeof window !== 'undefined') {
     window.loadDashboardView = loadDashboardView;
     window.removeChart = removeChart;
 }
+
+

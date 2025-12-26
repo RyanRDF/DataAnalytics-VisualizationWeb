@@ -203,6 +203,41 @@
           <!-- Dashboard content will be loaded here by dashboard.js -->
         </div>
         
+        <!-- Upload Success/Error Messages -->
+        {% if success_message %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin: 20px;">
+          <i class="fas fa-check-circle me-2"></i>
+          <strong>Success!</strong> {{ success_message }}
+          {% if upload_result %}
+          <div class="mt-2">
+            <small>
+              {% if upload_result.rows_success > 0 %}
+                <span class="badge bg-success">{{ upload_result.rows_success }} rows successful</span>
+              {% endif %}
+              {% if upload_result.rows_failed > 0 %}
+                <span class="badge bg-warning">{{ upload_result.rows_failed }} duplicate rows</span>
+              {% endif %}
+              {% if upload_result.total_rows > 0 %}
+                <span class="badge bg-info">{{ upload_result.total_rows }} total rows</span>
+              {% endif %}
+            </small>
+          </div>
+          {% endif %}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          {% if upload_result %}
+          <div data-import-stats='{"rows_success": {{ upload_result.rows_success }}, "rows_failed": {{ upload_result.rows_failed }}, "total_rows": {{ upload_result.total_rows }}}' style="display: none;"></div>
+          {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin: 20px;">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <strong>Error!</strong> {{ error }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        
         <!-- Data Processing Information (shown below dashboard if available) -->
         {% if processing_summary %}
           <div class="info-card" id="processing-info" style="display: none;">
